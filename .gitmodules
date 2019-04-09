@@ -1,0 +1,3 @@
+[submodule "libs/ada-interface"]
+	path = libs/ada-interface
+	url = https://github.com/Componolit/ada-interface.git
