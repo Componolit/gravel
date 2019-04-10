@@ -9,19 +9,18 @@ clean:
 
 runtime: ../../libs/ada-interface/ada-runtime/obj/lib/libposix_rts.a
 
-gprbuild/lib/permutation: runtime
-	gprbuild -j4 -P gprbuild/permutation.gpr -XOPERATION=compile
+.SECONDEXPANSION:
+DEPS=$$(call deps,$$@)
+.SECONDEXPANSION:
+LIB_DEPS=$$(call deps,gprbuild/$$(notdir $$(basename $$@)).gpr)
 
-gprbuild/lib/sparkcrypto: runtime
-	gprbuild -j4 -P gprbuild/libsparkcrypto.gpr -XOPERATION=compile
+deps=$(addprefix gprbuild/lib/,$(shell cat $(1) | grep -E "^with \"[^\.]" | sed "s/with \"\(.*\)\.gpr.*/\1/g"))
 
-libsparkcrypto: gprbuild/lib/sparkcrypto
+gprbuild/lib/%: runtime $(LIB_DEPS)
+	gprbuild -j4 -P gprbuild/$(notdir $@).gpr -XOPERATION=compile
 
-permutation: gprbuild/lib/permutation
+gprbuild/lib/%: runtime $(LIB_DEPS)
+	gprbuild -j4 -P gprbuild/$(notdir $@).gpr -XOPERATION=compile
 
-libs: libsparkcrypto permutation
-
-component=$(shell echo $(1) | sed -e "s/\(.*\)\..*/\1/g")
-
-%.component: runtime libs
-	gprbuild -j4 -P gprbuild/component.gpr -XNAME=$(call component,$@) -XPATH=$(shell find ../../ -name $(call component,$@) | head -n1)
+%.gpr: runtime $(DEPS)
+	gprbuild -j4 -P $@

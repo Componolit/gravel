@@ -1,0 +1,42 @@
+with "../../../libs/ada-interface/switches.gpr";
+with "libsparkcrypto.gpr";
+with "libpermutation.gpr";
+
+project Block_Correctness is
+   ----
+
+   Root_Dir := "../../../";
+
+   for Create_Missing_Dirs use "True";
+   for Object_Dir use "build";
+
+   package Binder is
+      for Switches ("Ada") use ("-static");
+   end Binder;
+
+   package Compiler is
+      for Default_Switches ("Ada") use Switches.Compiler_Switches;
+   end Compiler;
+
+   package Linker is
+      for Required_Switches use ("-L../../../../libs/ada-interface/ada-runtime/obj/lib", "-lposix_rts", "-lpthread");
+   end Linker;
+
+   for Runtime ("Ada") use Root_Dir & "libs/ada-interface/ada-runtime/obj";
+
+   package Builder is
+      for Global_Configuration_Pragmas use Root_Dir & "libs/ada-interface/spark.adc";
+      for Executable ("main.c") use "block_correctness";
+   end Builder;
+
+   ----
+
+   for Languages use ("Ada", "C");
+
+   for Main use ("main.c");
+
+   for Source_Dirs use (Root_Dir & "components/common/block_correctness",
+                        Root_Dir & "libs/ada-interface/src",
+                        Root_Dir & "libs/ada-interface/platform/posix");
+
+end Block_Correctness;

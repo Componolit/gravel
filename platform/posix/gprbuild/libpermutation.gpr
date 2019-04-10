@@ -1,5 +1,5 @@
 
-project Permutation is
+project Libpermutation is
 
    Root_Dir := "../../../";
 
@@ -7,9 +7,9 @@ project Permutation is
 
    Operation : Operation_Type := external ("OPERATION", "include");
 
-   for Library_Dir use "lib/permutation";
+   for Library_Dir use "lib/libpermutation";
    for Library_Kind use "static";
-   for Library_Name use "permutation";
+   for Library_Name use "libpermutation";
 
    case Operation is
       when "compile" =>
@@ -33,4 +33,4 @@ project Permutation is
 
    for Runtime ("Ada") use Root_Dir & "libs/ada-interface/ada-runtime/obj";
 
-end Permutation;
+end Libpermutation;

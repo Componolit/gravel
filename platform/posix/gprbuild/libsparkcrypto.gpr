@@ -6,7 +6,7 @@ project Libsparkcrypto is
 
    Operation : Operation_Type := external ("OPERATION", "include");
 
-   for Library_Dir use "lib/sparkcrypto";
+   for Library_Dir use "lib/libsparkcrypto";
    for Library_Kind use "static";
    for Library_Name use "sparkcrypto";
 
