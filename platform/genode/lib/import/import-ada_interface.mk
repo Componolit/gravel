@@ -2,6 +2,7 @@
 CAI_INC_DIR = $(REP_DIR)/../../libs/ada-interface/src
 CAI_BLOCK_INC_DIR = $(CAI_INC_DIR)/block
 CAI_LOG_INC_DIR = $(CAI_INC_DIR)/log
+CAI_TIMER_INC_DIR = $(CAI_INC_DIR)/timer
 CAI_PLATFORM_DIR = $(CAI_INC_DIR)/platform/genode
 
 INC_DIR += $(CAI_INC_DIR) \
@@ -15,7 +16,11 @@ INC_DIR += $(CAI_INC_DIR) \
 	   $(CAI_LOG_INC_DIR) \
 	   $(CAI_LOG_INC_DIR)/genode \
 	   $(CAI_LOG_INC_DIR)/client \
-	   $(CAI_LOG_INC_DIR)/client/genode
+	   $(CAI_LOG_INC_DIR)/client/genode \
+	   $(CAI_TIMER_INC_DIR) \
+	   $(CAI_TIMER_INC_DIR)/genode \
+	   $(CAI_TIMER_INC_DIR)/client \
+	   $(CAI_TIMER_INC_DIR)/client/genode
 
 SRC_CC += cai_main.cc
 SRC_ADB += cai-component.adb
