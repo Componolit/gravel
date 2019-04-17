@@ -6,7 +6,6 @@ CC_CXX_OPT += -Wno-attributes
 SRC_ADS += cxx.ads \
 	   cxx-block.ads \
 	   cxx-block-client.ads \
-	   cxx-block-dispatcher.ads \
 	   cxx-genode.ads \
 	   cxx-log.ads \
 	   cxx-log-client.ads \
@@ -19,6 +18,7 @@ SRC_ADS += cxx.ads \
 	   cai-block.ads
 
 SRC_ADB += cxx-block-server.adb \
+	   cxx-block-dispatcher.adb \
 	   cai-block-client.adb \
 	   cai-block-server.adb \
 	   cai-block-dispatcher.adb \
@@ -33,8 +33,37 @@ SRC_CC += block_client.cc \
 
 LIBS = base spark
 
-vpath %.cc $(CAI_PLATFORM_DIR)
-vpath %.ads $(CAI_PLATFORM_DIR) $(CAI_INC_DIR)
-vpath %.adb $(CAI_PLATFORM_DIR) $(CAI_INC_DIR)
+INC_DIR += $(CAI_INC_DIR)/platform/genode \
+	   $(CAI_LOG_INC_DIR)/genode \
+	   $(CAI_LOG_INC_DIR)/client/genode \
+	   $(CAI_BLOCK_INC_DIR)/genode \
+	   $(CAI_BLOCK_INC_DIR)/client/genode \
+	   $(CAI_BLOCK_INC_DIR)/server/genode
+
+vpath cxx.ads $(CAI_PLATFORM_DIR)
+vpath cxx-block.ads $(CAI_BLOCK_INC_DIR)/genode
+vpath cxx-block-client.ads $(CAI_BLOCK_INC_DIR)/client/genode
+vpath cxx-genode.ads $(CAI_PLATFORM_DIR)
+vpath cxx-log.ads $(CAI_LOG_INC_DIR)/genode
+vpath cxx-log-client.ads $(CAI_LOG_INC_DIR)/client/genode
+vpath cai-internal.ads $(CAI_PLATFORM_DIR)
+vpath cai-internal-block.ads $(CAI_BLOCK_INC_DIR)/genode
+vpath cai-internal-log.ads $(CAI_LOG_INC_DIR)/genode
+vpath cai.ads $(CAI_INC_DIR)
+vpath cai-types.ads $(CAI_INC_DIR)
+vpath cai-internal-types.ads $(CAI_PLATFORM_DIR)
+vpath cai-block.ads $(CAI_BLOCK_INC_DIR)
+vpath cxx-block-server.adb $(CAI_BLOCK_INC_DIR)/server/genode
+vpath cxx-block-dispatcher.adb $(CAI_BLOCK_INC_DIR)/server/genode
+vpath cai-block-client.adb $(CAI_BLOCK_INC_DIR)/client/genode
+vpath cai-block-server.adb $(CAI_BLOCK_INC_DIR)/server/genode
+vpath cai-block-dispatcher.adb $(CAI_BLOCK_INC_DIR)/server/genode
+vpath cai-block-util.adb $(CAI_BLOCK_INC_DIR)/genode
+vpath cai-log.adb $(CAI_LOG_INC_DIR)
+vpath cai-log-client.adb $(CAI_LOG_INC_DIR)/client/genode
+vpath block_client.cc $(CAI_BLOCK_INC_DIR)/client/genode
+vpath block_dispatcher.cc $(CAI_BLOCK_INC_DIR)/server/genode
+vpath block_server.cc $(CAI_BLOCK_INC_DIR)/server/genode
+vpath log_client.cc $(CAI_LOG_INC_DIR)/client/genode
 
 SHARED_LIB = yes
