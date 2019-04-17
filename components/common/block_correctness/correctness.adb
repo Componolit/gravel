@@ -130,7 +130,7 @@ package body Correctness is
       while not Client.Ready (C, Request) loop
          null;
       end loop;
-      Client.Enqueue_Read (C, Request);
+      Client.Enqueue (C, Request);
       Client.Submit (C);
       Start := Ada.Real_Time.Clock;
       Last := Ada.Real_Time.Clock;
@@ -142,9 +142,6 @@ package body Correctness is
       return T.Bounds_Checked;
    end Bounds_Check_Finished;
 
-   procedure Hash_Block (Context : in out LSC.Internal.SHA256.Context_Type;
-                         Buffer  :        Block.Buffer) with
-      Pre => Buffer'Length mod (LSC.Internal.SHA256.Block_Size / 8) = 0;
    procedure Hash_Block (Context : in out LSC.Internal.SHA256.Context_Type;
                          Buffer  :        Block.Buffer)
    is
@@ -201,16 +198,12 @@ package body Correctness is
                                    Start  => 0,
                                    Length => 1,
                                    Status => Block.Raw);
-      Buf : Block_Buffer;
    begin
       if T.Sent < T.Count then
          loop
             exit when not Client.Ready (C, Request) or T.Sent >= T.Count;
             Request.Start := Next (T.Last);
-            PR_Block (Buf (1 .. Request.Length * Client.Block_Size (C)), Request.Start);
-            Client.Enqueue_Write (C, Request,
-                                  Buf (1 .. Request.Length * Client.Block_Size (C)));
-            Hash_Block (T.Write_Context, Buf (1 .. Request.Length * Client.Block_Size (C)));
+            Client.Enqueue (C, Request);
             T.Sent := T.Sent + 1;
             T.Last := Request.Start;
          end loop;
@@ -250,7 +243,6 @@ package body Correctness is
                         Success : in out Boolean;
                         L       : in out Cai.Log.Client_Session)
    is
-      Buf : Block_Buffer;
    begin
       while T.Read < T.Count loop
          declare
@@ -258,8 +250,7 @@ package body Correctness is
          begin
             if R.Kind = Block.Read then
                if R.Status = Block.Ok and then Ring.Has_Block (T.Data, R.Start) then
-                  Client.Read (C, R, Buf (1 .. R.Length * Client.Block_Size (C)));
-                  Ring.Set_Data (T.Data, R.Start, Buf);
+                  Client.Read (C, R);
                else
                   Cai.Log.Client.Error (L, "Read received erroneous request "
                                            & Cai.Log.Image (Long_Integer (R.Start)) & "/"
@@ -274,6 +265,14 @@ package body Correctness is
          end;
       end loop;
    end Read_Recv;
+
+   procedure Cache_Data (T : in out Test_State;
+                         S : Block.Id;
+                         B : Block.Buffer)
+   is
+   begin
+      Ring.Set_Data (T.Data, S, B);
+   end Cache_Data;
 
    procedure Read_Send (C       : in out Block.Client_Session;
                         T       : in out Test_State;
@@ -295,7 +294,7 @@ package body Correctness is
          loop
             exit when not Client.Ready (C, Request) or not Ring.Free (T.Data) or T.Sent >= T.Count;
             Request.Start := Next (T.Last);
-            Client.Enqueue_Read (C, Request);
+            Client.Enqueue (C, Request);
             if not Ring.Has_Block (T.Data, Request.Start) then
                Ring.Add (T.Data, Request.Start);
             else

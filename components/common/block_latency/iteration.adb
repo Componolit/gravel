@@ -44,7 +44,6 @@ package body Iteration is
       T.Offset    := Offset;
       T.Finished  := False;
       T.Sync      := S;
-      T.Buffer    := (others => Block.Byte'First);
       for I in T.Data'Range loop
          T.Data (I) := (Success => False, others => Ada.Real_Time.Time_First);
       end loop;
@@ -79,11 +78,10 @@ package body Iteration is
                      --  In a package instance the compiler deletes the branches that cannot be reached
                      when Block.Write =>
                         Start (Write_Request, T.Offset, T.Data);
-                        Client.Enqueue_Write (C, Write_Request,
-                                              T.Buffer (1 .. Block.Buffer_Index (Client.Block_Size (C))));
+                        Client.Enqueue (C, Write_Request);
                      when Block.Read =>
                         Start (Read_Request, T.Offset, T.Data);
-                        Client.Enqueue_Read (C, Read_Request);
+                        Client.Enqueue (C, Read_Request);
                      when others =>
                         null;
                      pragma Warnings (On, "this code can never be executed and has been deleted");
@@ -107,11 +105,11 @@ package body Iteration is
                                                Length => 0,
                                                Status => Block.Raw);
             begin
-               if Client.Supported (C, S) then
+               if Client.Supported (C, S.Kind) then
                   while not Client.Ready (C, S) loop
                      null;
                   end loop;
-                  Client.Enqueue_Sync (C, S);
+                  Client.Enqueue (C, S);
                   Client.Submit (C);
                end if;
             end;
@@ -130,8 +128,8 @@ package body Iteration is
                R : Client.Request := Client.Next (C);
             begin
                if R.Kind = Operation then
-                  if R.Kind = Block.Read then
-                     Client.Read (C, R, T.Buffer (1 .. R.Length * Client.Block_Size (C)));
+                  if R.Kind = Block.Read and then R.Status = Block.Ok then
+                     Client.Read (C, R);
                   end if;
                   Finish (R, T.Offset, T.Data);
                   T.Received := T.Received + 1;

@@ -26,7 +26,19 @@ is
 
    Log : Cai.Log.Client_Session;
 
-   package Block_Client is new Block.Client (Event);
+   procedure Read (C : Block.Client_Instance;
+                   B : Block.Size;
+                   S : Block.Id;
+                   L : Block.Count;
+                   D : Buffer);
+
+   procedure Write (C :     Block.Client_Instance;
+                    B :     Block.Size;
+                    S :     Block.Id;
+                    L :     Block.Count;
+                    D : out Buffer);
+
+   package Block_Client is new Block.Client (Event, Read, Write);
 
    Client : Block.Client_Session;
 
@@ -44,12 +56,19 @@ is
       return Next_Block;
    end Next;
 
-   procedure PR_Block (B : in out Buffer;
-                       I :        Block.Id);
+   package Disk_Test is new Correctness (Block, Block_Client, Next);
 
-   procedure PR_Block (B : in out Buffer;
-                       I :        Block.Id)
+   Data : Disk_Test.Test_State;
+
+   procedure Write (C :     Block.Client_Instance;
+                    B :     Block.Size;
+                    S :     Block.Id;
+                    L :     Block.Count;
+                    D : out Buffer)
    is
+      pragma Unreferenced (C);
+      pragma Unreferenced (B);
+      pragma Unreferenced (L);
       function CBC_Key is new LSC.AES_Generic.Enc_Key (Unsigned_Long,
                                                        Byte,
                                                        Buffer);
@@ -61,18 +80,28 @@ is
                                                         Buffer);
       subtype Id is Buffer (1 .. 8);
       function Convert_Id is new Ada.Unchecked_Conversion (Block.Id, Id);
-      Null_Block : constant Buffer (1 .. B'Length) := (others => 0);
+      Null_Block : constant Buffer (1 .. D'Length) := (others => 0);
       IV : Buffer (1 .. 16) := (others => 0);
       Key : constant Buffer (1 .. 128) := (others => 16#42#);
       --  This is no cryptographically secure encryption and only used to generate pseudo random blocks
    begin
-      IV (1 .. 8) := Convert_Id (I);
-      CBC (Null_Block, IV, CBC_Key (Key, LSC.AES_Generic.L128), B);
-   end PR_Block;
+      IV (1 .. 8) := Convert_Id (S);
+      CBC (Null_Block, IV, CBC_Key (Key, LSC.AES_Generic.L128), D);
+      Disk_Test.Hash_Block (Data.Write_Context, D);
+   end Write;
 
-   package Disk_Test is new Correctness (Block, Block_Client, Next, PR_Block);
-
-   Data : Disk_Test.Test_State;
+   procedure Read (C : Block.Client_Instance;
+                   B : Block.Size;
+                   S : Block.Id;
+                   L : Block.Count;
+                   D : Buffer)
+   is
+      pragma Unreferenced (C);
+      pragma Unreferenced (B);
+      pragma Unreferenced (L);
+   begin
+      Disk_Test.Cache_Data (Data, S, D);
+   end Read;
 
    procedure Construct (Cap : Cai.Types.Capability)
    is

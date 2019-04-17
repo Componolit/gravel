@@ -27,7 +27,6 @@ package Iteration is
       Offset    : Block.Count;
       Finished  : Boolean;
       Sync      : Boolean;
-      Buffer    : Block.Buffer (1 .. 4096);
       Data      : Burst (0 .. Long_Integer (Request_Count - 1));
    end record;
 

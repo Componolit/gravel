@@ -16,7 +16,52 @@ is
 
    package Block is new Cai.Block (Byte, Long_Integer, Buffer);
 
-   package Block_Client is new Block.Client (Event);
+   procedure Write (C :     Block.Client_Instance;
+                    B :     Block.Size;
+                    S :     Block.Id;
+                    L :     Block.Count;
+                    D : out Buffer);
+
+   procedure Write (C :     Block.Client_Instance;
+                    B :     Block.Size;
+                    S :     Block.Id;
+                    L :     Block.Count;
+                    D : out Buffer)
+   is
+      pragma Unreferenced (C);
+      pragma Unreferenced (B);
+      pragma Unreferenced (S);
+      pragma Unreferenced (L);
+   begin
+      D := (others => 0);
+   end Write;
+
+   procedure Read (C : Block.Client_Instance;
+                   B : Block.Size;
+                   S : Block.Id;
+                   L : Block.Count;
+                   D : Buffer);
+
+   procedure Read (C : Block.Client_Instance;
+                   B : Block.Size;
+                   S : Block.Id;
+                   L : Block.Count;
+                   D : Buffer)
+   is
+      pragma Unreferenced (C);
+      pragma Unreferenced (B);
+      pragma Unreferenced (S);
+      pragma Unreferenced (L);
+      pragma Warnings (Off, "variable ""Temp"" is assigned but never read");
+      pragma Warnings (Off, "possibly useless assignment to ""Temp"", value might not be referenced");
+      --  D is read to force the platform to provide the buffer
+      --  to get correct latencies on platforms with lazy read
+      Temp : Buffer (D'First .. D'Last);
+   begin
+      Temp := D;
+   end Read;
+
+   package Block_Client is new Block.Client (Event, Read, Write);
    Client : Block.Client_Session;
    Log    : Cai.Log.Client_Session;
    Xml    : Cai.Log.Client_Session;

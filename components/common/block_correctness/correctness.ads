@@ -9,7 +9,6 @@ generic
    with package Block is new Cai.Block (<>);
    with package Client is new Block.Client (<>);
    with function Next (Current : Block.Id) return Block.Id;
-   with procedure PR_Block (B : in out Block.Buffer; Id : Block.Id);
 package Correctness is
 
    type Buffer_Index is mod 256;
@@ -61,5 +60,13 @@ package Correctness is
                       Equal :    out Boolean);
 
    function Compare_Finished (T : Test_State) return Boolean;
+
+   procedure Hash_Block (Context : in out LSC.Internal.SHA256.Context_Type;
+                         Buffer  :        Block.Buffer) with
+      Pre => Buffer'Length mod (LSC.Internal.SHA256.Block_Size / 8) = 0;
+
+   procedure Cache_Data (T : in out Test_State;
+                         S : Block.Id;
+                         B : Block.Buffer);
 
 end Correctness;
