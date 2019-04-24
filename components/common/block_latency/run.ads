@@ -1,4 +1,5 @@
 
+with Cai.Types;
 with Cai.Block;
 with Cai.Block.Client;
 with Cai.Log;
@@ -17,7 +18,8 @@ package Run is
    type Run_Type is array (1 .. Run_Count) of Iter.Test;
 
    procedure Initialize (R : out Run_Type;
-                         S :     Boolean);
+                         S :     Boolean;
+                         C :     Cai.Types.Capability);
 
    procedure Run (C   : in out Block.Client_Session;
                   R   : in out Run_Type;

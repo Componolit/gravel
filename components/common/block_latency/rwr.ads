@@ -1,4 +1,5 @@
 
+with Cai.Types;
 with Cai.Block;
 with Cai.Block.Client;
 with Cai.Log;
@@ -21,7 +22,8 @@ package Rwr is
       R2 : RR2.Run_Type;
    end record;
 
-   procedure Initialize (R : out Rwr_Run);
+   procedure Initialize (R : out Rwr_Run;
+                         C :     Cai.Types.Capability);
 
    procedure Run (C   : in out Block.Client_Session;
                   R   : in out Rwr_Run;

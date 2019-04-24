@@ -1,7 +1,8 @@
-with Ada.Real_Time;
+with Cai.Types;
 with Cai.Block;
 with Cai.Block.Client;
 with Cai.Log;
+with Cai.Timer;
 
 generic
    with package Block is new Cai.Block (<>);
@@ -14,14 +15,14 @@ package Iteration is
    use all type Block.Count;
 
    type Request is record
-      Start   : Ada.Real_Time.Time;
-      Finish  : Ada.Real_Time.Time;
+      Start   : Cai.Timer.Time;
+      Finish  : Cai.Timer.Time;
       Success : Boolean;
    end record;
 
    type Burst is array (Long_Integer range <>) of Request;
 
-   type Test is record
+   type Test is limited record
       Sent      : Long_Integer;
       Received  : Long_Integer;
       Offset    : Block.Count;
@@ -32,7 +33,8 @@ package Iteration is
 
    procedure Initialize (T      : out Test;
                          Offset :     Block.Count;
-                         S      :     Boolean);
+                         S      :     Boolean;
+                         Cap    :     Cai.Types.Capability);
 
    procedure Send (C   : in out Block.Client_Session;
                    T   : in out Test;

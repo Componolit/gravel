@@ -47,7 +47,7 @@ append config {
         </provides>
     </start>
 
-    <start name="block-test-latency">
+    <start name="block-test-latency" caps="200">
         <resource name="RAM" quantum="256M"/>
         <route>
             <service name="LOG" label="Latency"><child name="vga_log_drv"/></service>
@@ -157,10 +157,10 @@ append_platform_drv_boot_modules
 
 build_boot_image $boot_modules
 
-set image "var/run/nuc_latency.iso.2"
+set image "var/run/block_nuc_latency.iso.2"
 set cmd "dd if=/dev/zero bs=1M count=64 >> $image"
 puts "creating image..."
-exec -ignorestderr sh -c "cp var/run/nuc_latency.iso $image" }
+exec -ignorestderr sh -c "cp var/run/block_nuc_latency.iso $image" }
 exec -ignorestderr sh -c $cmd
 set cmd "/sbin/parted --script $image mkpart primary ext2 32MiB 100%"
 puts "creating partition..."

@@ -3,12 +3,13 @@ with Cai.Log.Client;
 
 package body Rwr is
 
-   procedure Initialize (R : out Rwr_Run)
+   procedure Initialize (R : out Rwr_Run;
+                         C :     Cai.Types.Capability)
    is
    begin
-      RR1.Initialize (R.R1, True);
-      WR.Initialize (R.W, True);
-      RR2.Initialize (R.R2, True);
+      RR1.Initialize (R.R1, True, C);
+      WR.Initialize (R.W, True, C);
+      RR2.Initialize (R.R2, True, C);
    end Initialize;
 
    Printed : Boolean := False;

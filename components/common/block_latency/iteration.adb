@@ -1,11 +1,13 @@
 
-with Ada.Unchecked_Conversion;
 with Cai.Log.Client;
+with Cai.Timer.Client;
 
 package body Iteration is
 
    use all type Block.Request_Kind;
    use all type Block.Request_Status;
+
+   Timer : Cai.Timer.Client_Session := Cai.Timer.Client.Create;
 
    procedure Start (Item   :        Client.Request;
                     Offset :        Block.Count;
@@ -22,7 +24,7 @@ package body Iteration is
                     Data   : in out Burst)
    is
    begin
-      Data (Long_Integer (Item.Start - Offset)).Start := Ada.Real_Time.Clock;
+      Data (Long_Integer (Item.Start - Offset)).Start := Cai.Timer.Client.Clock (Timer);
    end Start;
 
    procedure Finish (Item   :        Client.Request;
@@ -30,13 +32,14 @@ package body Iteration is
                      Data   : in out Burst)
    is
    begin
-      Data (Long_Integer (Item.Start - Offset)).Finish  := Ada.Real_Time.Clock;
+      Data (Long_Integer (Item.Start - Offset)).Finish  := Cai.Timer.Client.Clock (Timer);
       Data (Long_Integer (Item.Start - Offset)).Success := Item.Status = Block.Ok;
    end Finish;
 
    procedure Initialize (T      : out Test;
                          Offset :     Block.Count;
-                         S      :     Boolean)
+                         S      :     Boolean;
+                         Cap    :     Cai.Types.Capability)
    is
    begin
       T.Sent      := -1;
@@ -45,8 +48,11 @@ package body Iteration is
       T.Finished  := False;
       T.Sync      := S;
       for I in T.Data'Range loop
-         T.Data (I) := (Success => False, others => Ada.Real_Time.Time_First);
+         T.Data (I) := (Success => False, others => Cai.Timer.Time'First);
       end loop;
+      if not Cai.Timer.Client.Initialized (Timer) then
+         Cai.Timer.Client.Initialize (Timer, Cap);
+      end if;
    end Initialize;
 
    procedure Send (C   : in out Block.Client_Session;
@@ -157,11 +163,10 @@ package body Iteration is
                   R       :        Request;
                   B       :        Block.Id)
    is
-      function Time_Conversion is new Ada.Unchecked_Conversion (Ada.Real_Time.Time, Duration);
    begin
       Cai.Log.Client.Info (Xml_Log, "<request id=""" & Cai.Log.Image (Long_Integer (B))
-                                    & """ sent=""" & Cai.Log.Image (Time_Conversion (R.Start))
-                                    & """ received=""" & Cai.Log.Image (Time_Conversion (R.Finish))
+                                    & """ sent=""" & Cai.Log.Image (Duration (R.Start))
+                                    & """ received=""" & Cai.Log.Image (Duration (R.Finish))
                                     & """ status=""" & (if R.Success then "OK" else "ERROR")
                                     & """/>");
    end Xml;

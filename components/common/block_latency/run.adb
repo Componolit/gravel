@@ -7,11 +7,12 @@ package body Run is
    use all type Block.Request_Kind;
 
    procedure Initialize (R : out Run_Type;
-                         S :     Boolean)
+                         S :     Boolean;
+                         C :     Cai.Types.Capability)
    is
    begin
       for I in R'Range loop
-         Iter.Initialize (R (I), Block.Count (I - 1) * R (I).Data'Length, S);
+         Iter.Initialize (R (I), Block.Count (I - 1) * R (I).Data'Length, S, C);
       end loop;
    end Initialize;
 

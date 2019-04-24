@@ -146,16 +146,16 @@ is
       Cai.Log.Client.Info (Log, "Initializing test data");
       Cai.Log.Client.Initialize (Xml, Cap, "XML");
       Block_Client.Initialize (Client, Cap, "");
-      Small_1.Initialize (Small_1_Data);
-      Small_2.Initialize (Small_2_Data);
-      Small_4.Initialize (Small_4_Data);
-      Medium_500.Initialize (Medium_500_Data);
-      Medium_1000.Initialize (Medium_1000_Data);
-      Medium_5000.Initialize (Medium_5000_Data);
-      Large_50000.Initialize (Large_50000_Data);
-      Large_100000.Initialize (Large_100000_Data);
---      Large_250000.Initialize (Large_250000_Data);
---      Large_1000000.Initialize (Large_1000000_Data);
+      Small_1.Initialize (Small_1_Data, Cap);
+      Small_2.Initialize (Small_2_Data, Cap);
+      Small_4.Initialize (Small_4_Data, Cap);
+      Medium_500.Initialize (Medium_500_Data, Cap);
+      Medium_1000.Initialize (Medium_1000_Data, Cap);
+      Medium_5000.Initialize (Medium_5000_Data, Cap);
+      Large_50000.Initialize (Large_50000_Data, Cap);
+      Large_100000.Initialize (Large_100000_Data, Cap);
+--      Large_250000.Initialize (Large_250000_Data, Cap);
+--      Large_1000000.Initialize (Large_1000000_Data, Cap);
       Event;
    end Construct;
 
