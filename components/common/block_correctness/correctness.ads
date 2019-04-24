@@ -1,4 +1,5 @@
 
+with Cai.Types;
 with Cai.Log;
 with Cai.Block;
 with Cai.Block.Client;
@@ -31,9 +32,10 @@ package Correctness is
 
    function Byte_Image (Bytes : Long_Integer) return String;
 
-   procedure Initialize (C : in out Block.Client_Session;
-                         T :    out Test_State;
-                         L : in out Cai.Log.Client_Session);
+   procedure Initialize (C   : in out Block.Client_Session;
+                         T   :    out Test_State;
+                         L   : in out Cai.Log.Client_Session;
+                         Cap :        Cai.Types.Capability);
 
    procedure Bounds_Check (C       : in out Block.Client_Session;
                            T       : in out Test_State;

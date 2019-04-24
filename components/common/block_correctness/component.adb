@@ -120,7 +120,7 @@ is
                                 & " byte size ("
                                 & Disk_Test.Byte_Image (Count * Size)
                                 & ")...");
-      Disk_Test.Initialize (Client, Data, Log);
+      Disk_Test.Initialize (Client, Data, Log, Cap);
       Event;
    end Construct;
 

@@ -1,25 +1,28 @@
 
 with Ada.Unchecked_Conversion;
-with Ada.Real_Time;
 with Cai.Log.Client;
+with Cai.Timer;
+with Cai.Timer.Client;
 with LSC.Internal.Types;
 with LSC.Internal.SHA256;
 
-use all type Ada.Real_Time.Time;
-use all type Ada.Real_Time.Time_Span;
 use all type LSC.Internal.Types.Word32_Array_Type;
 use all type LSC.Internal.SHA256.Message_Index;
 
 package body Correctness is
 
+   use all type Cai.Timer.Time;
    use all type Block.Count;
    use all type Block.Size;
    use all type Block.Request_Kind;
    use all type Block.Request_Status;
 
-   procedure Initialize (C : in out Block.Client_Session;
-                         T :    out Test_State;
-                         L : in out Cai.Log.Client_Session)
+   Timer : Cai.Timer.Client_Session := Cai.Timer.Client.Create;
+
+   procedure Initialize (C   : in out Block.Client_Session;
+                         T   :    out Test_State;
+                         L   : in out Cai.Log.Client_Session;
+                         Cap :        Cai.Types.Capability)
    is
    begin
       T.Last           := Block.Id'Last;
@@ -35,26 +38,27 @@ package body Correctness is
                                     & Cai.Log.Image (Long_Integer (Client.Block_Size (C)))
                                     & " is too large, requests might fail");
       end if;
+      Cai.Timer.Client.Initialize (Timer, Cap);
       Ring.Initialize (T.Data);
    end Initialize;
 
    Progress : Long_Integer := -1;
-   Start    : Ada.Real_Time.Time;
-   Last     : Ada.Real_Time.Time;
+   Start    : Cai.Timer.Time;
+   Last     : Cai.Timer.Time;
 
-   function Remain (S : Ada.Real_Time.Time;
-                    C : Ada.Real_Time.Time;
+   function Remain (S : Cai.Timer.Time;
+                    C : Cai.Timer.Time;
                     P : Long_Integer) return Duration;
 
-   function Remain (S : Ada.Real_Time.Time;
-                    C : Ada.Real_Time.Time;
+   function Remain (S : Cai.Timer.Time;
+                    C : Cai.Timer.Time;
                     P : Long_Integer) return Duration
    is
    begin
       if P < 1 or P > 999 then
          return Duration (0);
       end if;
-      return Ada.Real_Time.To_Duration (((C - S) / Integer (P)) * Integer (1000 - P));
+      return Duration (((C - S) / Integer (P)) * Integer (1000 - P));
    end Remain;
 
    function Byte_Image (Bytes : Long_Integer) return String is
@@ -77,11 +81,11 @@ package body Correctness is
                              C      :        Block.Client_Session;
                              L      : in out Cai.Log.Client_Session)
    is
-      Current : Ada.Real_Time.Time;
+      Current : Cai.Timer.Time;
       Size    : constant Block.Size := Client.Block_Size (C);
    begin
-      Current := Ada.Real_Time.Clock;
-      if Ada.Real_Time.To_Duration (Current - Last) > Duration (2) then
+      Current := Cai.Timer.Client.Clock (Timer);
+      if Duration (Current - Last) > Duration (2) then
          Last     := Current;
          Progress := Long_Integer (Done) / Long_Integer (Todo / 1000);
          Cai.Log.Client.Info (L, Prefix & "... ("
@@ -92,7 +96,7 @@ package body Correctness is
                                  & " / " & Byte_Image (Long_Integer (Todo * Block.Count (Size)))
                                  & ")");
          Cai.Log.Client.Info (L, "Elapsed: "
-                                 & Cai.Log.Image (Ada.Real_Time.To_Duration (Current - Start))
+                                 & Cai.Log.Image (Duration (Current - Start))
                                  & " Remaining: "
                                  & Cai.Log.Image (Remain (Start, Current, Progress)));
       end if;
@@ -132,8 +136,8 @@ package body Correctness is
       end loop;
       Client.Enqueue (C, Request);
       Client.Submit (C);
-      Start := Ada.Real_Time.Clock;
-      Last := Ada.Real_Time.Clock;
+      Start := Cai.Timer.Client.Clock (Timer);
+      Last := Cai.Timer.Client.Clock (Timer);
    end Bounds_Check;
 
    function Bounds_Check_Finished (T : Test_State) return Boolean
