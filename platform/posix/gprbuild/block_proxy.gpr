@@ -17,7 +17,7 @@ project Block_Proxy is
    end Compiler;
 
    package Linker is
-      for Required_Switches use ("-L../../../../libs/ada-interface/ada-runtime/obj/lib", "-lposix_rts", "-lpthread");
+      for Required_Switches use ("-L../../../../libs/ada-interface/ada-runtime/obj/lib", "-lposix_rts", "-lpthread", "-lrt");
    end Linker;
 
    for Runtime ("Ada") use Root_Dir & "libs/ada-interface/ada-runtime/obj";
@@ -27,14 +27,27 @@ project Block_Proxy is
       for Executable ("main.c") use "block_proxy";
    end Builder;
 
+   Interface_Source := (Root_Dir & "libs/ada-interface/src",
+                        Root_Dir & "libs/ada-interface/src/platform/posix",
+                        Root_Dir & "libs/ada-interface/src/block",
+                        Root_Dir & "libs/ada-interface/src/block/posix",
+                        Root_Dir & "libs/ada-interface/src/block/client",
+                        Root_Dir & "libs/ada-interface/src/block/client/posix",
+                        Root_Dir & "libs/ada-interface/src/log",
+                        Root_Dir & "libs/ada-interface/src/log/posix",
+                        Root_Dir & "libs/ada-interface/src/log/client",
+                        Root_Dir & "libs/ada-interface/src/log/client/posix",
+                        Root_Dir & "libs/ada-interface/src/timer",
+                        Root_Dir & "libs/ada-interface/src/timer/posix",
+                        Root_Dir & "libs/ada-interface/src/timer/client",
+                        Root_Dir & "libs/ada-interface/src/timer/client/posix");
+
    ----
 
    for Languages use ("Ada", "C");
 
    for Main use ("main.c");
 
-   for Source_Dirs use (Root_Dir & "libs/ada-interface/test/block_proxy",
-                        Root_Dir & "libs/ada-interface/src",
-                        Root_Dir & "libs/ada-interface/platform/posix");
+   for Source_Dirs use (Root_Dir & "libs/ada-interface/test/block_proxy") & Interface_Source;
 
 end Block_Proxy;

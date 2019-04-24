@@ -27,14 +27,27 @@ project Hello_World is
       for Executable ("main.c") use "hello_world";
    end Builder;
 
+   Interface_Source := (Root_Dir & "libs/ada-interface/src",
+                        Root_Dir & "libs/ada-interface/src/platform/posix",
+                        Root_Dir & "libs/ada-interface/src/block",
+                        Root_Dir & "libs/ada-interface/src/block/posix",
+                        Root_Dir & "libs/ada-interface/src/block/client",
+                        Root_Dir & "libs/ada-interface/src/block/client/posix",
+                        Root_Dir & "libs/ada-interface/src/log",
+                        Root_Dir & "libs/ada-interface/src/log/posix",
+                        Root_Dir & "libs/ada-interface/src/log/client",
+                        Root_Dir & "libs/ada-interface/src/log/client/posix",
+                        Root_Dir & "libs/ada-interface/src/timer",
+                        Root_Dir & "libs/ada-interface/src/timer/posix",
+                        Root_Dir & "libs/ada-interface/src/timer/client",
+                        Root_Dir & "libs/ada-interface/src/timer/client/posix");
+
    ----
 
    for Languages use ("Ada", "C");
 
    for Main use ("main.c");
 
-   for Source_Dirs use (Root_Dir & "libs/ada-interface/test/hello_world",
-                        Root_Dir & "libs/ada-interface/src",
-                        Root_Dir & "libs/ada-interface/platform/posix");
+   for Source_Dirs use (Root_Dir & "libs/ada-interface/test/hello_world") & Interface_Source;
 
 end Hello_World;
