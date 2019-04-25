@@ -12,6 +12,8 @@ generic
    with function Next (Current : Block.Id) return Block.Id;
 package Correctness is
 
+   use type Block.Buffer_Index;
+
    type Buffer_Index is mod 256;
    subtype Block_Buffer is Block.Buffer (1 .. 4096);
 
@@ -69,6 +71,7 @@ package Correctness is
 
    procedure Cache_Data (T : in out Test_State;
                          S : Block.Id;
-                         B : Block.Buffer);
+                         B : Block.Buffer) with
+     Pre => B'Length > 0 and B'Length <= 4096;
 
 end Correctness;

@@ -24,8 +24,6 @@ is
 
    package Block_Permutation is new Permutation (Block.Id);
 
-   Log : Cai.Log.Client_Session;
-
    procedure Read (C : Block.Client_Instance;
                    B : Block.Size;
                    S : Block.Id;
@@ -44,6 +42,12 @@ is
 
    function Next (Current : Block.Id) return Block.Id;
 
+   package Disk_Test is new Correctness (Block, Block_Client, Next);
+
+   Data : Disk_Test.Test_State;
+
+   Log : Cai.Log.Client_Session;
+
    function Next (Current : Block.Id) return Block.Id
    is
       Next_Block : Block.Id := Current + Block.Count'(1);
@@ -55,10 +59,6 @@ is
       end if;
       return Next_Block;
    end Next;
-
-   package Disk_Test is new Correctness (Block, Block_Client, Next);
-
-   Data : Disk_Test.Test_State;
 
    procedure Write (C :     Block.Client_Instance;
                     B :     Block.Size;

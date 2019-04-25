@@ -274,8 +274,10 @@ package body Correctness is
                          S : Block.Id;
                          B : Block.Buffer)
    is
+      use type Block.Buffer;
+      Pad : constant Block.Buffer (1 .. Block_Buffer'Length - B'Length) := (others => Block.Byte'First);
    begin
-      Ring.Set_Data (T.Data, S, B);
+      Ring.Set_Data (T.Data, S, B & Pad);
    end Cache_Data;
 
    procedure Read_Send (C       : in out Block.Client_Session;
