@@ -58,46 +58,30 @@ package body Iteration is
    procedure Send (C   : in out Block.Client_Session;
                    T   : in out Test;
                    Log : in out Cai.Log.Client_Session) is
-      Read_Request : Client.Request := (Kind   => Block.Read,
-                                        Priv   => Block.Null_Data,
-                                        Start  => 0,
-                                        Length => 1,
-                                        Status => Block.Raw);
-      Write_Request : Client.Request := (Kind   => Block.Write,
-                                         Priv   => Block.Null_Data,
-                                         Start  => 0,
-                                         Length => 1,
-                                         Status => Block.Raw);
+      Req : Client.Request (Kind => Operation);
    begin
+      Req.Priv := Block.Null_Data;
+      Req.Length := 1;
+      Req.Status := Block.Raw;
       if T.Sent < T.Data'Last then
          if Client.Initialized (C) then
             for I in T.Sent .. T.Data'Last - 1 loop
-               Read_Request.Start  := Block.Id (I + 1) + T.Offset;
-               Write_Request.Start := Block.Id (I + 1) + T.Offset;
-               if
-                  Client.Ready (C, Write_Request)
-                  and Client.Ready (C, Read_Request)
-               then
-                  case Operation is
-                     pragma Warnings (Off, "this code can never be executed and has been deleted");
-                     --  Operation is a generic parameter of this package
-                     --  In a package instance the compiler deletes the branches that cannot be reached
-                     when Block.Write =>
-                        Start (Write_Request, T.Offset, T.Data);
-                        Client.Enqueue (C, Write_Request);
-                     when Block.Read =>
-                        Start (Read_Request, T.Offset, T.Data);
-                        Client.Enqueue (C, Read_Request);
-                     when others =>
-                        null;
-                     pragma Warnings (On, "this code can never be executed and has been deleted");
-                  end case;
-                  T.Sent := T.Sent + 1;
-               else
-                  Client.Submit (C);
-                  exit;
-               end if;
+               Req.Start  := Block.Id (I + 1) + T.Offset;
+               exit when not Client.Ready (C, Req);
+               case Operation is
+                  pragma Warnings (Off, "this code can never be executed and has been deleted");
+                  --  Operation is a generic parameter of this package
+                  --  In a package instance the compiler deletes the branches that cannot be reached
+                  when Block.Write | Block.Read =>
+                     Start (Req, T.Offset, T.Data);
+                     Client.Enqueue (C, Req);
+                  when others =>
+                     null;
+                  pragma Warnings (On, "this code can never be executed and has been deleted");
+               end case;
+               T.Sent := T.Sent + 1;
             end loop;
+            Client.Submit (C);
          else
             Cai.Log.Client.Error (Log, "Failed to run test, client not initialized");
          end if;
