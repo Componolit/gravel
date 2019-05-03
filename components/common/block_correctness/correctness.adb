@@ -5,13 +5,13 @@ with Cai.Timer;
 with Cai.Timer.Client;
 with LSC.Internal.Types;
 with LSC.Internal.SHA256;
+with Output;
 
 use all type LSC.Internal.Types.Word32_Array_Type;
 use all type LSC.Internal.SHA256.Message_Index;
 
 package body Correctness is
 
-   use all type Cai.Timer.Time;
    use all type Block.Count;
    use all type Block.Size;
    use all type Block.Request_Kind;
@@ -43,65 +43,8 @@ package body Correctness is
       Ring.Initialize (T.Data);
    end Initialize;
 
-   Progress : Long_Integer := -1;
    Start    : Cai.Timer.Time;
    Last     : Cai.Timer.Time;
-
-   function Remain (S : Cai.Timer.Time;
-                    C : Cai.Timer.Time;
-                    P : Long_Integer) return Duration;
-
-   function Remain (S : Cai.Timer.Time;
-                    C : Cai.Timer.Time;
-                    P : Long_Integer) return Duration
-   is
-   begin
-      if P < 1 or P > 999 then
-         return Duration (0);
-      end if;
-      return Duration (((C - S) / Integer (P)) * Integer (1000 - P));
-   end Remain;
-
-   function Byte_Image (Bytes : Long_Integer) return String is
-      (if
-         Bytes < (1024 ** 3) * 10
-      then
-         Cai.Log.Image (Bytes / 1024 ** 2) & " MiB"
-      else
-         Cai.Log.Image (Bytes / 1024 ** 3) & " GiB");
-
-   procedure Print_Progress (Prefix :        String;
-                             Done   :        Block.Count;
-                             Todo   :        Block.Count;
-                             C      :        Block.Client_Session;
-                             L      : in out Cai.Log.Client_Session);
-
-   procedure Print_Progress (Prefix :        String;
-                             Done   :        Block.Count;
-                             Todo   :        Block.Count;
-                             C      :        Block.Client_Session;
-                             L      : in out Cai.Log.Client_Session)
-   is
-      Current : Cai.Timer.Time;
-      Size    : constant Block.Size := Client.Block_Size (C);
-   begin
-      Current := Cai.Timer.Client.Clock (Timer);
-      if Duration (Current - Last) > Duration (2) then
-         Last     := Current;
-         Progress := Long_Integer (Done) / Long_Integer (Todo / 1000);
-         Cai.Log.Client.Info (L, Prefix & "... ("
-                                 & Cai.Log.Image (Progress / 10)
-                                 & "."
-                                 & Cai.Log.Image (Progress rem 10)
-                                 & "%, " & Byte_Image (Long_Integer (Done * Block.Count (Size)))
-                                 & " / " & Byte_Image (Long_Integer (Todo * Block.Count (Size)))
-                                 & ")");
-         Cai.Log.Client.Info (L, "Elapsed: "
-                                 & Cai.Log.Image (Duration (Current - Start))
-                                 & " Remaining: "
-                                 & Cai.Log.Image (Remain (Start, Current, Progress)));
-      end if;
-   end Print_Progress;
 
    procedure Bounds_Check (C       : in out Block.Client_Session;
                            T       : in out Test_State;
@@ -225,7 +168,14 @@ package body Correctness is
       Success := True;
       Write_Recv (C, T, Success, L);
       Write_Send (C, T);
-      Print_Progress ("Writing", T.Written, T.Count, C, L);
+      Output.Progress ("Writing",
+                       Long_Integer (T.Written),
+                       Long_Integer (T.Count),
+                       Long_Integer (Client.Block_Size (C)),
+                       Start,
+                       Cai.Timer.Client.Clock (Timer),
+                       Last,
+                       L);
       if Write_Finished (T) then
          T.Sent := 0;
          T.Last := Block.Id'Last;
@@ -333,7 +283,14 @@ package body Correctness is
             Hash_Block (T.Read_Context, Buf (1 .. Block.Count (1) * Client.Block_Size (C)));
          end;
       end loop;
-      Print_Progress ("Reading", T.Read, T.Count, C, L);
+      Output.Progress ("Reading",
+                       Long_Integer (T.Read),
+                       Long_Integer (T.Count),
+                       Long_Integer (Client.Block_Size (C)),
+                       Start,
+                       Cai.Timer.Client.Clock (Timer),
+                       Last,
+                       L);
    end Read;
 
    function Read_Finished (T : Test_State) return Boolean

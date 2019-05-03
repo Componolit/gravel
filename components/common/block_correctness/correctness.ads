@@ -32,8 +32,6 @@ package Correctness is
       Data           : Ring.Cycle;
    end record;
 
-   function Byte_Image (Bytes : Long_Integer) return String;
-
    procedure Initialize (C   : in out Block.Client_Session;
                          T   :    out Test_State;
                          L   : in out Cai.Log.Client_Session;

@@ -13,6 +13,7 @@ with SXML.Parser;
 with SXML.Query;
 with Permutation;
 with Correctness;
+with Output;
 
 package body Component with
    SPARK_Mode
@@ -166,7 +167,7 @@ is
                                             & " blocks of "
                                             & Cai.Log.Image (Size)
                                             & " byte size ("
-                                            & Disk_Test.Byte_Image (Count * Size)
+                                            & Output.Byte_Image (Count * Size)
                                             & ")...");
                   Disk_Test.Initialize (Client, Data, Log, Capability, Block.Count (Count));
                   Event;
