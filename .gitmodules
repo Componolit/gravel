@@ -4,3 +4,6 @@
 [submodule "libs/libsparkcrypto"]
 	path = libs/libsparkcrypto
 	url = https://github.com/Componolit/libsparkcrypto.git
+[submodule "libs/SXML"]
+	path = libs/SXML
+	url = https://github.com/Componolit/SXML
