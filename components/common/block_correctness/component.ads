@@ -7,8 +7,9 @@ package Component with
 is
 
    procedure Construct (Cap : Cai.Types.Capability);
+   procedure Destruct;
 
-   package Correctness_Test is new Cai.Component (Construct);
+   package Correctness_Test is new Cai.Component (Construct, Destruct);
 
    procedure Event;
 

@@ -15,7 +15,7 @@ install_config {
 		</default-route>
 		<default caps="50"/>
 		<start name="test-hello_world">
-			<resource name="RAM" quantum="1M"/>
+			<resource name="RAM" quantum="2M"/>
 		</start>
 	</config>
 }

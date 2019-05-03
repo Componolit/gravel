@@ -9,6 +9,8 @@ package body Component with
    SPARK_Mode
 is
 
+   Capability : Cai.Types.Capability;
+
    procedure Event;
 
    type Byte is mod 2 ** 8;
@@ -142,6 +144,7 @@ is
 
    procedure Construct (Cap : Cai.Types.Capability) is
    begin
+      Capability := Cap;
       Cai.Log.Client.Initialize (Log, Cap, "Latency");
       Cai.Log.Client.Info (Log, "Initializing test data");
       Cai.Log.Client.Initialize (Xml, Cap, "XML");
@@ -235,7 +238,22 @@ is
          Cai.Log.Client.Flush (Xml);
          Cai.Log.Client.Info (Log, "Data written.");
          Cai.Log.Client.Flush (Log);
+         Latency_Test.Vacate (Capability, Latency_Test.Success);
       end if;
    end Event;
+
+   procedure Destruct
+   is
+   begin
+      if Block_Client.Initialized (Client) then
+         Block_Client.Finalize (Client);
+      end if;
+      if Cai.Log.Client.Initialized (Log) then
+         Cai.Log.Client.Finalize (Log);
+      end if;
+      if Cai.Log.Client.Initialized (Xml) then
+         Cai.Log.Client.Finalize (Xml);
+      end if;
+   end Destruct;
 
 end Component;

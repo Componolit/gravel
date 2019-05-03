@@ -28,19 +28,19 @@ project Block_Proxy is
    end Builder;
 
    Interface_Source := (Root_Dir & "libs/ada-interface/src",
-                        Root_Dir & "libs/ada-interface/src/platform/posix",
+                        Root_Dir & "libs/ada-interface/src/platform/linux",
                         Root_Dir & "libs/ada-interface/src/block",
-                        Root_Dir & "libs/ada-interface/src/block/posix",
+                        Root_Dir & "libs/ada-interface/src/block/linux",
                         Root_Dir & "libs/ada-interface/src/block/client",
-                        Root_Dir & "libs/ada-interface/src/block/client/posix",
+                        Root_Dir & "libs/ada-interface/src/block/client/linux",
                         Root_Dir & "libs/ada-interface/src/log",
-                        Root_Dir & "libs/ada-interface/src/log/posix",
+                        Root_Dir & "libs/ada-interface/src/log/linux",
                         Root_Dir & "libs/ada-interface/src/log/client",
-                        Root_Dir & "libs/ada-interface/src/log/client/posix",
+                        Root_Dir & "libs/ada-interface/src/log/client/linux",
                         Root_Dir & "libs/ada-interface/src/timer",
-                        Root_Dir & "libs/ada-interface/src/timer/posix",
+                        Root_Dir & "libs/ada-interface/src/timer/linux",
                         Root_Dir & "libs/ada-interface/src/timer/client",
-                        Root_Dir & "libs/ada-interface/src/timer/client/posix");
+                        Root_Dir & "libs/ada-interface/src/timer/client/linux");
 
    ----
 

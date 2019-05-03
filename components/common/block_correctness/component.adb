@@ -103,11 +103,14 @@ is
       Disk_Test.Cache_Data (Data, S, D);
    end Read;
 
+   Capability : Cai.Types.Capability;
+
    procedure Construct (Cap : Cai.Types.Capability)
    is
       Count : Long_Integer;
       Size  : Long_Integer;
    begin
+      Capability := Cap;
       Cai.Log.Client.Initialize (Log, Cap, "Correctness");
       Cai.Log.Client.Info (Log, "Correctness");
       Block_Client.Initialize (Client, Cap, "");
@@ -123,6 +126,17 @@ is
       Disk_Test.Initialize (Client, Data, Log, Cap);
       Event;
    end Construct;
+
+   procedure Destruct
+   is
+   begin
+      if Block_Client.Initialized (Client) then
+         Block_Client.Finalize (Client);
+      end if;
+      if Cai.Log.Client.Initialized (Log) then
+         Cai.Log.Client.Finalize (Log);
+      end if;
+   end Destruct;
 
    Success     : Boolean := True;
    First_Write : Boolean := True;
@@ -182,6 +196,8 @@ is
       then
          Cai.Log.Client.Info (Log, "Correctness test "
                                    & (if Success then "succeeded." else "failed."));
+         Correctness_Test.Vacate (Capability,
+                                  (if Success then Correctness_Test.Success else Correctness_Test.Failure));
       end if;
    end Event;
 

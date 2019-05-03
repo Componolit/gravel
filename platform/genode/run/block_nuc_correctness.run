@@ -39,7 +39,7 @@ append config {
     <default-route>
         <any-service> <parent/> <any-child/> </any-service>
     </default-route>
-    <default caps="100"/>
+    <default caps="200"/>
 }
 append_platform_drv_config
 append config {
