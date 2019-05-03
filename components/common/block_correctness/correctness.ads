@@ -37,7 +37,8 @@ package Correctness is
    procedure Initialize (C   : in out Block.Client_Session;
                          T   :    out Test_State;
                          L   : in out Cai.Log.Client_Session;
-                         Cap :        Cai.Types.Capability);
+                         Cap :        Cai.Types.Capability;
+                         Max :        Block.Count);
 
    procedure Bounds_Check (C       : in out Block.Client_Session;
                            T       : in out Test_State;

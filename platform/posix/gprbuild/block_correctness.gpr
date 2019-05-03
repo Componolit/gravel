@@ -1,6 +1,7 @@
 with "../../../libs/ada-interface/switches.gpr";
 with "libsparkcrypto.gpr";
 with "libpermutation.gpr";
+with "libsxml.gpr";
 
 project Block_Correctness is
    ----

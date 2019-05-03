@@ -22,14 +22,15 @@ package body Correctness is
    procedure Initialize (C   : in out Block.Client_Session;
                          T   :    out Test_State;
                          L   : in out Cai.Log.Client_Session;
-                         Cap :        Cai.Types.Capability)
+                         Cap :        Cai.Types.Capability;
+                         Max :        Block.Count)
    is
    begin
       T.Last           := Block.Id'Last;
       T.Sent           := 0;
       T.Written        := 0;
       T.Read           := 0;
-      T.Count          := Client.Block_Count (C);
+      T.Count          := Max;
       T.Bounds_Checked := False;
       T.Write_Context  := LSC.Internal.SHA256.SHA256_Context_Init;
       T.Read_Context   := LSC.Internal.SHA256.SHA256_Context_Init;
@@ -109,7 +110,7 @@ package body Correctness is
    is
       Request : constant Client.Request := (Kind   => Block.Read,
                                             Priv   => Block.Null_Data,
-                                            Start  => Block.Id (T.Count),
+                                            Start  => Block.Id (Client.Block_Count (C)),
                                             Length => 1,
                                             Status => Block.Raw);
       R : Client.Request := Client.Next (C);

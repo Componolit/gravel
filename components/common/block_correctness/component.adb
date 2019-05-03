@@ -4,8 +4,13 @@ with Cai.Log;
 with Cai.Log.Client;
 with Cai.Block;
 with Cai.Block.Client;
+with Cai.Configuration;
+with Cai.Configuration.Client;
 with LSC.AES_Generic;
 with LSC.AES_Generic.CBC;
+with SXML;
+with SXML.Parser;
+with SXML.Query;
 with Permutation;
 with Correctness;
 
@@ -16,6 +21,12 @@ is
    type Byte is mod 2 ** 8;
    type Unsigned_Long is range 0 .. 2 ** 63 - 1;
    type Buffer is array (Unsigned_Long range <>) of Byte;
+
+   procedure Parse (S : String);
+
+   package Config is new Cai.Configuration.Client (Character, Positive, String, Parse);
+
+   Conf : Cai.Configuration.Client_Session := Config.Create;
 
    package Block is new Cai.Block (Byte, Unsigned_Long, Buffer);
 
@@ -105,26 +116,74 @@ is
 
    Capability : Cai.Types.Capability;
 
-   procedure Construct (Cap : Cai.Types.Capability)
+   function Str_To_Long (S : String) return Long_Integer;
+
+   function Str_To_Long (S : String) return Long_Integer
    is
+      L : Long_Integer := 0;
+   begin
+      for C of S loop
+         L := Character'Pos (C) - 48 + L;
+         L := L * 10;
+      end loop;
+      return L / 10;
+   end Str_To_Long;
+
+   procedure Parse (S : String)
+   is
+      use type SXML.Result_Type;
+      use type SXML.Parser.Match_Type;
       Count : Long_Integer;
       Size  : Long_Integer;
+      Document : SXML.Document_Type (1 .. 100) := (others => SXML.Null_Node);
+      Result : SXML.Parser.Match_Type;
+      Position : Natural;
+      State : SXML.Query.State_Type;
+   begin
+      Cai.Log.Client.Info (Log, Character'Val (10) & S);
+      SXML.Parser.Parse (S, Document, Result, Position);
+      if not Block_Client.Initialized (Client) and Result = SXML.Parser.Match_OK then
+         State := SXML.Query.Init (Document);
+         if State.Result = SXML.Result_OK then
+            State := SXML.Query.Path (State, Document, "/device");
+            if
+               State.Result = SXML.Result_OK
+               and then SXML.Query.Has_Attribute (State, Document, "location")
+            then
+               Block_Client.Initialize (Client, Capability, SXML.Query.Attribute (State, Document, "location"));
+               if Block_Client.Initialized (Client) then
+                  Size  := Long_Integer (Block_Client.Block_Size (Client));
+                  if SXML.Query.Has_Attribute (State, Document, "size") then
+                     Count := Str_To_Long (SXML.Query.Attribute (State, Document, "size")) / Size;
+                     if Count > Long_Integer (Block_Client.Block_Count (Client)) then
+                        Count := Long_Integer (Block_Client.Block_Count (Client));
+                     end if;
+                  else
+                     Count := Long_Integer (Block_Client.Block_Count (Client));
+                  end if;
+                  Cai.Log.Client.Info (Log, "Running correctness test over "
+                                            & Cai.Log.Image (Count)
+                                            & " blocks of "
+                                            & Cai.Log.Image (Size)
+                                            & " byte size ("
+                                            & Disk_Test.Byte_Image (Count * Size)
+                                            & ")...");
+                  Disk_Test.Initialize (Client, Data, Log, Capability, Block.Count (Count));
+                  Event;
+               end if;
+            end if;
+         end if;
+      end if;
+   end Parse;
+
+   procedure Construct (Cap : Cai.Types.Capability)
+   is
    begin
       Capability := Cap;
       Cai.Log.Client.Initialize (Log, Cap, "Correctness");
       Cai.Log.Client.Info (Log, "Correctness");
-      Block_Client.Initialize (Client, Cap, "");
-      Count := Long_Integer (Block_Client.Block_Count (Client));
-      Size  := Long_Integer (Block_Client.Block_Size (Client));
-      Cai.Log.Client.Info (Log, "Running correctness test over "
-                                & Cai.Log.Image (Count)
-                                & " blocks of "
-                                & Cai.Log.Image (Size)
-                                & " byte size ("
-                                & Disk_Test.Byte_Image (Count * Size)
-                                & ")...");
-      Disk_Test.Initialize (Client, Data, Log, Cap);
-      Event;
+      Config.Initialize (Conf, Capability);
+      Config.Load (Conf);
    end Construct;
 
    procedure Destruct

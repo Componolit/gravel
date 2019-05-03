@@ -51,7 +51,12 @@ append config {
     </start>
 
     <start name="block-test-correctness">
-        <resource name="RAM" quantum="16M"/>
+        <resource name="RAM" quantum="32M"/>
+        <config>
+            <xml>
+                <device location="" size="10737418240"/>
+            </xml>
+        </config>
         <route>
             <service name="LOG" label="Correctness"><child name="log_tee_vga"/></service>
             <!--<service name="Block"><child name="part_block_ahci"/></service>-->
@@ -189,7 +194,8 @@ append config {
         </provides>
         <config>
             <report ports="yes"/>
-            <policy label_prefix="part_block_ahci" device="0" writeable="yes"/>
+            <!--<policy label_prefix="part_block_ahci" device="0" writeable="yes"/>-->
+            <policy label_prefix="block-test-correctness" device="0" writeable="yes"/>
         </config>
         <route>
             <service name="LOG"><child name="vga_log_drv"/></service>
@@ -239,10 +245,10 @@ set cmd "/sbin/mkfs.ext2 -F -E offset=33554432 $image"
 puts "formatting partition..."
 exec -ignorestderr sh -c $cmd
 set testdisk "bin/testdisk.img"
-set cmd "dd if=/dev/zero of=$testdisk bs=512 count=20480"
+set cmd "dd if=/dev/zero of=$testdisk bs=512 count=1204800"
 puts "creating test disk..."
 exec -ignorestderr sh -c $cmd
-set cmd "/sbin/parted --script $testdisk mklabel msdos mkpart primary ext2 512B 8MiB"
+set cmd "/sbin/parted --script $testdisk mklabel msdos mkpart primary ext2 512B 64MiB"
 puts "partitioning test disk..."
 exec -ignorestderr sh -c $cmd
 
