@@ -59,8 +59,8 @@ append config {
         </config>
         <route>
             <service name="LOG" label="Correctness"><child name="log_tee_vga"/></service>
+            <service name="Block"><child name="ahci_drv"/></service>
             <!--<service name="Block"><child name="part_block_ahci"/></service>-->
-            <service name="Block"><child name="ram_block"/></service>
             <any-service><parent/><any-child/></any-service>
         </route>
     </start>
@@ -81,19 +81,6 @@ append config {
         </provides>
         <route>
             <service name="LOG" label="block-test-correctness -> Correctness"><child name="vga_log_drv"/></service>
-            <service name="LOG"><child name="log_tee_fs" label="block-correctness"/></service>
-            <any-service><parent/><any-child/></any-service>
-        </route>
-    </start>
-
-    <start name="log_tee_fs">
-        <binary name="log_tee"/>
-        <resource name="RAM" quantum="4M"/>
-        <provides>
-            <service name="LOG"/>
-        </provides>
-        <route>
-            <service name="LOG" label="block-correctness"><child name="fs_log"/></service>
             <any-service><parent/><any-child/></any-service>
         </route>
     </start>
@@ -120,24 +107,7 @@ append config {
             <policy label_prefix="rump_fs" partition="2" writeable="yes"/>
         </config>
         <route>
-            <service name="LOG"><child name="vga_log_drv"/></service>
             <service name="Block"><child name="usb_drv"/></service>
-            <any-service><parent/><any-child/></any-service>
-        </route>
-    </start>
-
-    <start name="part_block_ahci">
-        <binary name="part_block"/>
-        <resource name="RAM" quantum="8M"/>
-        <provides>
-            <service name="Block"/>
-        </provides>
-        <config>
-            <policy label_prefix="block-test-correctness" partition="1" writeable="yes"/>
-        </config>
-        <route>
-            <service name="LOG"><child name="vga_log_drv"/></service>
-            <service name="Block"><child name="ahci_drv"/></service>
             <any-service><parent/><any-child/></any-service>
         </route>
     </start>
@@ -151,7 +121,6 @@ append config {
             <policy label_prefix="fs_log" root="/" writeable="yes"/>
         </config>
         <route>
-            <service name="LOG"><child name="vga_log_drv"/></service>
             <service name="Block"><child name="part_block_usb"/></service>
             <any-service><parent/><any-child/></any-service>
         </route>
@@ -175,7 +144,6 @@ append config {
             <service name="LOG"/>
         </provides>
         <config>
-            <policy label="log_tee_fs -> block-correctness"/>
             <policy label="log_core -> log"/>
         </config>
     </start>
@@ -194,11 +162,9 @@ append config {
         </provides>
         <config>
             <report ports="yes"/>
-            <!--<policy label_prefix="part_block_ahci" device="0" writeable="yes"/>-->
             <policy label_prefix="block-test-correctness" device="0" writeable="yes"/>
         </config>
         <route>
-            <service name="LOG"><child name="vga_log_drv"/></service>
             <any-service><parent/><any-child/></any-service>
         </route>
     </start>
@@ -245,11 +211,8 @@ set cmd "/sbin/mkfs.ext2 -F -E offset=33554432 $image"
 puts "formatting partition..."
 exec -ignorestderr sh -c $cmd
 set testdisk "bin/testdisk.img"
-set cmd "dd if=/dev/zero of=$testdisk bs=512 count=1204800"
+set cmd "dd if=/dev/zero of=$testdisk bs=512 count=16384"
 puts "creating test disk..."
-exec -ignorestderr sh -c $cmd
-set cmd "/sbin/parted --script $testdisk mklabel msdos mkpart primary ext2 512B 64MiB"
-puts "partitioning test disk..."
 exec -ignorestderr sh -c $cmd
 
 append qemu_args " -drive if=none,id=disk,file=$image"
