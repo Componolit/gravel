@@ -6,12 +6,9 @@ with Cai.Block;
 with Cai.Block.Client;
 with Cai.Configuration;
 with Cai.Configuration.Client;
-with LSC.AES_Generic;
-with LSC.AES_Generic.CBC;
 with SXML;
 with SXML.Parser;
 with SXML.Query;
-with Permutation;
 with Correctness;
 with Output;
 
@@ -26,15 +23,7 @@ is
    procedure Parse (S : String);
 
    package Config is new Cai.Configuration.Client (Character, Positive, String, Parse);
-
-   Conf : Cai.Configuration.Client_Session := Config.Create;
-
    package Block is new Cai.Block (Byte, Unsigned_Long, Buffer);
-
-   use all type Block.Id;
-   use all type Block.Count;
-
-   package Block_Permutation is new Permutation (Block.Id);
 
    procedure Read (C : Block.Client_Instance;
                    B : Block.Size;
@@ -48,29 +37,18 @@ is
                     L :     Block.Count;
                     D : out Buffer);
 
+   function Str_To_Long (S : String) return Long_Integer;
+
    package Block_Client is new Block.Client (Event, Read, Write);
+   package Disk_Test is new Correctness (Block, Block_Client);
 
-   Client : Block.Client_Session;
+   Conf   : Cai.Configuration.Client_Session := Config.Create;
+   Client : Block.Client_Session             := Block_Client.Create;
+   Log    : Cai.Log.Client_Session           := Cai.Log.Client.Create;
+   Data   : Disk_Test.Test_State;
 
-   function Next (Current : Block.Id) return Block.Id;
-
-   package Disk_Test is new Correctness (Block, Block_Client, Next);
-
-   Data : Disk_Test.Test_State;
-
-   Log : Cai.Log.Client_Session;
-
-   function Next (Current : Block.Id) return Block.Id
-   is
-      Next_Block : Block.Id := Current + Block.Count'(1);
-   begin
-      if Block_Permutation.Has_Element then
-         Block_Permutation.Next (Next_Block);
-      else
-         Cai.Log.Client.Error (Log, "Block permutation exceeded, increasing block number.");
-      end if;
-      return Next_Block;
-   end Next;
+   Success    : Boolean := True;
+   Capability : Cai.Types.Capability;
 
    procedure Write (C :     Block.Client_Instance;
                     B :     Block.Size;
@@ -81,25 +59,8 @@ is
       pragma Unreferenced (C);
       pragma Unreferenced (B);
       pragma Unreferenced (L);
-      function CBC_Key is new LSC.AES_Generic.Enc_Key (Unsigned_Long,
-                                                       Byte,
-                                                       Buffer);
-      procedure CBC is new LSC.AES_Generic.CBC.Encrypt (Unsigned_Long,
-                                                        Byte,
-                                                        Buffer,
-                                                        Unsigned_Long,
-                                                        Byte,
-                                                        Buffer);
-      subtype Id is Buffer (1 .. 8);
-      function Convert_Id is new Ada.Unchecked_Conversion (Block.Id, Id);
-      Null_Block : constant Buffer (1 .. D'Length) := (others => 0);
-      IV : Buffer (1 .. 16) := (others => 0);
-      Key : constant Buffer (1 .. 128) := (others => 16#42#);
-      --  This is no cryptographically secure encryption and only used to generate pseudo random blocks
    begin
-      IV (1 .. 8) := Convert_Id (S);
-      CBC (Null_Block, IV, CBC_Key (Key, LSC.AES_Generic.L128), D);
-      Disk_Test.Hash_Block (Data.Write_Context, D);
+      Disk_Test.Block_Write (Data, S, D);
    end Write;
 
    procedure Read (C : Block.Client_Instance;
@@ -112,12 +73,8 @@ is
       pragma Unreferenced (B);
       pragma Unreferenced (L);
    begin
-      Disk_Test.Cache_Data (Data, S, D);
+      Disk_Test.Block_Read (Data, S, D);
    end Read;
-
-   Capability : Cai.Types.Capability;
-
-   function Str_To_Long (S : String) return Long_Integer;
 
    function Str_To_Long (S : String) return Long_Integer
    is
@@ -198,10 +155,6 @@ is
       end if;
    end Destruct;
 
-   Success     : Boolean := True;
-   First_Write : Boolean := True;
-   First_Read  : Boolean := True;
-
    procedure Event
    is
    begin
@@ -217,10 +170,6 @@ is
          and Disk_Test.Bounds_Check_Finished (Data)
          and not Disk_Test.Write_Finished (Data)
       then
-         if First_Write then
-            Block_Permutation.Initialize (Block.Id (Block_Client.Block_Count (Client) - 1));
-            First_Write := False;
-         end if;
          Disk_Test.Write (Client, Data, Success, Log);
       end if;
 
@@ -230,10 +179,6 @@ is
          and Disk_Test.Write_Finished (Data)
          and not Disk_Test.Read_Finished (Data)
       then
-         if First_Read then
-            Block_Permutation.Initialize (Block.Id (Block_Client.Block_Count (Client) - 1));
-            First_Read := False;
-         end if;
          Disk_Test.Read (Client, Data, Success, Log);
       end if;
 

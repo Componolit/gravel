@@ -43,22 +43,22 @@ is
                        Last   : in out Cai.Timer.Time;
                        Log    : in out Cai.Log.Client_Session)
    is
-      Progress : Long_Integer := -1;
+      P : Long_Integer := -1;
    begin
       if Duration (Now - Last) > Duration (2) then
          Last     := Now;
-         Progress := Done / (Todo / 1000);
+         P := Done / (Todo / 1000);
          Cai.Log.Client.Info (Log, Prefix & "... ("
-                                   & Cai.Log.Image (Progress / 10)
+                                   & Cai.Log.Image (P / 10)
                                    & "."
-                                   & Cai.Log.Image (Progress rem 10)
+                                   & Cai.Log.Image (P rem 10)
                                    & "%, " & Byte_Image (Done * Size)
                                    & " / " & Byte_Image (Todo * Size)
                                    & ")");
          Cai.Log.Client.Info (Log, "Elapsed: "
                                    & Cai.Log.Image (Duration (Now - Start))
                                    & " Remaining: "
-                                   & Cai.Log.Image (Remain (Start, Now, Progress)));
+                                   & Cai.Log.Image (Remain (Start, Now, P)));
       end if;
    end Progress;
 

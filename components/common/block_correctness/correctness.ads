@@ -9,7 +9,6 @@ with Ringbuffer;
 generic
    with package Block is new Cai.Block (<>);
    with package Client is new Block.Client (<>);
-   with function Next (Current : Block.Id) return Block.Id;
 package Correctness is
 
    use type Block.Buffer_Index;
@@ -64,13 +63,12 @@ package Correctness is
 
    function Compare_Finished (T : Test_State) return Boolean;
 
-   procedure Hash_Block (Context : in out LSC.Internal.SHA256.Context_Type;
-                         Buffer  :        Block.Buffer) with
-      Pre => Buffer'Length mod (LSC.Internal.SHA256.Block_Size / 8) = 0;
+   procedure Block_Read (T : in out Test_State;
+                         S :        Block.Id;
+                         D :        Block.Buffer);
 
-   procedure Cache_Data (T : in out Test_State;
-                         S : Block.Id;
-                         B : Block.Buffer) with
-     Pre => B'Length > 0 and B'Length <= 4096;
+   procedure Block_Write (T : in out Test_State;
+                          S :        Block.Id;
+                          D :    out Block.Buffer);
 
 end Correctness;
