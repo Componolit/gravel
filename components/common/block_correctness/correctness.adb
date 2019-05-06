@@ -240,7 +240,7 @@ package body Correctness is
       Update_Write_Cache (T, Client.Block_Size (C));
       Output.Progress ("Writing",
                        Long_Integer (T.Written),
-                       Long_Integer (T.Count),
+                       Long_Integer (T.Count) * 2,
                        Long_Integer (Client.Block_Size (C)),
                        Start,
                        Cai.Timer.Client.Clock (Timer),
@@ -340,8 +340,8 @@ package body Correctness is
          end;
       end loop;
       Output.Progress ("Reading",
-                       Long_Integer (T.Read),
-                       Long_Integer (T.Count),
+                       Long_Integer (T.Written + T.Read),
+                       Long_Integer (T.Count) * 2,
                        Long_Integer (Client.Block_Size (C)),
                        Start,
                        Cai.Timer.Client.Clock (Timer),
