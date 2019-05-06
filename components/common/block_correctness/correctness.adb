@@ -46,9 +46,36 @@ package body Correctness is
                          Buffer  :        Block.Buffer) with
       Pre => Buffer'Length mod (LSC.Internal.SHA256.Block_Size / 8) = 0;
 
-   Timer : Cai.Timer.Client_Session := Cai.Timer.Client.Create;
-   Start : Cai.Timer.Time;
-   Last  : Cai.Timer.Time;
+   procedure Generate_Block (S :     Block.Id;
+                             B : out Block.Buffer);
+
+   procedure Update_Write_Cache (T : in out Test_State;
+                                 B :        Block.Size);
+
+   Timer        : Cai.Timer.Client_Session := Cai.Timer.Client.Create;
+   Start        : Cai.Timer.Time;
+   Last         : Cai.Timer.Time;
+   Write_Buffer : Block_Buffer;
+   Last_Context : LSC.Internal.SHA256.Context_Type;
+
+   procedure Update_Write_Cache (T : in out Test_State;
+                                 B :        Block.Size)
+   is
+      W : Write_Cache;
+   begin
+      W.Context := Last_Context;
+      W.Buffer := (others => Block.Byte'First);
+      loop
+         exit when not Write_Permutation.Has_Element or not Write_Ring.Free (T.Write_Data);
+         Write_Permutation.Next (T.Last);
+         exit when Write_Ring.Has_Block (T.Write_Data, T.Last);
+         Write_Ring.Add (T.Write_Data, T.Last);
+         Generate_Block (T.Last, W.Buffer (1 .. Block.Count'(1) * B));
+         Hash_Block (W.Context, W.Buffer (1 .. Block.Count'(1) * B));
+         Write_Ring.Set_Data (T.Write_Data, T.Last, W);
+         Last_Context := W.Context;
+      end loop;
+   end Update_Write_Cache;
 
    procedure Initialize (C   : in out Block.Client_Session;
                          T   :    out Test_State;
@@ -71,9 +98,12 @@ package body Correctness is
                                     & " is too large, requests might fail");
       end if;
       Cai.Timer.Client.Initialize (Timer, Cap);
-      Ring.Initialize (T.Data);
+      Read_Ring.Initialize (T.Read_Data);
+      Write_Ring.Initialize (T.Write_Data);
       Write_Permutation.Initialize (Block.Id (Max - 1));
       Read_Permutation.Initialize (Block.Id (Max - 1));
+      Last_Context := T.Write_Context;
+      Update_Write_Cache (T, Client.Block_Size (C));
    end Initialize;
 
    procedure Bounds_Check (C       : in out Block.Client_Session;
@@ -169,15 +199,26 @@ package body Correctness is
                                    Start  => 0,
                                    Length => 1,
                                    Status => Block.Raw);
+      W : Write_Cache;
    begin
       if T.Sent < T.Count then
          loop
             exit when not Client.Ready (C, Request) or T.Sent >= T.Count;
-            if Write_Permutation.Has_Element then
-               Write_Permutation.Next (Request.Start);
+            if Write_Ring.Block_Ready (T.Write_Data) then
+               Write_Ring.Get_Block (T.Write_Data, Request.Start, W);
+               T.Write_Context := W.Context;
+               Write_Buffer := W.Buffer;
             else
-               Request.Start := T.Last + 1;
-               Cai.Log.Client.Error (L, "Block permutation exceeded, increasing block number (Write).");
+               Cai.Log.Client.Warning (L, "Write cache depleted, generating block on demand...");
+               if Write_Permutation.Has_Element then
+                  Write_Permutation.Next (Request.Start);
+               else
+                  Request.Start := T.Last + 1;
+                  Cai.Log.Client.Error (L, "Block permutation exceeded, increasing block number (Write).");
+               end if;
+               Generate_Block (Request.Start, Write_Buffer);
+               Hash_Block (T.Write_Context, Write_Buffer (1 .. Block.Count'(1) * Client.Block_Size (C)));
+               Last_Context := T.Write_Context;
             end if;
             Client.Enqueue (C, Request);
             T.Sent := T.Sent + 1;
@@ -196,6 +237,7 @@ package body Correctness is
       Success := True;
       Write_Recv (C, T, Success, L);
       Write_Send (C, T, L);
+      Update_Write_Cache (T, Client.Block_Size (C));
       Output.Progress ("Writing",
                        Long_Integer (T.Written),
                        Long_Integer (T.Count),
@@ -227,7 +269,7 @@ package body Correctness is
             R : Client.Request := Client.Next (C);
          begin
             if R.Kind = Block.Read then
-               if R.Status = Block.Ok and then Ring.Has_Block (T.Data, R.Start) then
+               if R.Status = Block.Ok and then Read_Ring.Has_Block (T.Read_Data, R.Start) then
                   Client.Read (C, R);
                else
                   Cai.Log.Client.Error (L, "Read received erroneous request "
@@ -257,7 +299,7 @@ package body Correctness is
    begin
       if T.Sent < T.Count then
          loop
-            exit when not Client.Ready (C, Request) or not Ring.Free (T.Data) or T.Sent >= T.Count;
+            exit when not Client.Ready (C, Request) or not Read_Ring.Free (T.Read_Data) or T.Sent >= T.Count;
             Request.Start := T.Last;
             if Read_Permutation.Has_Element then
                Read_Permutation.Next (Request.Start);
@@ -266,8 +308,8 @@ package body Correctness is
                Cai.Log.Client.Error (L, "Block permutation exceeded, increasing block number (Read).");
             end if;
             Client.Enqueue (C, Request);
-            if not Ring.Has_Block (T.Data, Request.Start) then
-               Ring.Add (T.Data, Request.Start);
+            if not Read_Ring.Has_Block (T.Read_Data, Request.Start) then
+               Read_Ring.Add (T.Read_Data, Request.Start);
             else
                Cai.Log.Client.Error (L, "Tried to insert duplicated block");
                Success := False;
@@ -288,12 +330,12 @@ package body Correctness is
       Success := True;
       Read_Recv (C, T, Success, L);
       Read_Send (C, T, Success, L);
-      while Ring.Block_Ready (T.Data) loop
+      while Read_Ring.Block_Ready (T.Read_Data) loop
          declare
             Buf : Block_Buffer;
             Id  : Block.Id;
          begin
-            Ring.Get_Block (T.Data, Id, Buf);
+            Read_Ring.Get_Block (T.Read_Data, Id, Buf);
             Hash_Block (T.Read_Context, Buf (1 .. Block.Count (1) * Client.Block_Size (C)));
          end;
       end loop;
@@ -338,12 +380,11 @@ package body Correctness is
       use type Block.Buffer;
       Pad : constant Block.Buffer (1 .. Block_Buffer'Length - D'Length) := (others => Block.Byte'First);
    begin
-      Ring.Set_Data (T.Data, S, D & Pad);
+      Read_Ring.Set_Data (T.Read_Data, S, D & Pad);
    end Block_Read;
 
-   procedure Block_Write (T : in out Test_State;
-                          S :        Block.Id;
-                          D :    out Block.Buffer)
+   procedure Generate_Block (S :     Block.Id;
+                             B : out Block.Buffer)
    is
       function CBC_Key is new LSC.AES_Generic.Enc_Key (Block.Buffer_Index,
                                                        Block.Byte,
@@ -356,14 +397,23 @@ package body Correctness is
                                                         Block.Buffer);
       subtype Id is Block.Buffer (1 .. 8);
       function Convert_Id is new Ada.Unchecked_Conversion (Block.Id, Id);
-      Null_Block : constant Block.Buffer (1 .. D'Length) := (others => Block.Byte'First);
+      Null_Block : constant Block.Buffer (1 .. B'Length) := (others => Block.Byte'First);
       IV : Block.Buffer (1 .. 16) := (others => Block.Byte'First);
       Key : constant Block.Buffer (1 .. 128) := (others => Block.Byte'Val (16#42#));
       --  This is no cryptographically secure encryption and only used to generate pseudo random blocks
    begin
       IV (1 .. 8) := Convert_Id (S);
-      CBC (Null_Block, IV, CBC_Key (Key, LSC.AES_Generic.L128), D);
-      Hash_Block (T.Write_Context, D);
+      CBC (Null_Block, IV, CBC_Key (Key, LSC.AES_Generic.L128), B);
+   end Generate_Block;
+
+   procedure Block_Write (T : in out Test_State;
+                          S :        Block.Id;
+                          D :    out Block.Buffer)
+   is
+      pragma Unreferenced (T);
+      pragma Unreferenced (S);
+   begin
+      D := Write_Buffer (1 .. D'Length);
    end Block_Write;
 
 end Correctness;

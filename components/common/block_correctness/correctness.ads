@@ -16,7 +16,13 @@ package Correctness is
    type Buffer_Index is mod 256;
    subtype Block_Buffer is Block.Buffer (1 .. 4096);
 
-   package Ring is new Ringbuffer (Block, Buffer_Index, Block_Buffer);
+   type Write_Cache is record
+      Buffer  : Block_Buffer;
+      Context : LSC.Internal.SHA256.Context_Type;
+   end record;
+
+   package Read_Ring is new Ringbuffer (Block, Buffer_Index, Block_Buffer);
+   package Write_Ring is new Ringbuffer (Block, Buffer_Index, Write_Cache);
 
    type Test_State is record
       Last           : Block.Id;
@@ -28,7 +34,8 @@ package Correctness is
       Compared       : Boolean;
       Write_Context  : LSC.Internal.SHA256.Context_Type;
       Read_Context   : LSC.Internal.SHA256.Context_Type;
-      Data           : Ring.Cycle;
+      Read_Data      : Read_Ring.Cycle;
+      Write_Data     : Write_Ring.Cycle;
    end record;
 
    procedure Initialize (C   : in out Block.Client_Session;
