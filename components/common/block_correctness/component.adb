@@ -6,6 +6,8 @@ with Cai.Block;
 with Cai.Block.Client;
 with Cai.Configuration;
 with Cai.Configuration.Client;
+with Cai.Timer;
+with Cai.Timer.Client;
 with SXML;
 with SXML.Parser;
 with SXML.Query;
@@ -37,7 +39,9 @@ is
                     L :     Block.Count;
                     D : out Buffer);
 
-   function Str_To_Long (S : String) return Long_Integer;
+   function Str_To_Long (S : String) return Long_Integer with
+     Pre => S'Length < 20 and (for all C of S => C in '0' .. '9'),
+     Post => Str_To_Long'Result >= 0;
 
    package Block_Client is new Block.Client (Event, Read, Write);
    package Disk_Test is new Correctness (Block, Block_Client);
@@ -45,6 +49,7 @@ is
    Conf   : Cai.Configuration.Client_Session := Config.Create;
    Client : Block.Client_Session             := Block_Client.Create;
    Log    : Cai.Log.Client_Session           := Cai.Log.Client.Create;
+   Timer  : Cai.Timer.Client_Session         := Cai.Timer.Client.Create;
    Data   : Disk_Test.Test_State;
 
    Success    : Boolean := True;
@@ -89,6 +94,7 @@ is
 
    procedure Parse (S : String)
    is
+      use type Block.Size;
       use type SXML.Result_Type;
       use type SXML.Parser.Match_Type;
       Count : Long_Integer;
@@ -98,20 +104,20 @@ is
       Position : Natural;
       State : SXML.Query.State_Type;
    begin
-      Cai.Log.Client.Info (Log, Character'Val (10) & S);
       SXML.Parser.Parse (S, Document, Result, Position);
       if not Block_Client.Initialized (Client) and Result = SXML.Parser.Match_OK then
          State := SXML.Query.Init (Document);
-         if State.Result = SXML.Result_OK then
+         if State.Result = SXML.Result_OK and then SXML.Query.Is_Open (Document, State) then
             State := SXML.Query.Path (State, Document, "/device");
             if
-               State.Result = SXML.Result_OK
+              State.Result = SXML.Result_OK
+              and then SXML.Query.Is_Open (Document, State)
                and then SXML.Query.Has_Attribute (State, Document, "location")
             then
                Block_Client.Initialize (Client, Capability, SXML.Query.Attribute (State, Document, "location"));
-               if Block_Client.Initialized (Client) then
+               if Block_Client.Initialized (Client) and then Block_Client.Block_Size (Client) <= 4096 then
                   Size  := Long_Integer (Block_Client.Block_Size (Client));
-                  if SXML.Query.Has_Attribute (State, Document, "size") then
+                  if SXML.Query.Has_Attribute (State, Document, "size") and Size > 0 then
                      Count := Str_To_Long (SXML.Query.Attribute (State, Document, "size")) / Size;
                      if Count > Long_Integer (Block_Client.Block_Count (Client)) then
                         Count := Long_Integer (Block_Client.Block_Count (Client));
@@ -125,9 +131,11 @@ is
                                             & Cai.Log.Image (Size)
                                             & " byte size ("
                                             & Output.Byte_Image (Count * Size)
-                                            & ")...");
-                  Disk_Test.Initialize (Client, Data, Log, Capability, Block.Count (Count));
-                  Event;
+                                       & ")...");
+                  if Count > 1 then
+                     Disk_Test.Initialize (Client, Data, Block.Count (Count));
+                     Event;
+                  end if;
                end if;
             end if;
          end if;
@@ -139,9 +147,14 @@ is
    begin
       Capability := Cap;
       Cai.Log.Client.Initialize (Log, Cap, "Correctness");
-      Cai.Log.Client.Info (Log, "Correctness");
       Config.Initialize (Conf, Capability);
-      Config.Load (Conf);
+      Cai.Timer.Client.Initialize (Timer, Cap);
+      if Cai.Log.Client.Initialized (Log) and Config.Initialized (Conf) then
+         Cai.Log.Client.Info (Log, "Correctness");
+         Config.Load (Conf);
+      else
+         Correctness_Test.Vacate (Cap, Correctness_Test.Failure);
+      end if;
    end Construct;
 
    procedure Destruct
@@ -159,50 +172,59 @@ is
    is
    begin
       if
-         Success
-         and not Disk_Test.Bounds_Check_Finished (Data)
+        Cai.Log.Client.Initialized (Log)
+        and Block_Client.Initialized (Client)
+        and Cai.Timer.Client.Initialized (Timer)
       then
-         Disk_Test.Bounds_Check (Client, Data, Success, Log);
-      end if;
+         if
+           Success
+           and not Disk_Test.Bounds_Check_Finished (Data)
+         then
+            Disk_Test.Bounds_Check (Client, Data, Success, Log, Timer);
+         end if;
 
-      if
-         Success
-         and Disk_Test.Bounds_Check_Finished (Data)
-         and not Disk_Test.Write_Finished (Data)
-      then
-         Disk_Test.Write (Client, Data, Success, Log);
-      end if;
+         if
+           Success
+           and Disk_Test.Bounds_Check_Finished (Data)
+           and not Disk_Test.Write_Finished (Data)
+         then
+            Disk_Test.Write (Client, Data, Success, Log, Timer);
+         end if;
 
-      if
-         Success
-         and Disk_Test.Bounds_Check_Finished (Data)
-         and Disk_Test.Write_Finished (Data)
-         and not Disk_Test.Read_Finished (Data)
-      then
-         Disk_Test.Read (Client, Data, Success, Log);
-      end if;
+         if
+           Success
+           and Disk_Test.Bounds_Check_Finished (Data)
+           and Disk_Test.Write_Finished (Data)
+           and not Disk_Test.Read_Finished (Data)
+         then
+            Disk_Test.Read (Client, Data, Success, Log, Timer);
+         end if;
 
-      if
-         Success
-         and Disk_Test.Bounds_Check_Finished (Data)
-         and Disk_Test.Write_Finished (Data)
-         and Disk_Test.Read_Finished (Data)
-         and not Disk_Test.Compare_Finished (Data)
-      then
-         Disk_Test.Compare (Data, Success);
-      end if;
+         if
+           Success
+           and Disk_Test.Bounds_Check_Finished (Data)
+           and Disk_Test.Write_Finished (Data)
+           and Disk_Test.Read_Finished (Data)
+           and not Disk_Test.Compare_Finished (Data)
+         then
+            Disk_Test.Compare (Data, Success);
+         end if;
 
-      if
-         (Disk_Test.Bounds_Check_Finished (Data)
-          and Disk_Test.Write_Finished (Data)
-          and Disk_Test.Read_Finished (Data)
-          and Disk_Test.Compare_Finished (Data))
-         or not Success
-      then
-         Cai.Log.Client.Info (Log, "Correctness test "
-                                   & (if Success then "succeeded." else "failed."));
-         Correctness_Test.Vacate (Capability,
-                                  (if Success then Correctness_Test.Success else Correctness_Test.Failure));
+         if
+           (Disk_Test.Bounds_Check_Finished (Data)
+            and Disk_Test.Write_Finished (Data)
+            and Disk_Test.Read_Finished (Data)
+            and Disk_Test.Compare_Finished (Data))
+           or not Success
+         then
+            pragma Assert (Cai.Log.Client.Initialized (Log));
+            Cai.Log.Client.Info (Log, "Correctness test "
+                                 & (if Success then "succeeded." else "failed."));
+            Correctness_Test.Vacate (Capability,
+                                     (if Success then Correctness_Test.Success else Correctness_Test.Failure));
+         end if;
+      else
+         Correctness_Test.Vacate (Capability, Correctness_Test.Failure);
       end if;
    end Event;
 

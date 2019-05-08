@@ -27,15 +27,13 @@ package body Ringbuffer is
       return R.Data (R.Read).Set;
    end Block_Ready;
 
-   procedure Initialize (R : out Cycle)
+   procedure Initialize (R : out Cycle;
+                         B :     Buffer)
    is
    begin
       R.Read  := Index'First;
       R.Write := Index'First;
-      for I in R.Data'Range loop
-         R.Data (I).Block_Id := Block.Id'Last;
-         R.Data (I).Set      := False;
-      end loop;
+      R.Data  := (others => (Block.Id'Last, False, B));
    end Initialize;
 
    procedure Add (R : in out Cycle;

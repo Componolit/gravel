@@ -28,11 +28,13 @@ package Ringbuffer is
 
    function Block_Ready (R : Cycle) return Boolean;
 
-   procedure Initialize (R : out Cycle);
+   procedure Initialize (R : out Cycle;
+                         B :     Buffer);
 
    procedure Add (R : in out Cycle;
                   B :        Block.Id) with
-      Pre => Free (R) and not Has_Block (R, B);
+     Pre => Free (R) and not Has_Block (R, B),
+     Post => Has_Block (R, B);
 
    procedure Set_Data (R   : in out Cycle;
                        B   :        Block.Id;
