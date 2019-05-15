@@ -18,14 +18,14 @@ is
 
    pragma Warnings (Off, "postcondition does not mention function result");
    function Write_Perm_State return Boolean is (True) with
-     Ghost,
-     Pre => State_Initialized,
-     Post => Write_Permutation.Initialized;
+      Ghost,
+      Pre  => State_Initialized,
+      Post => Write_Permutation.Initialized;
 
    function Read_Perm_State return Boolean is (True) with
-     Ghost,
-     Pre => State_Initialized,
-     Post => Read_Permutation.Initialized;
+      Ghost,
+      Pre  => State_Initialized,
+      Post => Read_Permutation.Initialized;
    pragma Warnings (On, "postcondition does not mention function result");
 
    use all type Block.Count;
@@ -37,38 +37,38 @@ is
                          T       : in out Test_State;
                          Success : in out Boolean;
                          L       : in out Cai.Log.Client_Session) with
-     Pre => Client.Initialized (C) and Cai.Log.Client.Initialized (L),
-     Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
-     and Client.Block_Size (C)'Old = Client.Block_Size (C);
+      Pre  => Client.Initialized (C) and Cai.Log.Client.Initialized (L),
+      Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
+              and Client.Block_Size (C)'Old = Client.Block_Size (C);
 
    procedure Write_Send (C : in out Block.Client_Session;
                          T : in out Test_State;
                          L : in out Cai.Log.Client_Session) with
-     Pre => (Client.Initialized (C)
-             and then Client.Block_Size (C) mod (LSC.Internal.SHA256.Block_Size / 8) = 0
-             and then Client.Block_Size (C) > 0
-             and then Client.Block_Size (C) < Block_Buffer'Length)
-     and Cai.Log.Client.Initialized (L)
-     and (State_Initialized and then Write_Perm_State and then Write_Permutation.Initialized),
-     Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
-     and Client.Block_Size (C)'Old = Client.Block_Size (C);
+      Pre  => (Client.Initialized (C)
+               and then Client.Block_Size (C) mod (LSC.Internal.SHA256.Block_Size / 8) = 0
+               and then Client.Block_Size (C) > 0
+               and then Client.Block_Size (C) <= Block_Buffer'Length)
+              and Cai.Log.Client.Initialized (L)
+              and (State_Initialized and then Write_Perm_State and then Write_Permutation.Initialized),
+      Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
+              and Client.Block_Size (C)'Old = Client.Block_Size (C);
 
    procedure Read_Recv (C       : in out Block.Client_Session;
                         T       : in out Test_State;
                         Success : in out Boolean;
                         L       : in out Cai.Log.Client_Session) with
-     Pre => Client.Initialized (C) and Cai.Log.Client.Initialized (L),
-     Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
-     and Client.Block_Size (C)'Old = Client.Block_Size (C);
+      Pre  => Client.Initialized (C) and Cai.Log.Client.Initialized (L),
+      Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
+              and Client.Block_Size (C)'Old = Client.Block_Size (C);
 
    procedure Read_Send (C       : in out Block.Client_Session;
                         T       : in out Test_State;
                         Success : in out Boolean;
                         L       : in out Cai.Log.Client_Session) with
-     Pre => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
-     and (State_Initialized and then Read_Perm_State and then Read_Permutation.Initialized),
-     Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
-     and Client.Block_Size (C)'Old = Client.Block_Size (C);
+      Pre  => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
+              and (State_Initialized and then Read_Perm_State and then Read_Permutation.Initialized),
+      Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
+              and Client.Block_Size (C)'Old = Client.Block_Size (C);
 
    procedure Hash_Block (Context : in out LSC.Internal.SHA256.Context_Type;
                          Buffer  :        Block.Buffer) with
@@ -76,16 +76,16 @@ is
 
    procedure Generate_Block (S :     Block.Id;
                              B : out Block.Buffer) with
-     Pre => B'Length <= Block_Buffer'Length
-     and B'Length > 0
-     and B'Length mod 16 = 0;
+      Pre => B'Length <= Block_Buffer'Length
+             and B'Length > 0
+             and B'Length mod 16 = 0;
 
    procedure Update_Write_Cache (T : in out Test_State;
                                  B :        Block.Size) with
-     Pre => Write_Permutation.Initialized
-     and B <= Block.Size (Block_Buffer'Last)
-     and B > 0
-     and B mod (LSC.Internal.SHA256.Block_Size / 8) = 0;
+      Pre => Write_Permutation.Initialized
+             and B <= Block.Size (Block_Buffer'Last)
+             and B > 0
+             and B mod (LSC.Internal.SHA256.Block_Size / 8) = 0;
 
    Start        : Cai.Timer.Time;
    Last         : Cai.Timer.Time;
@@ -98,17 +98,18 @@ is
                                  B :        Block.Size)
    is
       W : Write_Cache;
+      L : Block.Id;
    begin
       W.Context := Last_Context;
-      W.Buffer := (others => Block.Byte'First);
+      W.Buffer  := (others => Block.Byte'First);
       loop
          exit when not Write_Permutation.Has_Element or not Write_Ring.Free (T.Write_Data);
-         Write_Permutation.Next (T.Last);
-         exit when Write_Ring.Has_Block (T.Write_Data, T.Last);
-         Write_Ring.Add (T.Write_Data, T.Last);
-         Generate_Block (T.Last, W.Buffer (1 .. Block.Count'(1) * B));
+         Write_Permutation.Next (L);
+         exit when Write_Ring.Has_Block (T.Write_Data, L);
+         Write_Ring.Add (T.Write_Data, L);
+         Generate_Block (L, W.Buffer (1 .. Block.Count'(1) * B));
          Hash_Block (W.Context, W.Buffer (1 .. Block.Count'(1) * B));
-         Write_Ring.Set_Data (T.Write_Data, T.Last, W);
+         Write_Ring.Set_Data (T.Write_Data, L, W);
          Last_Context := W.Context;
       end loop;
    end Update_Write_Cache;
@@ -119,6 +120,7 @@ is
    is
    begin
       T.Last           := Block.Id'Last;
+      T.Last_Finished  := True;
       T.Sent           := 0;
       T.Written        := 0;
       T.Read           := 0;
@@ -161,7 +163,9 @@ is
                                         when Block.Error        => "Error",
                                         when Block.Acknowledged => "Acknowledged"));
          end if;
+         pragma Warnings (Off, "unused assignment to ""R""");
          Client.Release (C, R);
+         pragma Warnings (On, "unused assignment to ""R""");
          T.Bounds_Checked := True;
          return;
       end if;
@@ -169,7 +173,7 @@ is
          Client.Enqueue (C, Request);
          Client.Submit (C);
          Start := Cai.Timer.Client.Clock (Timer);
-         Last := Cai.Timer.Client.Clock (Timer);
+         Last  := Cai.Timer.Client.Clock (Timer);
       end if;
    end Bounds_Check;
 
@@ -198,9 +202,7 @@ is
                          Success : in out Boolean;
                          L       : in out Cai.Log.Client_Session)
    is
-      use type Block.Id;
-      Eid : Block.Id;
-      Size : Block.Size := Client.Block_Size (C) with Ghost;
+      Size : constant Block.Size := Client.Block_Size (C) with Ghost;
    begin
       while T.Written < T.Count loop
          pragma Loop_Invariant (Client.Initialized (C));
@@ -213,15 +215,13 @@ is
                T.Written := T.Written + 1;
                Success   := R.Status = Block.Ok;
                if not Success then
-                  Eid := R.Start;
-                  if Eid > Block.Id (Long_Integer'Last) then
-                     Eid := Block.Id (Long_Integer'Last);
-                  end if;
                   Cai.Log.Client.Error (L, "Write received erroneous request "
-                                           & Cai.Log.Image (Long_Integer (Eid)) & "/"
+                                           & Cai.Log.Image (Cai.Log.Unsigned (R.Start)) & "/"
                                            & Cai.Log.Image (Long_Integer (Client.Block_Count (C))));
                end if;
+               pragma Warnings (Off, "unused assignment to ""R""");
                Client.Release (C, R);
+               pragma Warnings (On, "unused assignment to ""R""");
             else
                exit;
             end if;
@@ -239,7 +239,7 @@ is
                                    Length => 1,
                                    Status => Block.Raw);
       W : Write_Cache;
-      Size : Block.Size := Client.Block_Size (C) with Ghost;
+      Size : constant Block.Size := Client.Block_Size (C) with Ghost;
    begin
       if T.Sent < T.Count and Client.Supported (C, Request.Kind) then
          loop
@@ -247,26 +247,37 @@ is
             pragma Loop_Invariant (Cai.Log.Client.Initialized (L));
             pragma Loop_Invariant (Client.Supported (C, Request.Kind));
             pragma Loop_Invariant (Client.Block_Size (C) = Size);
-            exit when not Client.Ready (C, Request) or T.Sent >= T.Count;
+            exit when T.Sent >= T.Count;
+            if T.Last_Finished then
+               if Write_Ring.Block_Ready (T.Write_Data) then
+                  Request.Start := Write_Ring.Block_Peek (T.Write_Data);
+               else
+                  Cai.Log.Client.Warning (L, "Write cache depleted, generating block on demand...");
+                  if Write_Permutation.Has_Element then
+                     Write_Permutation.Next (Request.Start);
+                  else
+                     Request.Start := T.Last + 1;
+                     Cai.Log.Client.Error (L, "Block permutation exceeded, increasing block number (Write).");
+                  end if;
+               end if;
+               T.Last := Request.Start;
+               T.Last_Finished := False;
+            else
+               Request.Start := T.Last;
+            end if;
+            exit when not Client.Ready (C, Request);
             if Write_Ring.Block_Ready (T.Write_Data) then
-               Write_Ring.Get_Block (T.Write_Data, Request.Start, W);
+               Write_Ring.Get_Block (T.Write_Data, W);
                T.Write_Context := W.Context;
                Write_Buffer := W.Buffer;
             else
-               Cai.Log.Client.Warning (L, "Write cache depleted, generating block on demand...");
-               if Write_Permutation.Has_Element then
-                  Write_Permutation.Next (Request.Start);
-               else
-                  Request.Start := T.Last + 1;
-                  Cai.Log.Client.Error (L, "Block permutation exceeded, increasing block number (Write).");
-               end if;
                Generate_Block (Request.Start, Write_Buffer);
                Hash_Block (T.Write_Context, Write_Buffer (1 .. Block.Count'(1) * Client.Block_Size (C)));
                Last_Context := T.Write_Context;
             end if;
             Client.Enqueue (C, Request);
             T.Sent := T.Sent + 1;
-            T.Last := Request.Start;
+            T.Last_Finished := True;
          end loop;
          Client.Submit (C);
       end if;
@@ -288,7 +299,7 @@ is
       Output.Progress ("Writing",
                        Long_Integer (T.Written),
                        (if
-                          Long_Integer'Last / 2 > Long_Integer (T.Count)
+                           Long_Integer'Last / 2 > Long_Integer (T.Count)
                         then
                            Long_Integer (T.Count) * 2
                         else
@@ -315,9 +326,7 @@ is
                         Success : in out Boolean;
                         L       : in out Cai.Log.Client_Session)
    is
-      use type Block.Id;
-      Eid : Block.Id;
-      Size : Block.Size := Client.Block_Size (C) with Ghost;
+      Size : constant Block.Size := Client.Block_Size (C) with Ghost;
    begin
       while T.Read < T.Count loop
          pragma Loop_Invariant (Client.Initialized (C));
@@ -330,12 +339,8 @@ is
                if R.Status = Block.Ok and then Read_Ring.Has_Block (T.Read_Data, R.Start) then
                   Client.Read (C, R);
                else
-                  Eid := R.Start;
-                  if Eid > Block.Id (Long_Integer'Last) then
-                     Eid := Block.Id (Long_Integer'Last);
-                  end if;
                   Cai.Log.Client.Error (L, "Read received erroneous request "
-                                           & Cai.Log.Image (Long_Integer (Eid)) & "/"
+                                           & Cai.Log.Image (Cai.Log.Unsigned (R.Start)) & "/"
                                            & Cai.Log.Image (Long_Integer (Client.Block_Count (C))));
                   Success := False;
                end if;
@@ -360,7 +365,7 @@ is
                                    Start  => 0,
                                    Length => 1,
                                    Status => Block.Raw);
-      Size : Block.Size := Client.Block_Size (C) with Ghost;
+      Size : constant Block.Size := Client.Block_Size (C) with Ghost;
    begin
       if T.Sent < T.Count and Client.Supported (C, Request.Kind) then
          loop
@@ -369,22 +374,29 @@ is
             pragma Loop_Invariant (Client.Supported (C, Request.Kind));
             pragma Loop_Invariant (Client.Block_Size (C) = Size);
             exit when not Read_Ring.Free (T.Read_Data) or T.Sent >= T.Count;
-            if Read_Permutation.Has_Element then
-               Read_Permutation.Next (Request.Start);
+            if T.Last_Finished then
+               if Read_Permutation.Has_Element then
+                  Read_Permutation.Next (Request.Start);
+               else
+                  Request.Start := T.Last + 1;
+                  Cai.Log.Client.Error (L, "Block permutation exceeded, increasing block number (Read).");
+               end if;
+               T.Last_Finished := False;
+               T.Last := Request.Start;
             else
-               Request.Start := T.Last + 1;
-               Cai.Log.Client.Error (L, "Block permutation exceeded, increasing block number (Read).");
+               Request.Start := T.Last;
             end if;
             exit when not Client.Ready (C, Request);
             Client.Enqueue (C, Request);
             if not Read_Ring.Has_Block (T.Read_Data, Request.Start) then
                Read_Ring.Add (T.Read_Data, Request.Start);
             else
-               Cai.Log.Client.Error (L, "Tried to insert duplicated block");
+               Cai.Log.Client.Error (L, "Tried to insert duplicated block: "
+                                        & Cai.Log.Image (Cai.Log.Unsigned (Request.Start)));
                Success := False;
             end if;
             T.Sent := T.Sent + 1;
-            T.Last := Request.Start;
+            T.Last_Finished := True;
          end loop;
          Client.Submit (C);
       end if;
@@ -406,9 +418,8 @@ is
       while Read_Ring.Block_Ready (T.Read_Data) loop
          declare
             Buf : Block_Buffer;
-            Id  : Block.Id;
          begin
-            Read_Ring.Get_Block (T.Read_Data, Id, Buf);
+            Read_Ring.Get_Block (T.Read_Data, Buf);
             Hash_Block (T.Read_Context, Buf (1 .. Block.Count'(1) * Client.Block_Size (C)));
          end;
       end loop;
@@ -465,7 +476,6 @@ is
                          S :        Block.Id;
                          D :        Block.Buffer)
    is
-      use type Block.Buffer;
       Padded : Block_Buffer := (others => Block.Byte'First);
    begin
       Padded (Padded'First .. Padded'First + D'Length - 1) := D;
