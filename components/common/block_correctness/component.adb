@@ -11,6 +11,7 @@ with Cai.Timer.Client;
 with SXML;
 with SXML.Parser;
 with SXML.Query;
+with LSC.Internal.SHA256;
 with Correctness;
 with Output;
 
@@ -39,21 +40,43 @@ is
                     L :     Block.Count;
                     D : out Buffer);
 
-   function Str_To_Long (S : String) return Long_Integer with
-     Pre => S'Length < 20 and (for all C of S => C in '0' .. '9'),
-     Post => Str_To_Long'Result >= 0;
+   function Str_To_Long (S : String) return Long_Integer;
 
    package Block_Client is new Block.Client (Event, Read, Write);
    package Disk_Test is new Correctness (Block, Block_Client);
 
+   procedure Transfer_State_1 with
+      Ghost,
+      Contract_Cases => (Disk_Test.State_Initialized => Initialized,
+                         not Disk_Test.State_Initialized => not Initialized);
+
+   procedure Transfer_State_2 with
+      Ghost,
+      Contract_Cases => (Initialized => Disk_Test.State_Initialized,
+                         not Initialized => not Disk_Test.State_Initialized);
+
    Conf   : Cai.Configuration.Client_Session := Config.Create;
    Client : Block.Client_Session             := Block_Client.Create;
-   Log    : Cai.Log.Client_Session           := Cai.Log.Client.Create;
    Timer  : Cai.Timer.Client_Session         := Cai.Timer.Client.Create;
+   Log    : Cai.Log.Client_Session           := Cai.Log.Client.Create;
    Data   : Disk_Test.Test_State;
 
    Success    : Boolean := True;
    Capability : Cai.Types.Capability;
+
+   procedure Transfer_State_1 with
+      SPARK_Mode => Off
+   is
+   begin
+      null;
+   end Transfer_State_1;
+
+   procedure Transfer_State_2 with
+      SPARK_Mode => Off
+   is
+   begin
+      null;
+   end Transfer_State_2;
 
    procedure Write (C :     Block.Client_Instance;
                     B :     Block.Size;
@@ -86,8 +109,14 @@ is
       L : Long_Integer := 0;
    begin
       for C of S loop
-         L := Character'Pos (C) - 48 + L;
-         L := L * 10;
+         pragma Loop_Invariant (L >= 0);
+         exit when
+            Long_Integer'Last - 10 < L
+            or else Long_Integer'Last / 10 < L + 10;
+         if C in '0' .. '9' then
+            L := Character'Pos (C) - 48 + L;
+            L := L * 10;
+         end if;
       end loop;
       return L / 10;
    end Str_To_Long;
@@ -105,40 +134,69 @@ is
       State : SXML.Query.State_Type;
    begin
       SXML.Parser.Parse (S, Document, Result, Position);
-      if not Block_Client.Initialized (Client) and Result = SXML.Parser.Match_OK then
-         State := SXML.Query.Init (Document);
-         if State.Result = SXML.Result_OK and then SXML.Query.Is_Open (Document, State) then
-            State := SXML.Query.Path (State, Document, "/device");
-            if
-              State.Result = SXML.Result_OK
-              and then SXML.Query.Is_Open (Document, State)
-               and then SXML.Query.Has_Attribute (State, Document, "location")
-            then
-               Block_Client.Initialize (Client, Capability, SXML.Query.Attribute (State, Document, "location"));
-               if Block_Client.Initialized (Client) and then Block_Client.Block_Size (Client) <= 4096 then
-                  Size  := Long_Integer (Block_Client.Block_Size (Client));
-                  if SXML.Query.Has_Attribute (State, Document, "size") and Size > 0 then
-                     Count := Str_To_Long (SXML.Query.Attribute (State, Document, "size")) / Size;
-                     if Count > Long_Integer (Block_Client.Block_Count (Client)) then
+      if Cai.Log.Client.Initialized (Log) then
+         if not Block_Client.Initialized (Client) and Result = SXML.Parser.Match_OK then
+            State := SXML.Query.Init (Document);
+            pragma Assert (SXML.Query.Is_Valid (Document, State));
+            if State.Result = SXML.Result_OK and then SXML.Query.Is_Open (Document, State) then
+               State := SXML.Query.Path (State, Document, "/device");
+               if
+                  State.Result = SXML.Result_OK
+                  and then SXML.Query.Is_Open (Document, State)
+                  and then SXML.Query.Has_Attribute (State, Document, "location")
+               then
+                  Block_Client.Initialize (Client, Capability, SXML.Query.Attribute (State, Document, "location"));
+                  if
+                     Block_Client.Initialized (Client)
+                     and then Block_Client.Block_Size (Client) <= 4096
+                     and then Block_Client.Block_Size (Client) > 0
+                     and then Block_Client.Block_Size (Client) mod (LSC.Internal.SHA256.Block_Size / 8) = 0
+                  then
+                     Size  := Long_Integer (Block_Client.Block_Size (Client));
+                     if SXML.Query.Has_Attribute (State, Document, "size") then
+                        Count := Str_To_Long (SXML.Query.Attribute (State, Document, "size")) / Size;
+                        Count := (if
+                                     Count > Long_Integer (Block_Client.Block_Count (Client))
+                                  then
+                                     Long_Integer (Block_Client.Block_Count (Client))
+                                  else
+                                     Count);
+                     else
                         Count := Long_Integer (Block_Client.Block_Count (Client));
                      end if;
+                     if Count > 1 then
+                        Cai.Log.Client.Info (Log, "Testing disk: ");
+                        Cai.Log.Client.Info (Log, Cai.Log.Image (Count)
+                                                  & " x "
+                                                  & Cai.Log.Image (Size)
+                                                  & "b ("
+                                                  & Output.Byte_Image ((if
+                                                                           Long_Integer'Last / Count > Size
+                                                                        then
+                                                                           Count * Size
+                                                                        else
+                                                                           Long_Integer'Last))
+                                                  & ")");
+                        Disk_Test.Initialize (Client, Data, Block.Count (Count));
+                        Transfer_State_1;
+                        Event;
+                     else
+                        Cai.Log.Client.Error (Log, "Invalid block count: "
+                                                & Cai.Log.Image (Count));
+                     end if;
                   else
-                     Count := Long_Integer (Block_Client.Block_Count (Client));
-                  end if;
-                  Cai.Log.Client.Info (Log, "Running correctness test over "
-                                            & Cai.Log.Image (Count)
-                                            & " blocks of "
-                                            & Cai.Log.Image (Size)
-                                            & " byte size ("
-                                            & Output.Byte_Image (Count * Size)
-                                       & ")...");
-                  if Count > 1 then
-                     Disk_Test.Initialize (Client, Data, Block.Count (Count));
-                     Event;
+                     if not Block_Client.Initialized (Client) then
+                        Cai.Log.Client.Error (Log, "Failed to initialize block session.");
+                     else
+                        Cai.Log.Client.Error (Log, "Invalid block size: "
+                                              & Cai.Log.Image (Long_Integer (Block_Client.Block_Size (Client))));
+                     end if;
                   end if;
                end if;
             end if;
          end if;
+      else
+         Correctness_Test.Vacate (Capability, Correctness_Test.Failure);
       end if;
    end Parse;
 
@@ -146,9 +204,15 @@ is
    is
    begin
       Capability := Cap;
-      Cai.Log.Client.Initialize (Log, Cap, "Correctness");
-      Config.Initialize (Conf, Capability);
-      Cai.Timer.Client.Initialize (Timer, Cap);
+      if not Cai.Log.Client.Initialized (Log) then
+         Cai.Log.Client.Initialize (Log, Cap, "Correctness");
+      end if;
+      if not Config.Initialized (Conf) then
+         Config.Initialize (Conf, Capability);
+      end if;
+      if not Cai.Timer.Client.Initialized (Timer) then
+         Cai.Timer.Client.Initialize (Timer, Cap);
+      end if;
       if Cai.Log.Client.Initialized (Log) and Config.Initialized (Conf) then
          Cai.Log.Client.Info (Log, "Correctness");
          Config.Load (Conf);
@@ -170,52 +234,64 @@ is
 
    procedure Event
    is
+      use type Block.Size;
    begin
+      Transfer_State_2;
       if
-        Cai.Log.Client.Initialized (Log)
-        and Block_Client.Initialized (Client)
-        and Cai.Timer.Client.Initialized (Timer)
+         Cai.Log.Client.Initialized (Log)
+         and Block_Client.Initialized (Client)
+         and Cai.Timer.Client.Initialized (Timer)
       then
          if
-           Success
-           and not Disk_Test.Bounds_Check_Finished (Data)
+            Success
+            and not Disk_Test.Bounds_Check_Finished (Data)
          then
             Disk_Test.Bounds_Check (Client, Data, Success, Log, Timer);
          end if;
 
          if
-           Success
-           and Disk_Test.Bounds_Check_Finished (Data)
-           and not Disk_Test.Write_Finished (Data)
+            Block_Client.Block_Size (Client) > 0
+            and Block_Client.Block_Size (Client) <= 4096
+            and Block_Client.Block_Size (Client) mod (LSC.Internal.SHA256.Block_Size / 8) = 0
          then
-            Disk_Test.Write (Client, Data, Success, Log, Timer);
+            if
+               Success
+               and Disk_Test.Bounds_Check_Finished (Data)
+               and not Disk_Test.Write_Finished (Data)
+            then
+               Disk_Test.Write (Client, Data, Success, Log, Timer);
+            end if;
+
+            if
+               Success
+               and Disk_Test.Bounds_Check_Finished (Data)
+               and Disk_Test.Write_Finished (Data)
+               and not Disk_Test.Read_Finished (Data)
+            then
+               Disk_Test.Read (Client, Data, Success, Log, Timer);
+            end if;
+         else
+            Cai.Log.Client.Error (Log, "Unsupported block size: "
+                                  & Cai.Log.Image (Long_Integer (Block_Client.Block_Size (Client))));
+            Success := False;
          end if;
 
          if
-           Success
-           and Disk_Test.Bounds_Check_Finished (Data)
-           and Disk_Test.Write_Finished (Data)
-           and not Disk_Test.Read_Finished (Data)
-         then
-            Disk_Test.Read (Client, Data, Success, Log, Timer);
-         end if;
-
-         if
-           Success
-           and Disk_Test.Bounds_Check_Finished (Data)
-           and Disk_Test.Write_Finished (Data)
-           and Disk_Test.Read_Finished (Data)
-           and not Disk_Test.Compare_Finished (Data)
+            Success
+            and Disk_Test.Bounds_Check_Finished (Data)
+            and Disk_Test.Write_Finished (Data)
+            and Disk_Test.Read_Finished (Data)
+            and not Disk_Test.Compare_Finished (Data)
          then
             Disk_Test.Compare (Data, Success);
          end if;
 
          if
-           (Disk_Test.Bounds_Check_Finished (Data)
-            and Disk_Test.Write_Finished (Data)
-            and Disk_Test.Read_Finished (Data)
-            and Disk_Test.Compare_Finished (Data))
-           or not Success
+            (Disk_Test.Bounds_Check_Finished (Data)
+             and Disk_Test.Write_Finished (Data)
+             and Disk_Test.Read_Finished (Data)
+             and Disk_Test.Compare_Finished (Data))
+            or not Success
          then
             pragma Assert (Cai.Log.Client.Initialized (Log));
             Cai.Log.Client.Info (Log, "Correctness test "
