@@ -13,12 +13,7 @@ package body Ringbuffer is
                        B : Block.Id) return Boolean
    is
    begin
-      for I of R.Data loop
-         if I.Block_Id = B then
-            return True;
-         end if;
-      end loop;
-      return False;
+      return (for some I of R.Data => I.Block_Id = B);
    end Has_Block;
 
    function Block_Ready (R : Cycle) return Boolean
@@ -26,6 +21,12 @@ package body Ringbuffer is
    begin
       return R.Data (R.Read).Set;
    end Block_Ready;
+
+   function Block_Peek (R : Cycle) return Block.Id
+   is
+   begin
+      return R.Data (R.Read).Block_Id;
+   end Block_Peek;
 
    procedure Initialize (R : out Cycle;
                          B :     Buffer)
@@ -60,11 +61,9 @@ package body Ringbuffer is
    end Set_Data;
 
    procedure Get_Block (R   : in out Cycle;
-                        B   :    out Block.Id;
                         Buf :    out Buffer)
    is
    begin
-      B                        := R.Data (R.Read).Block_Id;
       Buf                      := R.Data (R.Read).Data;
       R.Data (R.Read).Block_Id := Block.Id'Last;
       R.Data (R.Read).Set      := False;
