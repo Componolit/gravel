@@ -47,11 +47,13 @@ is
 
    procedure Transfer_State_1 with
       Ghost,
+      Import,
       Contract_Cases => (Disk_Test.State_Initialized => Initialized,
                          not Disk_Test.State_Initialized => not Initialized);
 
    procedure Transfer_State_2 with
       Ghost,
+      Import,
       Contract_Cases => (Initialized => Disk_Test.State_Initialized,
                          not Initialized => not Disk_Test.State_Initialized);
 
@@ -63,20 +65,6 @@ is
 
    Success    : Boolean := True;
    Capability : Cai.Types.Capability;
-
-   procedure Transfer_State_1 with
-      SPARK_Mode => Off
-   is
-   begin
-      null;
-   end Transfer_State_1;
-
-   procedure Transfer_State_2 with
-      SPARK_Mode => Off
-   is
-   begin
-      null;
-   end Transfer_State_2;
 
    procedure Write (C :     Block.Client_Instance;
                     B :     Block.Size;

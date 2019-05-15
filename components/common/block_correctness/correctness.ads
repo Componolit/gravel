@@ -46,7 +46,7 @@ is
    end record;
 
    function State_Initialized return Boolean with
-     Ghost;
+      Ghost;
 
    procedure Initialize (C   :        Block.Client_Session;
                          T   :    out Test_State;

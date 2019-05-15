@@ -16,18 +16,6 @@ is
    package Write_Permutation is new Permutation (Block.Id);
    package Read_Permutation is new Permutation (Block.Id);
 
-   pragma Warnings (Off, "postcondition does not mention function result");
-   function Write_Perm_State return Boolean is (True) with
-      Ghost,
-      Pre  => State_Initialized,
-      Post => Write_Permutation.Initialized;
-
-   function Read_Perm_State return Boolean is (True) with
-      Ghost,
-      Pre  => State_Initialized,
-      Post => Read_Permutation.Initialized;
-   pragma Warnings (On, "postcondition does not mention function result");
-
    use all type Block.Count;
    use all type Block.Size;
    use all type Block.Request_Kind;
@@ -49,7 +37,7 @@ is
                and then Client.Block_Size (C) > 0
                and then Client.Block_Size (C) <= Block_Buffer'Length)
               and Cai.Log.Client.Initialized (L)
-              and (State_Initialized and then Write_Perm_State and then Write_Permutation.Initialized),
+              and Write_Permutation.Initialized,
       Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
               and Client.Block_Size (C)'Old = Client.Block_Size (C);
 
@@ -66,7 +54,7 @@ is
                         Success : in out Boolean;
                         L       : in out Cai.Log.Client_Session) with
       Pre  => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
-              and (State_Initialized and then Read_Perm_State and then Read_Permutation.Initialized),
+              and Read_Permutation.Initialized,
       Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
               and Client.Block_Size (C)'Old = Client.Block_Size (C);
 
@@ -92,7 +80,8 @@ is
    Write_Buffer : Block_Buffer;
    Last_Context : LSC.Internal.SHA256.Context_Type;
 
-   function State_Initialized return Boolean is (Read_Permutation.Initialized and Write_Permutation.Initialized);
+   function State_Initialized return Boolean is
+      (Write_Permutation.Initialized and Read_Permutation.Initialized);
 
    procedure Update_Write_Cache (T : in out Test_State;
                                  B :        Block.Size)
