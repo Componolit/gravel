@@ -3,8 +3,6 @@ package body Output with
    SPARK_Mode
 is
 
-   use type Cai.Timer.Time;
-
    function Remain (S : Cai.Timer.Time;
                     C : Cai.Timer.Time;
                     P : Long_Integer) return Duration;
@@ -19,8 +17,8 @@ is
          return 0.0;
       end if;
       if
-         ((S > 0.0 and then Cai.Timer.Time'First + S <= C)
-          or (S < 0.0 and then Cai.Timer.Time'Last + S >= C))
+         (S > 0.0 and then Cai.Timer.Time'First + S <= C)
+         or (S < 0.0 and then Cai.Timer.Time'Last + S >= C)
       then
          T := ((C - S) / Integer (P));
          if
@@ -58,7 +56,8 @@ is
                        Log    : in out Cai.Log.Client_Session)
    is
       function Safe_Multiply (L, R : Long_Integer) return Long_Integer with
-        Pre => L >= 0 and R >= 0
+         Pre => L >= 0 and R >= 0;
+      function Safe_Multiply (L, R : Long_Integer) return Long_Integer
       is
       begin
          if L = 0 or R = 0 then
@@ -82,13 +81,13 @@ is
          Last     := Now;
          P := (if Todo > 999 then Done / (Todo / 1000) else 0);
          declare
-            S : String := Prefix & "... ("
-                                 & Cai.Log.Image (P / 10)
-                                 & "."
-                                 & Cai.Log.Image (P rem 10)
-                                 & "%, " & Byte_Image (Safe_Multiply (Done, Size))
-                                 & " / " & Byte_Image (Safe_Multiply (Todo, Size))
-                                 & ")";
+            S : constant String := Prefix & "... ("
+                                          & Cai.Log.Image (P / 10)
+                                          & "."
+                                          & Cai.Log.Image (P rem 10)
+                                          & "%, " & Byte_Image (Safe_Multiply (Done, Size))
+                                          & " / " & Byte_Image (Safe_Multiply (Todo, Size))
+                                          & ")";
          begin
             if S'Length > Cai.Log.Client.Maximum_Message_Length (Log) then
                Cai.Log.Client.Info (Log, S (S'First  .. S'First + Cai.Log.Client.Maximum_Message_Length (Log) - 2));
