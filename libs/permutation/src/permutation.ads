@@ -15,17 +15,17 @@ is
      Ghost;
 
    procedure Initialize (Upper : Output_Type) with
-     Pre => Upper > Output_Type'First,
-     Post => Initialized;
+      Pre  => Upper > Output_Type'First,
+      Post => Initialized;
    function Has_Element return Boolean;
    procedure Next (Number : out Output_Type) with
-     Pre => Has_Element and Initialized;
+      Pre => Has_Element and Initialized;
 
 private
 
    type U64 is mod 2**64;
    type U32 is mod 2**32;
-   type Long_Natural is range 0 .. 2 ** 32;
+   type Long_Natural is range 0 .. 2 ** 63 - 1;
 
    type Data_Type is
       record
@@ -34,7 +34,7 @@ private
       end record;
 
    function Next_Size (O : Output_Type) return Natural with
-     Post => Next_Size'Result >= 12 and Next_Size'Result <= 64;
+      Post => Next_Size'Result >= 12 and Next_Size'Result <= 64;
 
    Upper_Bound : Output_Type := Output_Type'First;
 
@@ -61,8 +61,20 @@ private
    Last_Reached : Boolean := False;
 
    function Permute (Number : U64) return U64 with
-     Pre => Number <= LAST and Initialized;
+      Pre => Number <= LAST and Initialized;
    function Inverse (Number : U64) return U64 with
-     Pre => Number <= LAST and Initialized;
+      Pre => Number <= LAST and Initialized;
+
+   --  Taken from SPARK.Arithmetic_Lemmas
+   procedure Lemma_Exp_Is_Monotonic_2
+      (Val  : Positive;
+       Exp1 : Natural;
+       Exp2 : Natural)
+      with
+         Ghost,
+         Import,
+         Global => null,
+         Pre  => Exp1 <= Exp2,
+         Post => Val ** Exp1 <= Val ** Exp2; --  MANUAL PROOF
 
 end Permutation;

@@ -3,13 +3,13 @@ SPARK_Mode
 is
 
    function Map (O : Output_Type) return U64 is
-     (U64 (Output_Type'Pos (O) - Output_Type'Pos (Output_Type'First)));
+      (U64'(Output_Type'Pos (O) - Output_Type'Pos (Output_Type'First)));
 
    function In_Range (N : U64) return Boolean is
-     (N >= Map (Output_Type'First) and then N <= Map (Upper_Bound));
+      (N >= Map (Output_Type'First) and then N <= Map (Upper_Bound));
 
    function Map (N : U64) return Output_Type is
-     (Output_Type'Val (U64'Pos (N) + Output_Type'Pos (Output_Type'First)))
+      (Output_Type'Val (N + U64'(Output_Type'Pos (Output_Type'First))))
      with
        Pre => In_Range (N);
 
@@ -70,12 +70,23 @@ is
    end Find_Next;
 
    procedure Initialize (Upper : Output_Type) is
+      type U is range 0 .. 2 ** 63 - 1;
    begin
       State := U64'First;
       Upper_Bound := Upper;
       SIZE := Next_Size (Upper);
       LAST := 2 ** SIZE - 1;
       pragma Assert (2 ** (64 / 2) in Long_Natural'Range);
+      for I in 0 .. 62 loop
+         Lemma_Exp_Is_Monotonic_2 (Val => 2, Exp1 => I, Exp2 => 62);
+         pragma Assert (2 ** I <= 2 ** 62);
+         pragma Annotate (GNATprove, False_Positive, "assertion",
+                          "direct reexpression of lemma postcondition");
+         pragma Annotate (GNATprove, False_Positive, "overflow check",
+                          "consequence of lemma postcondition");
+         pragma Loop_Invariant (for all K in 0 .. I => 2 ** K in U'Range);
+      end loop;
+      pragma Assert (for all I in 0 .. 62 => 2 ** I in U'Range);
       pragma Assert (for all I in 12 .. 64 => 2 ** (I / 2) in Long_Natural'Range);
       M := 2**(SIZE / 2);
       pragma Assert (M > 0);
