@@ -1,11 +1,12 @@
 
-with Cai.Log;
-with Cai.Log.Client;
-with Cai.Timer;
+with Componolit.Interfaces.Log;
+with Componolit.Interfaces.Log.Client;
+with Componolit.Interfaces.Timer;
 
 package Output with
    SPARK_Mode
 is
+   package Cai renames Componolit.Interfaces;
 
    use type Cai.Timer.Time;
 

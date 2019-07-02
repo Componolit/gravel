@@ -1,13 +1,23 @@
 
-with Cai.Log.Client;
-with Cai.Timer.Client;
+with Componolit.Interfaces.Log.Client;
+with Componolit.Interfaces.Timer.Client;
 
 package body Iteration is
 
    use all type Block.Request_Kind;
    use all type Block.Request_Status;
 
-   Timer : Cai.Timer.Client_Session := Cai.Timer.Client.Create;
+   procedure Event;
+
+   procedure Event
+   is
+   begin
+      null;
+   end Event;
+
+   package Timer_Client is new Cai.Timer.Client (Event);
+
+   Timer : Cai.Timer.Client_Session := Timer_Client.Create;
 
    procedure Start (Item   :        Client.Request;
                     Offset :        Block.Count;
@@ -24,7 +34,7 @@ package body Iteration is
                     Data   : in out Burst)
    is
    begin
-      Data (Long_Integer (Item.Start - Offset)).Start := Cai.Timer.Client.Clock (Timer);
+      Data (Long_Integer (Item.Start - Offset)).Start := Timer_Client.Clock (Timer);
    end Start;
 
    procedure Finish (Item   :        Client.Request;
@@ -32,7 +42,7 @@ package body Iteration is
                      Data   : in out Burst)
    is
    begin
-      Data (Long_Integer (Item.Start - Offset)).Finish  := Cai.Timer.Client.Clock (Timer);
+      Data (Long_Integer (Item.Start - Offset)).Finish  := Timer_Client.Clock (Timer);
       Data (Long_Integer (Item.Start - Offset)).Success := Item.Status = Block.Ok;
    end Finish;
 
@@ -50,8 +60,8 @@ package body Iteration is
       for I in T.Data'Range loop
          T.Data (I) := (Success => False, others => Cai.Timer.Time'First);
       end loop;
-      if not Cai.Timer.Client.Initialized (Timer) then
-         Cai.Timer.Client.Initialize (Timer, Cap);
+      if not Timer_Client.Initialized (Timer) then
+         Timer_Client.Initialize (Timer, Cap);
       end if;
    end Initialize;
 

@@ -28,13 +28,18 @@ package body Ringbuffer is
       return R.Data (R.Read).Block_Id;
    end Block_Peek;
 
-   procedure Initialize (R : out Cycle;
-                         B :     Buffer)
+   procedure Initialize (R : out Cycle)
    is
    begin
       R.Read  := Index'First;
       R.Write := Index'First;
-      R.Data  := (others => (Block.Id'Last, False, B));
+      for I in R.Data'Range loop
+         R.Data (I).Block_Id := Block.Id'Last;
+         R.Data (I).Set      := False;
+         R.Data (I).Data     := Null_Buffer;
+      end loop;
+      --  R.Data  := (others => (Block.Id'Last, False, Null_Buffer));
+      --  FIXME: this line causes a crash on Genode, probably broken elaboration code?
    end Initialize;
 
    procedure Add (R : in out Cycle;

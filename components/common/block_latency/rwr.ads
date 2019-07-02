@@ -1,16 +1,18 @@
 
-with Cai.Types;
-with Cai.Block;
-with Cai.Block.Client;
-with Cai.Log;
+with Componolit.Interfaces.Types;
+with Componolit.Interfaces.Block;
+with Componolit.Interfaces.Block.Client;
+with Componolit.Interfaces.Log;
 with Run;
 
 generic
-   with package Block is new Cai.Block (<>);
+   with package Block is new Componolit.Interfaces.Block (<>);
    with package Client is new Block.Client (<>);
    Request_Count : Block.Count;
    Iterations    : Positive;
 package Rwr is
+
+   package Cai renames Componolit.Interfaces;
 
    package RR1 is new Run (Block, Client, Request_Count, Iterations, Block.Read);
    package WR is new Run (Block, Client, Request_Count, Iterations, Block.Write);

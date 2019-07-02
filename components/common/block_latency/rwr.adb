@@ -1,5 +1,5 @@
 
-with Cai.Log.Client;
+with Componolit.Interfaces.Log.Client;
 
 package body Rwr is
 

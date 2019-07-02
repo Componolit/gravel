@@ -1,10 +1,11 @@
 
-with Cai.Block;
+with Componolit.Interfaces.Block;
 
 generic
-   with package Block is new Cai.Block (<>);
+   with package Block is new Componolit.Interfaces.Block (<>);
    type Index is mod <>;
    type Buffer is private;
+   Null_Buffer : Buffer;
 package Ringbuffer is
 
    use type Block.Id;
@@ -36,8 +37,7 @@ package Ringbuffer is
    function Block_Peek (R : Cycle) return Block.Id with
       Pre => Block_Ready (R);
 
-   procedure Initialize (R : out Cycle;
-                         B :     Buffer);
+   procedure Initialize (R : out Cycle);
 
    procedure Add (R : in out Cycle;
                   B :        Block.Id) with

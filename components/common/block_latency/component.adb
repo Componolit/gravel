@@ -1,8 +1,8 @@
 
-with Cai.Log;
-with Cai.Log.Client;
-with Cai.Block;
-with Cai.Block.Client;
+with Componolit.Interfaces.Log;
+with Componolit.Interfaces.Log.Client;
+with Componolit.Interfaces.Block;
+with Componolit.Interfaces.Block.Client;
 with Rwr;
 
 package body Component with
@@ -14,9 +14,10 @@ is
    procedure Event;
 
    type Byte is mod 2 ** 8;
-   type Buffer is array (Long_Integer range <>) of Byte;
+   subtype Long_Natural is Long_Integer range 0 .. Long_Integer'Last;
+   type Buffer is array (Long_Natural range <>) of Byte;
 
-   package Block is new Cai.Block (Byte, Long_Integer, Buffer);
+   package Block is new Cai.Block (Byte, Long_Natural, Buffer);
 
    procedure Write (C :     Block.Client_Instance;
                     B :     Block.Size;
@@ -238,7 +239,7 @@ is
          Cai.Log.Client.Flush (Xml);
          Cai.Log.Client.Info (Log, "Data written.");
          Cai.Log.Client.Flush (Log);
-         Latency_Test.Vacate (Capability, Latency_Test.Success);
+         Main.Vacate (Capability, Main.Success);
       end if;
    end Event;
 

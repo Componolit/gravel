@@ -1,15 +1,17 @@
-with Cai.Types;
-with Cai.Block;
-with Cai.Block.Client;
-with Cai.Log;
-with Cai.Timer;
+with Componolit.Interfaces.Types;
+with Componolit.Interfaces.Block;
+with Componolit.Interfaces.Block.Client;
+with Componolit.Interfaces.Log;
+with Componolit.Interfaces.Timer;
 
 generic
-   with package Block is new Cai.Block (<>);
+   with package Block is new Componolit.Interfaces.Block (<>);
    with package Client is new Block.Client (<>);
    Request_Count : Block.Count;
    Operation     : Block.Request_Kind;
-package Iteration is
+package Iteration
+is
+   package Cai renames Componolit.Interfaces;
 
    use all type Block.Id;
    use all type Block.Count;

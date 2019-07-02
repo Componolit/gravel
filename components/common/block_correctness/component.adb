@@ -1,13 +1,12 @@
 
-with Ada.Unchecked_Conversion;
-with Cai.Log;
-with Cai.Log.Client;
-with Cai.Block;
-with Cai.Block.Client;
-with Cai.Configuration;
-with Cai.Configuration.Client;
-with Cai.Timer;
-with Cai.Timer.Client;
+with Componolit.Interfaces.Log;
+with Componolit.Interfaces.Log.Client;
+with Componolit.Interfaces.Block;
+with Componolit.Interfaces.Block.Client;
+with Componolit.Interfaces.Rom;
+with Componolit.Interfaces.Rom.Client;
+with Componolit.Interfaces.Timer;
+with Componolit.Interfaces.Timer.Client;
 with SXML;
 with SXML.Parser;
 with SXML.Query;
@@ -25,8 +24,9 @@ is
 
    procedure Parse (S : String);
 
-   package Config is new Cai.Configuration.Client (Character, Positive, String, Parse);
+   package Config is new Cai.Rom.Client (Character, Positive, String, Parse);
    package Block is new Cai.Block (Byte, Unsigned_Long, Buffer);
+   package Timer_Client is new Cai.Timer.Client (Event);
 
    procedure Read (C : Block.Client_Instance;
                    B : Block.Size;
@@ -43,7 +43,7 @@ is
    function Str_To_Long (S : String) return Long_Integer;
 
    package Block_Client is new Block.Client (Event, Read, Write);
-   package Disk_Test is new Correctness (Block, Block_Client);
+   package Disk_Test is new Correctness (Block, Block_Client, Timer_Client);
 
    procedure Transfer_State_1 with
       Ghost,
@@ -57,9 +57,9 @@ is
       Contract_Cases => (Initialized => Disk_Test.State_Initialized,
                          not Initialized => not Disk_Test.State_Initialized);
 
-   Conf   : Cai.Configuration.Client_Session := Config.Create;
+   Conf   : Cai.Rom.Client_Session := Config.Create;
    Client : Block.Client_Session             := Block_Client.Create;
-   Timer  : Cai.Timer.Client_Session         := Cai.Timer.Client.Create;
+   Timer  : Cai.Timer.Client_Session         := Timer_Client.Create;
    Log    : Cai.Log.Client_Session           := Cai.Log.Client.Create;
    Data   : Disk_Test.Test_State;
 
@@ -117,15 +117,25 @@ is
       Count : Long_Integer;
       Size  : Long_Integer;
       Document : SXML.Document_Type (1 .. 100) := (others => SXML.Null_Node);
-      Result : SXML.Parser.Match_Type;
+      Result : SXML.Parser.Match_Type := SXML.Parser.Match_Invalid;
       Position : Natural;
       State : SXML.Query.State_Type;
+      use type SXML.Offset_Type;
    begin
-      SXML.Parser.Parse (S, Document, Result, Position);
+      if SXML.Valid_Content (S'First, S'Last) then
+         pragma Warnings (Off, "unused assignment to ""Position""");
+         SXML.Parser.Parse (S, Document, Result, Position);
+         pragma Warnings (On, "unused assignment to ""Position""");
+      end if;
       if Cai.Log.Client.Initialized (Log) then
          if not Block_Client.Initialized (Client) and Result = SXML.Parser.Match_OK then
             State := SXML.Query.Init (Document);
+            pragma Assert (Document'Length > 0);
+            pragma Assert (State.Result = SXML.Result_OK);
+            pragma Assert (SXML.Query.Offset (State) < Document'Length);
             pragma Assert (SXML.Query.Is_Valid (Document, State));
+            --  FIXME: Proof of SXML does not work, some postconditions are not recognized when required
+            --  as preconditions
             if State.Result = SXML.Result_OK and then SXML.Query.Is_Open (Document, State) then
                State := SXML.Query.Path (State, Document, "/device");
                if
@@ -198,8 +208,8 @@ is
       if not Config.Initialized (Conf) then
          Config.Initialize (Conf, Capability);
       end if;
-      if not Cai.Timer.Client.Initialized (Timer) then
-         Cai.Timer.Client.Initialize (Timer, Cap);
+      if not Timer_Client.Initialized (Timer) then
+         Timer_Client.Initialize (Timer, Cap);
       end if;
       if Cai.Log.Client.Initialized (Log) and Config.Initialized (Conf) then
          Cai.Log.Client.Info (Log, "Correctness");
@@ -220,6 +230,8 @@ is
       end if;
    end Destruct;
 
+   Output_Bounds : Boolean := True;
+
    procedure Event
    is
       use type Block.Size;
@@ -228,13 +240,21 @@ is
       if
          Cai.Log.Client.Initialized (Log)
          and Block_Client.Initialized (Client)
-         and Cai.Timer.Client.Initialized (Timer)
+         and Timer_Client.Initialized (Timer)
       then
          if
             Success
             and not Disk_Test.Bounds_Check_Finished (Data)
          then
             Disk_Test.Bounds_Check (Client, Data, Success, Log, Timer);
+            if Output_Bounds then
+               if Success then
+                  Cai.Log.Client.Info (Log, "Bounds check succeeded.");
+               else
+                  Cai.Log.Client.Error (Log, "Bounds check failed.");
+               end if;
+               Output_Bounds := False;
+            end if;
          end if;
 
          if

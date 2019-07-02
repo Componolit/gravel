@@ -4,7 +4,7 @@ CAI_BLOCK_INC_DIR = $(CAI_INC_DIR)/block
 CAI_LOG_INC_DIR = $(CAI_INC_DIR)/log
 CAI_TIMER_INC_DIR = $(CAI_INC_DIR)/timer
 CAI_PLATFORM_DIR = $(CAI_INC_DIR)/platform/genode
-CAI_CONFIG_DIR = $(CAI_INC_DIR)/configuration
+CAI_CONFIG_DIR = $(CAI_INC_DIR)/rom
 
 INC_DIR += $(CAI_INC_DIR) \
 	   $(CAI_PLATFORM_DIR) \
@@ -28,7 +28,7 @@ INC_DIR += $(CAI_INC_DIR) \
 	   $(CAI_CONFIG_DIR)/client/genode
 
 SRC_CC += cai_main.cc
-SRC_ADB += cai-component.adb
+SRC_ADB += componolit-interfaces-component.adb
 
 vpath cai_main.cc $(CAI_PLATFORM_DIR)
-vpath cai-component.adb $(CAI_PLATFORM_DIR)
+vpath componolit-interfaces-component.adb $(CAI_PLATFORM_DIR)

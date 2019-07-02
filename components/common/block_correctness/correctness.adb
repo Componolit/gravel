@@ -118,8 +118,8 @@ is
       T.Compared       := False;
       T.Write_Context  := LSC.Internal.SHA256.SHA256_Context_Init;
       T.Read_Context   := LSC.Internal.SHA256.SHA256_Context_Init;
-      Read_Ring.Initialize (T.Read_Data, (others => Block.Byte'First));
-      Write_Ring.Initialize (T.Write_Data, ((others => Block.Byte'First), T.Write_Context));
+      Read_Ring.Initialize (T.Read_Data);
+      Write_Ring.Initialize (T.Write_Data);
       Write_Permutation.Initialize (Block.Id (Max - 1));
       Read_Permutation.Initialize (Block.Id (Max - 1));
       Last_Context := T.Write_Context;
@@ -161,8 +161,8 @@ is
       if Client.Supported (C, Request.Kind) and then Client.Ready (C, Request) then
          Client.Enqueue (C, Request);
          Client.Submit (C);
-         Start := Cai.Timer.Client.Clock (Timer);
-         Last  := Cai.Timer.Client.Clock (Timer);
+         Start := Timer_Client.Clock (Timer);
+         Last  := Timer_Client.Clock (Timer);
       end if;
    end Bounds_Check;
 
@@ -284,7 +284,7 @@ is
       Write_Recv (C, T, Success, L);
       Write_Send (C, T, L);
       Update_Write_Cache (T, Client.Block_Size (C));
-      Current := Cai.Timer.Client.Clock (Timer);
+      Current := Timer_Client.Clock (Timer);
       Output.Progress ("Writing",
                        Long_Integer (T.Written),
                        (if
@@ -412,8 +412,8 @@ is
             Hash_Block (T.Read_Context, Buf (1 .. Block.Count'(1) * Client.Block_Size (C)));
          end;
       end loop;
-      if Cai.Timer.Client.Initialized (Timer) then
-         Current := Cai.Timer.Client.Clock (Timer);
+      if Timer_Client.Initialized (Timer) then
+         Current := Timer_Client.Clock (Timer);
       else
          Current := Cai.Timer.Time'First;
       end if;

@@ -1,10 +1,11 @@
 
-with Cai.Types;
-with Cai.Component;
+with Componolit.Interfaces.Types;
+with Componolit.Interfaces.Component;
 
 package Component with
    SPARK_Mode
 is
+   package Cai renames Componolit.Interfaces;
 
    Initialized : Boolean with Ghost;
 

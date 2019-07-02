@@ -1,19 +1,21 @@
 
-with Cai.Log;
-with Cai.Log.Client;
-with Cai.Block;
-with Cai.Block.Client;
-with Cai.Timer;
-with Cai.Timer.Client;
+with Componolit.Interfaces.Log;
+with Componolit.Interfaces.Log.Client;
+with Componolit.Interfaces.Block;
+with Componolit.Interfaces.Block.Client;
+with Componolit.Interfaces.Timer;
+with Componolit.Interfaces.Timer.Client;
 with LSC.Internal.SHA256;
 with Ringbuffer;
 
 generic
-   with package Block is new Cai.Block (<>);
+   with package Block is new Componolit.Interfaces.Block (<>);
    with package Client is new Block.Client (<>);
+   with package Timer_Client is new Componolit.Interfaces.Timer.Client (<>);
 package Correctness
 is
    pragma Unevaluated_Use_Of_Old (Allow);
+   package Cai renames Componolit.Interfaces;
 
    use type Block.Count;
    use type Block.Size;
@@ -22,13 +24,17 @@ is
    type Buffer_Index is mod 256;
    subtype Block_Buffer is Block.Buffer (1 .. 4096);
 
+   Null_Buffer : constant Block_Buffer := (others => Block.Byte'First);
+
    type Write_Cache is record
       Buffer  : Block_Buffer;
       Context : LSC.Internal.SHA256.Context_Type;
    end record;
 
-   package Read_Ring is new Ringbuffer (Block, Buffer_Index, Block_Buffer);
-   package Write_Ring is new Ringbuffer (Block, Buffer_Index, Write_Cache);
+   Null_Cache : constant Write_Cache := (Null_Buffer, LSC.Internal.SHA256.SHA256_Context_Init);
+
+   package Read_Ring is new Ringbuffer (Block, Buffer_Index, Block_Buffer, Null_Buffer);
+   package Write_Ring is new Ringbuffer (Block, Buffer_Index, Write_Cache, Null_Cache);
 
    type Test_State is record
       Last           : Block.Id;
@@ -65,7 +71,7 @@ is
                            Timer   :        Cai.Timer.Client_Session) with
       Pre  => Client.Initialized (C)
               and Cai.Log.Client.Initialized (L)
-              and Cai.Timer.Client.Initialized (Timer),
+              and Timer_Client.Initialized (Timer),
       Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L);
 
    function Bounds_Check_Finished (T : Test_State) return Boolean;
@@ -80,7 +86,7 @@ is
               and then Client.Block_Size (C) <= Block_Buffer'Length
               and then Client.Block_Size (C) mod (LSC.Internal.SHA256.Block_Size / 8) = 0
               and then Cai.Log.Client.Initialized (L)
-              and then Cai.Timer.Client.Initialized (Timer)
+              and then Timer_Client.Initialized (Timer)
               and then State_Initialized,
       Post => Client.Initialized (C)
               and then Cai.Log.Client.Initialized (L)
@@ -96,7 +102,7 @@ is
                    Timer   :        Cai.Timer.Client_Session) with
       Pre  => Client.Initialized (C)
               and then Cai.Log.Client.Initialized (L)
-              and then Cai.Timer.Client.Initialized (Timer)
+              and then Timer_Client.Initialized (Timer)
               and then State_Initialized
               and then Client.Block_Size (C) <= Block_Buffer'Length
               and then Client.Block_Size (C) mod (LSC.Internal.SHA256.Block_Size / 8) = 0,

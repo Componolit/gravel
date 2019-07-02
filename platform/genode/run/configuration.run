@@ -1,0 +1,29 @@
+build "core init test/cai_configuration"
+
+create_boot_directory
+
+install_config {
+	<config>
+		<parent-provides>
+			<service name="LOG"/>
+			<service name="PD"/>
+			<service name="CPU"/>
+			<service name="ROM"/>
+		</parent-provides>
+		<default-route>
+			<any-service> <parent/> </any-service>
+		</default-route>
+		<default caps="50"/>
+		<start name="test-configuration" caps="100">
+			<resource name="RAM" quantum="2M"/>
+                        <config><raw>Example</raw></config>
+		</start>
+	</config>
+}
+
+build_boot_image "core ld.lib.so spark.lib.so ada_interface.lib.so init test-configuration"
+
+append qemu_args "-nographic "
+append xen_args  { sdl="0" }
+
+run_genode_until forever
