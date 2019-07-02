@@ -4,6 +4,7 @@ set build_components {
     timer
     server/log_terminal
     test/block/server
+    server/block_delay
     test/latency
 }
 
@@ -48,8 +49,23 @@ append config {
         </provides>
     </start>
 
+    <start name="block_delay">
+        <resource name="RAM" quantum="4M"/>
+        <provides>
+            <service name="Block"/>
+        </provides>
+        <route>
+            <service name="Block"><child name="test-block-server"/></service>
+            <any-service><parent/><any-child/></any-service>
+        </route>
+    </start>
+
     <start name="block-test-latency">
         <resource name="RAM" quantum="16M"/>
+        <route>
+            <service name="Block"><child name="block_delay"/></service>
+            <any-service><parent/><any-child/></any-service>
+        </route>
     </start>
 
     <start name="log_terminal">
@@ -72,6 +88,7 @@ set boot_modules {
     timer
     log_terminal
     test-block-server
+    block_delay
     block-test-latency
 }
 
