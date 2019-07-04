@@ -30,7 +30,7 @@ is
       Next : Cai.Timer.Time := Cai.Timer.Time'Last;
    begin
       for C of Request_Cache loop
-         if C.Send_Time < Next then
+         if C.Ready and then C.Send_Time < Next then
             Next := C.Send_Time;
          end if;
       end loop;
@@ -85,6 +85,7 @@ is
                Instance_Client.Read (Client, R);
             end if;
             Request_Cache (I).C_Request.Status := R.Status;
+            Request_Cache (I).Ready            := True;
             exit;
          end if;
       end loop;
@@ -112,15 +113,13 @@ is
       end loop;
    end Acknowledge_Outstanding_Requests;
 
-   Block_Data_Cache : Buffer (1 .. 65536) := (others => 0);
-
    procedure Handle_Incoming_Request (Stop : out Boolean);
 
    procedure Handle_Incoming_Request (Stop : out Boolean)
    is
       use type Componolit.Interfaces.Timer.Time;
-      R         : Instance.Request                 := Instance.Head (Server);
-      Recv_Time : Componolit.Interfaces.Timer.Time := Time.Clock (Timer);
+      R         : constant Instance.Request                 := Instance.Head (Server);
+      Recv_Time : constant Componolit.Interfaces.Timer.Time := Time.Clock (Timer);
       Index     : Integer;
    begin
       Get_Free_Cache_Entry (Index, Stop);
@@ -200,8 +199,8 @@ is
                   when Types.None | Types.Undefined =>
                      Request_Cache (I) := Null_Cache_Entry;
                   when Types.Sync | Types.Trim | Types.Read | Types.Write =>
-                     Instance_Client.Enqueue (Client, Request_Cache (I).C_Request);
                      Request_Cache (I).Processed := True;
+                     Instance_Client.Enqueue (Client, Request_Cache (I).C_Request);
                end case;
             else
                Request_Cache (I) := Null_Cache_Entry;
@@ -232,31 +231,41 @@ is
             exit when Stop;
          end loop;
          Process_Requests;
+         Next_Interrupt := Duration (Get_Next_Ready_Time - Time.Clock (Timer));
+         Time.Set_Timeout (Timer, Next_Interrupt);
+         --  FIXME: too short delays or removing this output cause the program to hang
+         --  when no request is in flight and no time is scheduled
+         Cai.Log.Client.Info (Log, "Event time: " & Cai.Log.Image (Duration (Get_Next_Ready_Time))
+                                   & " " & Cai.Log.Image (Duration (Time.Clock (Timer)))
+                                   & " " & Cai.Log.Image (Next_Interrupt));
+         Instance.Unblock_Client (Server);
       end if;
-      Next_Interrupt := Duration (Get_Next_Ready_Time - Time.Clock (Timer));
-      Time.Set_Timeout (Timer, Next_Interrupt);
    end Event;
 
    function Block_Count (S : Types.Server_Instance) return Types.Count
    is
+      pragma Unreferenced (S);
    begin
       return Instance_Client.Block_Count (Client);
    end Block_Count;
 
    function Block_Size (S : Types.Server_Instance) return Types.Size
    is
+      pragma Unreferenced (S);
    begin
       return Instance_Client.Block_Size (Client);
    end Block_Size;
 
    function Writable (S : Types.Server_Instance) return Boolean
    is
+      pragma Unreferenced (S);
    begin
       return Instance_Client.Writable (Client);
    end Writable;
 
    function Maximum_Transfer_Size (S : Types.Server_Instance) return Types.Byte_Length
    is
+      pragma Unreferenced (S);
       use type Types.Byte_Length;
    begin
       if Instance_Client.Maximum_Transfer_Size (Client) < 65536 then
@@ -270,6 +279,8 @@ is
                          L : String;
                          B : Types.Byte_Length)
    is
+      pragma Unreferenced (S);
+      pragma Unreferenced (B);
    begin
       if not Cai.Log.Client.Initialized (Log) then
          Cai.Log.Client.Initialize (Log, Capability, L);
@@ -298,6 +309,7 @@ is
 
    procedure Finalize (S : Types.Server_Instance)
    is
+      pragma Unreferenced (S);
    begin
       if Cai.Log.Client.Initialized (Log) then
          Cai.Log.Client.Finalize (Log);
@@ -313,6 +325,8 @@ is
                     L :     Types.Count;
                     D : out Buffer)
    is
+      pragma Unreferenced (C);
+      pragma Unreferenced (B);
       use type Types.Request_Kind;
       use type Types.Id;
       use type Types.Count;
@@ -344,6 +358,8 @@ is
                    L : Types.Count;
                    D : Buffer)
    is
+      pragma Unreferenced (C);
+      pragma Unreferenced (B);
       use type Types.Request_Kind;
       use type Types.Id;
       use type Types.Count;
