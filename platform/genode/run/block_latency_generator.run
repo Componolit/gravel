@@ -51,6 +51,11 @@ append config {
 
     <start name="block_delay">
         <resource name="RAM" quantum="4M"/>
+        <config>
+            <xml>
+                <test delay="0.1" device="dev0"/>
+            </xml>
+        </config>
         <provides>
             <service name="Block"/>
         </provides>
