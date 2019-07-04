@@ -17,8 +17,6 @@ is
       end if;
    end Start;
 
-   Server_Instance : Types.Server_Session := Block.Server.Instance.Create;
-
    procedure Request
    is
       Label : String (1 .. 160);
@@ -26,10 +24,10 @@ is
       Valid : Boolean;
    begin
       Instance.Session_Request (Dispatcher, Valid, Label, Last);
-      if Valid and not Block.Server.Instance.Initialized (Server_Instance) then
-         Instance.Session_Accept (Dispatcher, Server_Instance, Label (1 .. Last));
+      if Valid and not Block.Server.Instance.Initialized (Block.Server.Server) then
+         Instance.Session_Accept (Dispatcher, Block.Server.Server, Label (1 .. Last));
       end if;
-      Instance.Session_Cleanup (Dispatcher, Server_Instance);
+      Instance.Session_Cleanup (Dispatcher, Block.Server.Server);
    end Request;
 
 end Block.Service;
