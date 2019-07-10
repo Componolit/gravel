@@ -81,4 +81,4 @@ build_boot_image $boot_modules
 
 append qemu_args " -m 512 -nographic"
 
-run_genode_until forever
+run_genode_until "Test finished..*\n" 20

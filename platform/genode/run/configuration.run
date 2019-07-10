@@ -26,4 +26,10 @@ build_boot_image "core ld.lib.so spark.lib.so ada_interface.lib.so init test-con
 append qemu_args "-nographic "
 append xen_args  { sdl="0" }
 
-run_genode_until forever
+run_genode_until "Log session configured with label: Example.*\n" 10
+
+grep_output {\[init -\> test-configuration}
+
+compare_output_to {
+[init -> test-configuration -> Example] Log session configured with label: Example
+}

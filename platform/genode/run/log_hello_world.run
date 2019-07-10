@@ -25,4 +25,13 @@ build_boot_image "core ld.lib.so spark.lib.so ada_interface.lib.so init test-hel
 append qemu_args "-nographic "
 append xen_args  { sdl="0" }
 
-run_genode_until forever
+run_genode_until ".*exited with exit value 0.*\n" 20
+
+grep_output {\[init -\> test-hello_world}
+
+compare_output_to {
+[init -> test-hello_world -> Hello_World] Hello World!
+[init -> test-hello_world -> Hello_World] Warning: Hello World!
+[init -> test-hello_world -> Hello_World] Error: Hello World!
+[init -> test-hello_world -> Hello_World] Destructing...
+}
