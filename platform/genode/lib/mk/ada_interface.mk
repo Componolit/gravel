@@ -30,7 +30,6 @@ SRC_ADB += cxx-block-server.adb \
 	   componolit-interfaces-block-client.adb \
 	   componolit-interfaces-block-server.adb \
 	   componolit-interfaces-block-dispatcher.adb \
-	   componolit-interfaces-block-util.adb \
 	   componolit-interfaces-log.adb \
 	   componolit-interfaces-log-client.adb \
 	   componolit-interfaces-timer-client.adb \
