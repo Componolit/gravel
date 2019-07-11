@@ -33,6 +33,13 @@ is
       Data      : Burst (0 .. Long_Integer (Request_Count - 1));
    end record;
 
+   type Request_Cache is array (Client.Request_Id'Range) of Client.Request;
+
+   Cache : Request_Cache := (others => Client.Create_Request);
+
+   procedure Allocate_Request (Id      : out Client.Request_Id;
+                               Success : out Boolean);
+
    procedure Initialize (T      : out Test;
                          Offset :     Block.Count;
                          S      :     Boolean;

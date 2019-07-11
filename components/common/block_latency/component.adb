@@ -17,44 +17,34 @@ is
    subtype Long_Natural is Long_Integer range 0 .. Long_Integer'Last;
    type Buffer is array (Long_Natural range <>) of Byte;
 
+   type Request_Id is mod 2 ** 5;
+
    package Block is new Cai.Block (Byte, Long_Natural, Buffer);
 
    procedure Write (C :     Block.Client_Instance;
-                    B :     Block.Size;
-                    S :     Block.Id;
-                    L :     Block.Count;
+                    I :     Request_Id;
                     D : out Buffer);
 
    procedure Write (C :     Block.Client_Instance;
-                    B :     Block.Size;
-                    S :     Block.Id;
-                    L :     Block.Count;
+                    I :     Request_Id;
                     D : out Buffer)
    is
       pragma Unreferenced (C);
-      pragma Unreferenced (B);
-      pragma Unreferenced (S);
-      pragma Unreferenced (L);
+      pragma Unreferenced (I);
    begin
       D := (others => 0);
    end Write;
 
    procedure Read (C : Block.Client_Instance;
-                   B : Block.Size;
-                   S : Block.Id;
-                   L : Block.Count;
+                   I : Request_Id;
                    D : Buffer);
 
    procedure Read (C : Block.Client_Instance;
-                   B : Block.Size;
-                   S : Block.Id;
-                   L : Block.Count;
+                   I : Request_Id;
                    D : Buffer)
    is
       pragma Unreferenced (C);
-      pragma Unreferenced (B);
-      pragma Unreferenced (S);
-      pragma Unreferenced (L);
+      pragma Unreferenced (I);
       pragma Warnings (Off, "variable ""Temp"" is assigned but never read");
       pragma Warnings (Off, "possibly useless assignment to ""Temp"", value might not be referenced");
       --  D is read to force the platform to provide the buffer
@@ -64,7 +54,7 @@ is
       Temp := D;
    end Read;
 
-   package Block_Client is new Block.Client (Event, Read, Write);
+   package Block_Client is new Block.Client (Request_Id, Event, Read, Write);
    Client : Block.Client_Session;
    Log    : Cai.Log.Client_Session;
    Xml    : Cai.Log.Client_Session;

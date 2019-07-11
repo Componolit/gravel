@@ -15,6 +15,21 @@ package body Iteration is
       null;
    end Event;
 
+   procedure Allocate_Request (Id      : out Client.Request_Id;
+                               Success : out Boolean)
+   is
+   begin
+      Success := False;
+      Id := Client.Request_Id'First;
+      for I in Cache'Range loop
+         if Client.Request_State (Cache (I)) = Block.Raw then
+            Id := I;
+            Success := True;
+            exit;
+         end if;
+      end loop;
+   end Allocate_Request;
+
    package Timer_Client is new Cai.Timer.Client (Event);
 
    Timer : Cai.Timer.Client_Session := Timer_Client.Create;
@@ -22,19 +37,19 @@ package body Iteration is
    procedure Start (Item   :        Client.Request;
                     Offset :        Block.Count;
                     Data   : in out Burst) with
-      Pre => Long_Integer (Item.Start - Offset) in Data'Range;
+      Pre => Long_Integer (Client.Request_Start (Item) - Offset) in Data'Range;
 
    procedure Finish (Item   :        Client.Request;
                      Offset :        Block.Count;
                      Data   : in out Burst) with
-      Pre => Long_Integer (Item.Start - Offset) in Data'Range;
+      Pre => Long_Integer (Client.Request_Start (Item) - Offset) in Data'Range;
 
    procedure Start (Item   :        Client.Request;
                     Offset :        Block.Count;
                     Data   : in out Burst)
    is
    begin
-      Data (Long_Integer (Item.Start - Offset)).Start := Timer_Client.Clock (Timer);
+      Data (Long_Integer (Client.Request_Start (Item) - Offset)).Start := Timer_Client.Clock (Timer);
    end Start;
 
    procedure Finish (Item   :        Client.Request;
@@ -42,8 +57,8 @@ package body Iteration is
                      Data   : in out Burst)
    is
    begin
-      Data (Long_Integer (Item.Start - Offset)).Finish  := Timer_Client.Clock (Timer);
-      Data (Long_Integer (Item.Start - Offset)).Success := Item.Status = Block.Ok;
+      Data (Long_Integer (Client.Request_Start (Item) - Offset)).Finish  := Timer_Client.Clock (Timer);
+      Data (Long_Integer (Client.Request_Start (Item) - Offset)).Success := Client.Request_State (Item) = Block.Ok;
    end Finish;
 
    procedure Initialize (T      : out Test;
@@ -68,27 +83,18 @@ package body Iteration is
    procedure Send (C   : in out Block.Client_Session;
                    T   : in out Test;
                    Log : in out Cai.Log.Client_Session) is
-      Req : Client.Request (Kind => Operation);
+      Id    : Client.Request_Id;
+      Ready : Boolean;
    begin
-      Req.Priv := Block.Null_Data;
-      Req.Length := 1;
-      Req.Status := Block.Raw;
       if T.Sent < T.Data'Last then
          if Client.Initialized (C) then
             for I in T.Sent .. T.Data'Last - 1 loop
-               Req.Start  := Block.Id (I + 1) + T.Offset;
-               exit when not Client.Ready (C, Req);
-               case Operation is
-                  pragma Warnings (Off, "this code can never be executed and has been deleted");
-                  --  Operation is a generic parameter of this package
-                  --  In a package instance the compiler deletes the branches that cannot be reached
-                  when Block.Write | Block.Read =>
-                     Start (Req, T.Offset, T.Data);
-                     Client.Enqueue (C, Req);
-                  when others =>
-                     null;
-                  pragma Warnings (On, "this code can never be executed and has been deleted");
-               end case;
+               Allocate_Request (Id, Ready);
+               exit when not Ready;
+               Client.Allocate_Request (C, Cache (Id), Operation, Block.Id (I + 1) + T.Offset, 1, Id);
+               exit when Client.Request_State (Cache (Id)) = Block.Raw;
+               Start (Cache (Id), T.Offset, T.Data);
+               Client.Enqueue (C, Cache (Id));
                T.Sent := T.Sent + 1;
             end loop;
             Client.Submit (C);
@@ -98,21 +104,8 @@ package body Iteration is
       end if;
       if T.Sent = T.Data'Last and T.Received = T.Data'Last then
          if Operation = Block.Write and T.Sync then
-            declare
-               S : constant Client.Request := (Kind   => Block.Sync,
-                                               Priv   => Block.Null_Data,
-                                               Start  => 0,
-                                               Length => 0,
-                                               Status => Block.Raw);
-            begin
-               if Client.Supported (C, S.Kind) then
-                  while not Client.Ready (C, S) loop
-                     null;
-                  end loop;
-                  Client.Enqueue (C, S);
-                  Client.Submit (C);
-               end if;
-            end;
+            null;
+            --  TODO: Sync after sync has been specified completely
          end if;
          T.Finished := True;
       end if;
@@ -120,26 +113,31 @@ package body Iteration is
 
    procedure Receive (C   : in out Block.Client_Session;
                       T   : in out Test;
-                      Log : in out Cai.Log.Client_Session) is
+                      Log : in out Cai.Log.Client_Session)
+   is
+      Id : Client.Request_Id;
+      Rc : Client.Request_Capability;
    begin
       if Client.Initialized (C) then
          while T.Received < T.Data'Last loop
-            declare
-               R : Client.Request := Client.Next (C);
-            begin
-               if R.Kind = Operation then
-                  if R.Kind = Block.Read and then R.Status = Block.Ok then
-                     Client.Read (C, R);
-                  end if;
-                  Finish (R, T.Offset, T.Data);
-                  T.Received := T.Received + 1;
-                  Client.Release (C, R);
-               elsif R.Kind = Block.None then
-                  exit;
-               else
-                  Cai.Log.Client.Warning (Log, "Received unexpected request");
+            Client.Update_Response_Queue (C, Rc);
+            exit when not Client.Valid_Capability (Rc);
+            Id := Client.Request_Identifier (Rc);
+            Client.Update_Request (C, Cache (Id), Rc);
+            if Client.Request_Type (Cache (Id)) = Operation then
+               if
+                  Client.Request_Type (Cache (Id)) = Block.Write
+                  and then Client.Request_State (Cache (Id)) = Block.Ok
+               then
+                  Client.Read (C, Cache (Id));
                end if;
-            end;
+               Finish (Cache (Id), T.Offset, T.Data);
+               T.Received := T.Received + 1;
+               Client.Release (C, Cache (Id));
+            else
+               Cai.Log.Client.Warning (Log, "Received unexpected request");
+               Client.Release (C, Cache (Id));
+            end if;
          end loop;
       else
          Cai.Log.Client.Error (Log, "Failed to run test, client not Initialized");
