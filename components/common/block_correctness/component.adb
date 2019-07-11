@@ -22,6 +22,8 @@ is
    type Unsigned_Long is range 0 .. 2 ** 63 - 1;
    type Buffer is array (Unsigned_Long range <>) of Byte;
 
+   type Request_Id is mod 256;
+
    procedure Parse (S : String);
 
    package Config is new Cai.Rom.Client (Character, Positive, String, Parse);
@@ -29,20 +31,16 @@ is
    package Timer_Client is new Cai.Timer.Client (Event);
 
    procedure Read (C : Block.Client_Instance;
-                   B : Block.Size;
-                   S : Block.Id;
-                   L : Block.Count;
+                   I : Request_Id;
                    D : Buffer);
 
    procedure Write (C :     Block.Client_Instance;
-                    B :     Block.Size;
-                    S :     Block.Id;
-                    L :     Block.Count;
+                    I :     Request_Id;
                     D : out Buffer);
 
    function Str_To_Long (S : String) return Long_Integer;
 
-   package Block_Client is new Block.Client (Event, Read, Write);
+   package Block_Client is new Block.Client (Request_Id, Event, Read, Write);
    package Disk_Test is new Correctness (Block, Block_Client, Timer_Client);
 
    procedure Transfer_State_1 with
@@ -67,29 +65,21 @@ is
    Capability : Cai.Types.Capability;
 
    procedure Write (C :     Block.Client_Instance;
-                    B :     Block.Size;
-                    S :     Block.Id;
-                    L :     Block.Count;
+                    I :     Request_Id;
                     D : out Buffer)
    is
       pragma Unreferenced (C);
-      pragma Unreferenced (B);
-      pragma Unreferenced (L);
    begin
-      Disk_Test.Block_Write (Data, S, D);
+      Disk_Test.Block_Write (Data, I, D);
    end Write;
 
    procedure Read (C : Block.Client_Instance;
-                   B : Block.Size;
-                   S : Block.Id;
-                   L : Block.Count;
+                   I : Request_Id;
                    D : Buffer)
    is
       pragma Unreferenced (C);
-      pragma Unreferenced (B);
-      pragma Unreferenced (L);
    begin
-      Disk_Test.Block_Read (Data, S, D);
+      Disk_Test.Block_Read (Data, I, D);
    end Read;
 
    function Str_To_Long (S : String) return Long_Integer

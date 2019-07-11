@@ -21,10 +21,10 @@ is
    use all type Block.Request_Kind;
    use all type Block.Request_Status;
 
-   procedure Write_Recv (C       : in out Block.Client_Session;
-                         T       : in out Test_State;
-                         Success : in out Boolean;
-                         L       : in out Cai.Log.Client_Session) with
+   procedure Recv (C       : in out Block.Client_Session;
+                   T       : in out Test_State;
+                   Success : in out Boolean;
+                   L       : in out Cai.Log.Client_Session) with
       Pre  => Client.Initialized (C) and Cai.Log.Client.Initialized (L),
       Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
               and Client.Block_Size (C)'Old = Client.Block_Size (C);
@@ -38,14 +38,6 @@ is
                and then Client.Block_Size (C) <= Block_Buffer'Length)
               and Cai.Log.Client.Initialized (L)
               and Write_Permutation.Initialized,
-      Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
-              and Client.Block_Size (C)'Old = Client.Block_Size (C);
-
-   procedure Read_Recv (C       : in out Block.Client_Session;
-                        T       : in out Test_State;
-                        Success : in out Boolean;
-                        L       : in out Cai.Log.Client_Session) with
-      Pre  => Client.Initialized (C) and Cai.Log.Client.Initialized (L),
       Post => Client.Initialized (C) and Cai.Log.Client.Initialized (L)
               and Client.Block_Size (C)'Old = Client.Block_Size (C);
 
@@ -132,37 +124,39 @@ is
                            L       : in out Cai.Log.Client_Session;
                            Timer   :        Cai.Timer.Client_Session)
    is
-      Request : constant Client.Request := (Kind   => Block.Read,
-                                            Priv   => Block.Null_Data,
-                                            Start  => Block.Id (Client.Block_Count (C)),
-                                            Length => 1,
-                                            Status => Block.Raw);
-      R : Client.Request := Client.Next (C);
+      Id : Client.Request_Id;
+      Rc : Client.Request_Capability;
    begin
       Success := True;
-      if R.Kind = Block.Read then
-         Success := R.Status = Block.Error;
+      Client.Update_Response_Queue (C, Rc);
+      if Client.Valid_Capability (Rc) then
+         Id := Client.Request_Identifier (Rc);
+         Client.Update_Request (C, Cache (Id), Rc);
+         Success := Client.Request_State (Cache (Id)) = Block.Error;
          if not Success then
             Cai.Log.Client.Error (L, "Bounds check failed, block "
-                                     & Cai.Log.Image (Cai.Log.Unsigned (R.Start))
+                                     & Cai.Log.Image (Cai.Log.Unsigned (Client.Request_Start (Cache (Id))))
                                      & " should not be: "
-                                     & (case R.Status is
+                                     & (case Client.Request_State (Cache (Id)) is
                                         when Block.Raw          => "Raw",
+                                        when Block.Allocated    => "Allocated",
+                                        when Block.Pending      => "Pending",
                                         when Block.Ok           => "Ok",
-                                        when Block.Error        => "Error",
-                                        when Block.Acknowledged => "Acknowledged"));
+                                        when Block.Error        => "Error"));
          end if;
-         pragma Warnings (Off, "unused assignment to ""R""");
-         Client.Release (C, R);
-         pragma Warnings (On, "unused assignment to ""R""");
+         Client.Release (C, Cache (Id));
          T.Bounds_Checked := True;
          return;
       end if;
-      if Client.Supported (C, Request.Kind) and then Client.Ready (C, Request) then
-         Client.Enqueue (C, Request);
-         Client.Submit (C);
-         Start := Timer_Client.Clock (Timer);
-         Last  := Timer_Client.Clock (Timer);
+      Allocate_Request (Id, Success);
+      if Success then
+         Client.Allocate_Request (C, Cache (Id), Block.Read, Block.Id (Client.Block_Count (C)), 1, Id);
+         if Client.Request_State (Cache (Id)) = Block.Allocated then
+            Client.Enqueue (C, Cache (Id));
+            Client.Submit (C);
+            Start := Timer_Client.Clock (Timer);
+            Last  := Timer_Client.Clock (Timer);
+         end if;
       end if;
    end Bounds_Check;
 
@@ -186,85 +180,100 @@ is
       end loop;
    end Hash_Block;
 
-   procedure Write_Recv (C       : in out Block.Client_Session;
-                         T       : in out Test_State;
-                         Success : in out Boolean;
-                         L       : in out Cai.Log.Client_Session)
+   procedure Recv (C       : in out Block.Client_Session;
+                   T       : in out Test_State;
+                   Success : in out Boolean;
+                   L       : in out Cai.Log.Client_Session)
    is
       Size : constant Block.Size := Client.Block_Size (C) with Ghost;
+      Rc   : Client.Request_Capability;
+      Id   : Client.Request_Id;
    begin
-      while T.Written < T.Count loop
+      while T.Written < T.Count  or T.Read < T.Count loop
          pragma Loop_Invariant (Client.Initialized (C));
          pragma Loop_Invariant (Cai.Log.Client.Initialized (L));
          pragma Loop_Invariant (Client.Block_Size (C) = Size);
-         declare
-            R : Client.Request := Client.Next (C);
-         begin
-            if R.Kind = Block.Write then
+         Client.Update_Response_Queue (C, Rc);
+         exit when not Client.Valid_Capability (Rc);
+         Id := Client.Request_Identifier (Rc);
+         Client.Update_Request (C, Cache (Id), Rc);
+         case Client.Request_Type (Cache (Id)) is
+            when Block.Write =>
                T.Written := T.Written + 1;
-               Success   := R.Status = Block.Ok;
+               Success := Client.Request_State (Cache (Id)) = Block.Ok;
                if not Success then
                   Cai.Log.Client.Error (L, "Write received erroneous request "
-                                           & Cai.Log.Image (Cai.Log.Unsigned (R.Start)) & "/"
+                                           & Cai.Log.Image (Cai.Log.Unsigned (Client.Request_Start (Cache (Id)))) & "/"
                                            & Cai.Log.Image (Long_Integer (Client.Block_Count (C))));
                end if;
-               pragma Warnings (Off, "unused assignment to ""R""");
-               Client.Release (C, R);
-               pragma Warnings (On, "unused assignment to ""R""");
-            else
-               exit;
-            end if;
-         end;
+               Client.Release (C, Cache (Id));
+            when Block.Read =>
+               T.Read := T.Read + 1;
+               if
+                  Client.Request_State (Cache (Id)) = Block.Ok
+                  and then Read_Ring.Has_Block (T.Read_Data, Client.Request_Start (Cache (Id)))
+               then
+                  Client.Read (C, Cache (Id));
+                  Success := True;
+               else
+                  Cai.Log.Client.Error (L, "Read received erroneous request "
+                                           & Cai.Log.Image (Cai.Log.Unsigned (Client.Request_Start (Cache (Id)))) & "/"
+                                           & Cai.Log.Image (Long_Integer (Client.Block_Count (C))));
+                  Success := False;
+               end if;
+               Client.Release (C, Cache (Id));
+            when others =>
+               null;
+         end case;
       end loop;
-   end Write_Recv;
+   end Recv;
 
    procedure Write_Send (C : in out Block.Client_Session;
                          T : in out Test_State;
                          L : in out Cai.Log.Client_Session)
    is
-      Request : Client.Request := (Kind   => Block.Write,
-                                   Priv   => Block.Null_Data,
-                                   Start  => 0,
-                                   Length => 1,
-                                   Status => Block.Raw);
-      W : Write_Cache;
-      Size : constant Block.Size := Client.Block_Size (C) with Ghost;
+      W     : Write_Cache;
+      Size  : constant Block.Size := Client.Block_Size (C) with Ghost;
+      Id    : Client.Request_Id;
+      Ready : Boolean;
+      Start : Block.Id;
    begin
-      if T.Sent < T.Count and Client.Supported (C, Request.Kind) then
+      if T.Sent < T.Count then
          loop
             pragma Loop_Invariant (Client.Initialized (C));
             pragma Loop_Invariant (Cai.Log.Client.Initialized (L));
-            pragma Loop_Invariant (Client.Supported (C, Request.Kind));
             pragma Loop_Invariant (Client.Block_Size (C) = Size);
-            exit when T.Sent >= T.Count;
+            Allocate_Request (Id, Ready);
+            exit when T.Sent >= T.Count or not Ready;
             if T.Last_Finished then
                if Write_Ring.Block_Ready (T.Write_Data) then
-                  Request.Start := Write_Ring.Block_Peek (T.Write_Data);
+                  Start := Write_Ring.Block_Peek (T.Write_Data);
                else
                   Cai.Log.Client.Warning (L, "Write cache depleted, generating block on demand...");
                   if Write_Permutation.Has_Element then
-                     Write_Permutation.Next (Request.Start);
+                     Write_Permutation.Next (Start);
                   else
-                     Request.Start := T.Last + 1;
+                     Start := T.Last + 1;
                      Cai.Log.Client.Error (L, "Block permutation exceeded, increasing block number (Write).");
                   end if;
                end if;
-               T.Last := Request.Start;
+               T.Last := Start;
                T.Last_Finished := False;
             else
-               Request.Start := T.Last;
+               Start := T.Last;
             end if;
-            exit when not Client.Ready (C, Request);
+            Client.Allocate_Request (C, Cache (Id), Block.Write, Start, 1, Id);
+            exit when Client.Request_State (Cache (Id)) = Block.Raw;
             if Write_Ring.Block_Ready (T.Write_Data) then
                Write_Ring.Get_Block (T.Write_Data, W);
                T.Write_Context := W.Context;
                Write_Buffer := W.Buffer;
             else
-               Generate_Block (Request.Start, Write_Buffer);
+               Generate_Block (Start, Write_Buffer);
                Hash_Block (T.Write_Context, Write_Buffer (1 .. Block.Count'(1) * Client.Block_Size (C)));
                Last_Context := T.Write_Context;
             end if;
-            Client.Enqueue (C, Request);
+            Client.Enqueue (C, Cache (Id));
             T.Sent := T.Sent + 1;
             T.Last_Finished := True;
          end loop;
@@ -281,7 +290,7 @@ is
       Current : Cai.Timer.Time;
    begin
       Success := True;
-      Write_Recv (C, T, Success, L);
+      Recv (C, T, Success, L);
       Write_Send (C, T, L);
       Update_Write_Cache (T, Client.Block_Size (C));
       Current := Timer_Client.Clock (Timer);
@@ -310,78 +319,43 @@ is
       return T.Written = T.Count;
    end Write_Finished;
 
-   procedure Read_Recv (C       : in out Block.Client_Session;
-                        T       : in out Test_State;
-                        Success : in out Boolean;
-                        L       : in out Cai.Log.Client_Session)
-   is
-      Size : constant Block.Size := Client.Block_Size (C) with Ghost;
-   begin
-      while T.Read < T.Count loop
-         pragma Loop_Invariant (Client.Initialized (C));
-         pragma Loop_Invariant (Cai.Log.Client.Initialized (L));
-         pragma Loop_Invariant (Client.Block_Size (C) = Size);
-         declare
-            R : Client.Request := Client.Next (C);
-         begin
-            if R.Kind = Block.Read then
-               if R.Status = Block.Ok and then Read_Ring.Has_Block (T.Read_Data, R.Start) then
-                  Client.Read (C, R);
-               else
-                  Cai.Log.Client.Error (L, "Read received erroneous request "
-                                           & Cai.Log.Image (Cai.Log.Unsigned (R.Start)) & "/"
-                                           & Cai.Log.Image (Long_Integer (Client.Block_Count (C))));
-                  Success := False;
-               end if;
-               T.Read := T.Read + 1;
-               pragma Warnings (Off, "unused assignment to ""R""");
-               Client.Release (C, R);
-               pragma Warnings (On, "unused assignment to ""R""");
-            else
-               exit;
-            end if;
-         end;
-      end loop;
-   end Read_Recv;
-
    procedure Read_Send (C       : in out Block.Client_Session;
                         T       : in out Test_State;
                         Success : in out Boolean;
                         L       : in out Cai.Log.Client_Session)
    is
-      Request : Client.Request := (Kind   => Block.Read,
-                                   Priv   => Block.Null_Data,
-                                   Start  => 0,
-                                   Length => 1,
-                                   Status => Block.Raw);
-      Size : constant Block.Size := Client.Block_Size (C) with Ghost;
+      Size  : constant Block.Size := Client.Block_Size (C) with Ghost;
+      Start : Block.Id;
+      Id    : Client.Request_Id;
+      Ready : Boolean;
    begin
-      if T.Sent < T.Count and Client.Supported (C, Request.Kind) then
+      if T.Sent < T.Count then
          loop
             pragma Loop_Invariant (Client.Initialized (C));
             pragma Loop_Invariant (Cai.Log.Client.Initialized (L));
-            pragma Loop_Invariant (Client.Supported (C, Request.Kind));
             pragma Loop_Invariant (Client.Block_Size (C) = Size);
-            exit when not Read_Ring.Free (T.Read_Data) or T.Sent >= T.Count;
+            Allocate_Request (Id, Ready);
+            exit when not Read_Ring.Free (T.Read_Data) or T.Sent >= T.Count or not Ready;
             if T.Last_Finished then
                if Read_Permutation.Has_Element then
-                  Read_Permutation.Next (Request.Start);
+                  Read_Permutation.Next (Start);
                else
-                  Request.Start := T.Last + 1;
+                  Start := T.Last + 1;
                   Cai.Log.Client.Error (L, "Block permutation exceeded, increasing block number (Read).");
                end if;
                T.Last_Finished := False;
-               T.Last := Request.Start;
+               T.Last := Start;
             else
-               Request.Start := T.Last;
+               Start := T.Last;
             end if;
-            exit when not Client.Ready (C, Request);
-            Client.Enqueue (C, Request);
-            if not Read_Ring.Has_Block (T.Read_Data, Request.Start) then
-               Read_Ring.Add (T.Read_Data, Request.Start);
+            Client.Allocate_Request (C, Cache (Id), Block.Read, Start, 1, Id);
+            exit when Client.Request_State (Cache (Id)) = Block.Raw;
+            Client.Enqueue (C, Cache (Id));
+            if not Read_Ring.Has_Block (T.Read_Data, Start) then
+               Read_Ring.Add (T.Read_Data, Start);
             else
                Cai.Log.Client.Error (L, "Tried to insert duplicated block: "
-                                        & Cai.Log.Image (Cai.Log.Unsigned (Request.Start)));
+                                        & Cai.Log.Image (Cai.Log.Unsigned (Start)));
                Success := False;
             end if;
             T.Sent := T.Sent + 1;
@@ -402,7 +376,7 @@ is
       Todo : Long_Integer;
    begin
       Success := True;
-      Read_Recv (C, T, Success, L);
+      Recv (C, T, Success, L);
       Read_Send (C, T, Success, L);
       while Read_Ring.Block_Ready (T.Read_Data) loop
          declare
@@ -462,13 +436,13 @@ is
    end Compare_Finished;
 
    procedure Block_Read (T : in out Test_State;
-                         S :        Block.Id;
+                         I :        Client.Request_Id;
                          D :        Block.Buffer)
    is
       Padded : Block_Buffer := (others => Block.Byte'First);
    begin
       Padded (Padded'First .. Padded'First + D'Length - 1) := D;
-      Read_Ring.Set_Data (T.Read_Data, S, Padded);
+      Read_Ring.Set_Data (T.Read_Data, Client.Request_Start (Cache (I)), Padded);
    end Block_Read;
 
    procedure Generate_Block (S :     Block.Id;
@@ -495,13 +469,28 @@ is
    end Generate_Block;
 
    procedure Block_Write (T : in out Test_State;
-                          S :        Block.Id;
+                          I :        Client.Request_Id;
                           D :    out Block.Buffer)
    is
       pragma Unreferenced (T);
-      pragma Unreferenced (S);
+      pragma Unreferenced (I);
    begin
       D := Write_Buffer (1 .. D'Length);
    end Block_Write;
+
+   procedure Allocate_Request (I : out Client.Request_Id;
+                               S : out Boolean)
+   is
+   begin
+      S := False;
+      I := Client.Request_Id'First;
+      for J in Cache'Range loop
+         if Client.Request_State (Cache (j)) = Block.Raw then
+            I := J;
+            S := True;
+            exit;
+         end if;
+      end loop;
+   end Allocate_Request;
 
 end Correctness;

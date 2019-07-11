@@ -24,6 +24,10 @@ is
    type Buffer_Index is mod 256;
    subtype Block_Buffer is Block.Buffer (1 .. 4096);
 
+   type Request_Cache is array (Client.Request_Id'Range) of Client.Request;
+
+   Cache : Request_Cache := (others => Client.Create_Request);
+
    Null_Buffer : constant Block_Buffer := (others => Block.Byte'First);
 
    type Write_Cache is record
@@ -116,14 +120,17 @@ is
    function Compare_Finished (T : Test_State) return Boolean;
 
    procedure Block_Read (T : in out Test_State;
-                         S :        Block.Id;
+                         I :        Client.Request_Id;
                          D :        Block.Buffer) with
-      Pre => Read_Ring.Has_Block (T.Read_Data, S)
+      Pre => Read_Ring.Has_Block (T.Read_Data, Client.Request_Start (Cache (I)))
              and D'Length <= Block_Buffer'Length;
 
    procedure Block_Write (T : in out Test_State;
-                          S :        Block.Id;
+                          I :        Client.Request_Id;
                           D :    out Block.Buffer) with
       Pre => D'Length <= Block_Buffer'Length;
+
+   procedure Allocate_Request (I : out Client.Request_Id;
+                               S : out Boolean);
 
 end Correctness;
