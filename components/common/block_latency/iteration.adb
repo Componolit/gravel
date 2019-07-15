@@ -22,7 +22,7 @@ package body Iteration is
       Success := False;
       Id := Client.Request_Id'First;
       for I in Cache'Range loop
-         if Client.Request_State (Cache (I)) = Block.Raw then
+         if Client.Status (Cache (I)) = Block.Raw then
             Id := I;
             Success := True;
             exit;
@@ -37,19 +37,19 @@ package body Iteration is
    procedure Start (Item   :        Client.Request;
                     Offset :        Block.Count;
                     Data   : in out Burst) with
-      Pre => Long_Integer (Client.Request_Start (Item) - Offset) in Data'Range;
+      Pre => Long_Integer (Client.Start (Item) - Offset) in Data'Range;
 
    procedure Finish (Item   :        Client.Request;
                      Offset :        Block.Count;
                      Data   : in out Burst) with
-      Pre => Long_Integer (Client.Request_Start (Item) - Offset) in Data'Range;
+      Pre => Long_Integer (Client.Start (Item) - Offset) in Data'Range;
 
    procedure Start (Item   :        Client.Request;
                     Offset :        Block.Count;
                     Data   : in out Burst)
    is
    begin
-      Data (Long_Integer (Client.Request_Start (Item) - Offset)).Start := Timer_Client.Clock (Timer);
+      Data (Long_Integer (Client.Start (Item) - Offset)).Start := Timer_Client.Clock (Timer);
    end Start;
 
    procedure Finish (Item   :        Client.Request;
@@ -57,8 +57,8 @@ package body Iteration is
                      Data   : in out Burst)
    is
    begin
-      Data (Long_Integer (Client.Request_Start (Item) - Offset)).Finish  := Timer_Client.Clock (Timer);
-      Data (Long_Integer (Client.Request_Start (Item) - Offset)).Success := Client.Request_State (Item) = Block.Ok;
+      Data (Long_Integer (Client.Start (Item) - Offset)).Finish  := Timer_Client.Clock (Timer);
+      Data (Long_Integer (Client.Start (Item) - Offset)).Success := Client.Status (Item) = Block.Ok;
    end Finish;
 
    procedure Initialize (T      : out Test;
@@ -92,7 +92,7 @@ package body Iteration is
                Allocate_Request (Id, Ready);
                exit when not Ready;
                Client.Allocate_Request (C, Cache (Id), Operation, Block.Id (I + 1) + T.Offset, 1, Id);
-               exit when Client.Request_State (Cache (Id)) = Block.Raw;
+               exit when Client.Status (Cache (Id)) = Block.Raw;
                Start (Cache (Id), T.Offset, T.Data);
                Client.Enqueue (C, Cache (Id));
                T.Sent := T.Sent + 1;
@@ -116,18 +116,18 @@ package body Iteration is
                       Log : in out Cai.Log.Client_Session)
    is
       Id : Client.Request_Id;
-      Rc : Client.Request_Capability;
+      Rc : Client.Request_Handle;
    begin
       if Client.Initialized (C) then
          while T.Received < T.Data'Last loop
             Client.Update_Response_Queue (C, Rc);
-            exit when not Client.Valid_Capability (Rc);
-            Id := Client.Request_Identifier (Rc);
+            exit when not Client.Valid (Rc);
+            Id := Client.Identifier (Rc);
             Client.Update_Request (C, Cache (Id), Rc);
-            if Client.Request_Type (Cache (Id)) = Operation then
+            if Client.Kind (Cache (Id)) = Operation then
                if
-                  Client.Request_Type (Cache (Id)) = Block.Write
-                  and then Client.Request_State (Cache (Id)) = Block.Ok
+                  Client.Kind (Cache (Id)) = Block.Write
+                  and then Client.Status (Cache (Id)) = Block.Ok
                then
                   Client.Read (C, Cache (Id));
                end if;

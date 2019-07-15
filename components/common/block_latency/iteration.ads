@@ -35,7 +35,7 @@ is
 
    type Request_Cache is array (Client.Request_Id'Range) of Client.Request;
 
-   Cache : Request_Cache := (others => Client.Create_Request);
+   Cache : Request_Cache := (others => Client.Null_Request);
 
    procedure Allocate_Request (Id      : out Client.Request_Id;
                                Success : out Boolean);
