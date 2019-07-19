@@ -34,33 +34,29 @@ is
 private
 
    procedure Write (C :     Types.Client_Instance;
-                    B :     Types.Size;
-                    S :     Types.Id;
-                    L :     Types.Count;
+                    I :     Request_Id;
                     D : out Buffer);
 
    procedure Read (C : Types.Client_Instance;
-                   B : Types.Size;
-                   S : Types.Id;
-                   L : Types.Count;
+                   I : Request_Id;
                    D : Buffer);
 
-   package Instance_Client is new Types.Client (Event, Read, Write);
+   package Instance_Client is new Types.Client (Request_Id, Event, Read, Write);
 
    package Time is new Componolit.Interfaces.Timer.Client (Event);
 
    Client : Types.Client_Session := Instance_Client.Create;
    Timer  : Componolit.Interfaces.Timer.Client_Session := Time.Create;
 
+   --  Free := Status (S_Request) = Raw and Status (C_Request) = Raw
+   --  Ready := Status (C_Request) = Ok | Error
+   --  Processed := Status (S_Request) = Pending and Status (C_Request) = Pending
    type Cache_Entry is record
       S_Request : Instance.Request;
       C_Request : Instance_Client.Request;
       Send_Time : Componolit.Interfaces.Timer.Time;
-      Processed : Boolean;
-      Ready     : Boolean;
-      Free      : Boolean;
    end record;
 
-   type Cache is array (Integer range <>) of Cache_Entry;
+   type Cache is array (Request_Id'Range) of Cache_Entry;
 
 end Block.Server;

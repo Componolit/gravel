@@ -8,19 +8,28 @@ package body Block.Server with
 is
    package Cai renames Componolit.Interfaces;
 
+   use type Types.Request_Status;
+
    Capability : Cai.Types.Capability;
    Log        : Cai.Log.Client_Session := Cai.Log.Client.Create;
 
-   Null_Cache_Entry : constant Cache_Entry := (Instance.Request'(Kind => Types.None,
-                                                                     Priv => Types.Null_Data),
-                                               Instance_Client.Request'(Kind => Types.None,
-                                                                        Priv => Types.Null_Data),
-                                               0.0,
-                                               False,
-                                               False,
-                                               True);
+   Request_Cache : Cache := (others => Cache_Entry'(S_Request => Instance.Null_Request,
+                                                    C_Request => Instance_Client.Null_Request,
+                                                    Send_Time => 0.0));
 
-   Request_Cache : Cache (1 .. 256) := (others => Null_Cache_Entry);
+   function Free (E : Cache_Entry) return Boolean
+   is
+      (Instance_Client.Status (E.C_Request) = Types.Raw
+       and Instance.Status (E.S_Request) = Types.Raw);
+
+   function Ready (E : Cache_Entry) return Boolean
+   is
+      (Instance_Client.Status (E.C_Request) in Types.Ok | Types.Error);
+
+   function Processed (E : Cache_Entry) return Boolean
+   is
+      (Ready (E) or else (Instance_Client.Status (E.C_Request) = Types.Pending
+                          and Instance.Status (E.S_Request) = Types.Pending));
 
    function Get_Next_Ready_Time return Cai.Timer.Time;
 
@@ -30,24 +39,24 @@ is
       Next : Cai.Timer.Time := Cai.Timer.Time'Last;
    begin
       for C of Request_Cache loop
-         if C.Ready and then C.Send_Time < Next then
+         if Ready (C) and then C.Send_Time < Next then
             Next := C.Send_Time;
          end if;
       end loop;
       return Next;
    end Get_Next_Ready_Time;
 
-   procedure Get_Free_Cache_Entry (Index   : out Integer;
+   procedure Get_Free_Cache_Entry (Index   : out Request_Id;
                                    Success : out Boolean);
 
-   procedure Get_Free_Cache_Entry (Index   : out Integer;
+   procedure Get_Free_Cache_Entry (Index   : out Request_Id;
                                    Success : out Boolean)
    is
    begin
       Success := False;
       Index   := 0;
       for I in Request_Cache'Range loop
-         if Request_Cache (I).Free then
+         if Free (Request_Cache (I)) then
             Success := True;
             Index   := I;
             exit;
@@ -65,49 +74,39 @@ is
 
    procedure Handle_Incoming_Response (Stop : out Boolean)
    is
-      use type Types.Request_Kind;
-      use type Types.Request_Status;
-      use type Types.Id;
-      use type Types.Count;
-      R : Instance_Client.Request := Instance_Client.Next (Client);
+      Handle : Instance_Client.Request_Handle;
+      Ident  : Request_Id;
    begin
-      Stop := R.Kind = Types.None;
-      for I in Request_Cache'Range loop
-         if
-            not Request_Cache (I).Free
-            and then Request_Cache (I).Processed
-            and then not Request_Cache (I).Ready
-            and then Request_Cache (I).C_Request.Kind = R.Kind
-            and then Request_Cache (I).C_Request.Start = R.Start
-            and then Request_Cache (I).C_Request.Length = R.Length
-         then
-            if R.Status = Types.Ok then
-               Instance_Client.Read (Client, R);
-            end if;
-            Request_Cache (I).C_Request.Status := R.Status;
-            Request_Cache (I).Ready            := True;
-            exit;
-         end if;
-      end loop;
-      Instance_Client.Release (Client, R);
+      Instance_Client.Update_Response_Queue (Client, Handle);
+      Stop := not Instance_Client.Valid (Handle);
+      if Stop then
+         return;
+      end if;
+      Ident := Instance_Client.Identifier (Handle);
+      Instance_Client.Update_Request (Client, Request_Cache (Ident).C_Request, Handle);
+      if Instance_Client.Status (Request_Cache (Ident).C_Request) = Types.Ok then
+         Instance_Client.Read (Client, Request_Cache (Ident).C_Request);
+      end if;
    end Handle_Incoming_Response;
 
    procedure Acknowledge_Outstanding_Requests;
 
    procedure Acknowledge_Outstanding_Requests
    is
-      use type Types.Request_Status;
       use type Componolit.Interfaces.Timer.Time;
       Current_Time : constant Componolit.Interfaces.Timer.Time := Time.Clock (Timer);
    begin
       for I in Request_Cache'Range loop
-         if Request_Cache (I).Ready
+         if
+            Ready (Request_Cache (I))
             and then Request_Cache (I).Send_Time > 0.0
             and then Current_Time > Request_Cache (I).Send_Time
          then
-            Instance.Acknowledge (Server, Request_Cache (I).S_Request);
-            if Request_Cache (I).S_Request.Status = Types.Acknowledged then
-               Request_Cache (I) := Null_Cache_Entry;
+            Instance.Acknowledge (Server, Request_Cache (I).S_Request,
+                                  Instance_Client.Status (Request_Cache (I).C_Request));
+            if Instance.Status (Request_Cache (I).S_Request) = Types.Raw then
+               Request_Cache (I).Send_Time := 0.0;
+               Instance_Client.Release (Client, Request_Cache (I).C_Request);
             end if;
          end if;
       end loop;
@@ -118,69 +117,20 @@ is
    procedure Handle_Incoming_Request (Stop : out Boolean)
    is
       use type Componolit.Interfaces.Timer.Time;
-      R         : constant Instance.Request                 := Instance.Head (Server);
       Recv_Time : constant Componolit.Interfaces.Timer.Time := Time.Clock (Timer);
-      Index     : Integer;
+      Index     : Request_Id;
    begin
       Get_Free_Cache_Entry (Index, Stop);
       Stop := not Stop;
-      if not Stop then
-         case R.Kind is
-            when Types.None =>
-               Stop := True;
-            when Types.Undefined =>
-               null;
-            when Types.Read =>
-               Request_Cache (Index) :=
-                  Cache_Entry'(S_Request => R,
-                               C_Request => Instance_Client.Request'(Kind   => Types.Read,
-                                                                     Priv   => Types.Null_Data,
-                                                                     Start  => R.Start,
-                                                                     Length => R.Length,
-                                                                     Status => Types.Raw),
-                               Processed => False,
-                               Free      => False,
-                               Ready     => False,
-                               Send_Time => Recv_Time + Config.Get_Delay);
-            when Types.Write =>
-               Request_Cache (Index) :=
-                  Cache_Entry'(S_Request => R,
-                               C_Request => Instance_Client.Request'(Kind   => Types.Write,
-                                                                     Priv   => Types.Null_Data,
-                                                                     Start  => R.Start,
-                                                                     Length => R.Length,
-                                                                     Status => Types.Raw),
-                               Processed => False,
-                               Free      => False,
-                               Ready     => False,
-                               Send_Time => Recv_Time + Config.Get_Delay);
-            when Types.Sync =>
-               Request_Cache (Index) :=
-                  Cache_Entry'(S_Request => R,
-                               C_Request => Instance_Client.Request'(Kind   => Types.Sync,
-                                                                     Priv   => Types.Null_Data,
-                                                                     Start  => R.Start,
-                                                                     Length => R.Length,
-                                                                     Status => Types.Raw),
-                               Processed => False,
-                               Free      => False,
-                               Ready     => False,
-                               Send_Time => Recv_Time + Config.Get_Delay);
-            when Types.Trim =>
-               Request_Cache (Index) :=
-                  Cache_Entry'(S_Request => R,
-                               C_Request => Instance_Client.Request'(Kind   => Types.Trim,
-                                                                     Priv   => Types.Null_Data,
-                                                                     Start  => R.Start,
-                                                                     Length => R.Length,
-                                                                     Status => Types.Raw),
-                               Processed => False,
-                               Free      => False,
-                               Ready     => False,
-                               Send_Time => Recv_Time + Config.Get_Delay);
-         end case;
-         Instance.Discard (Server);
+      if Stop then
+         return;
       end if;
+      Instance.Process (Server, Request_Cache (Index).S_Request);
+      Stop := Instance.Status (Request_Cache (Index).S_Request) = Types.Raw;
+      if Stop then
+         return;
+      end if;
+      Request_Cache (Index).Send_Time := Recv_Time + Config.Get_Delay;
    end Handle_Incoming_Request;
 
    procedure Process_Requests;
@@ -190,20 +140,17 @@ is
    begin
       for I in Request_Cache'Range loop
          if
-            not Request_Cache (I).Free
-            and then not Request_Cache (I).Processed
+            not Free (Request_Cache (I))
+            and then not Processed (Request_Cache (I))
          then
-            if Instance_Client.Supported (Client, Request_Cache (I).C_Request.Kind) then
-               exit when not Instance_Client.Ready (Client, Request_Cache (I).C_Request);
-               case Request_Cache (I).C_Request.Kind is
-                  when Types.None | Types.Undefined =>
-                     Request_Cache (I) := Null_Cache_Entry;
-                  when Types.Sync | Types.Trim | Types.Read | Types.Write =>
-                     Request_Cache (I).Processed := True;
-                     Instance_Client.Enqueue (Client, Request_Cache (I).C_Request);
-               end case;
-            else
-               Request_Cache (I) := Null_Cache_Entry;
+            Instance_Client.Allocate_Request (Client,
+                                              Request_Cache (I).C_Request,
+                                              Instance.Kind (Request_Cache (I).S_Request),
+                                              Instance.Start (Request_Cache (I).S_Request),
+                                              Instance.Length (Request_Cache (I).S_Request),
+                                              I);
+            if Instance_Client.Status (Request_Cache (I).C_Request) = Types.Allocated then
+               Instance_Client.Enqueue (Client, Request_Cache (I).C_Request);
             end if;
          end if;
       end loop;
@@ -320,68 +267,21 @@ is
    end Finalize;
 
    procedure Write (C :     Types.Client_Instance;
-                    B :     Types.Size;
-                    S :     Types.Id;
-                    L :     Types.Count;
+                    I :     Request_Id;
                     D : out Buffer)
    is
       pragma Unreferenced (C);
-      pragma Unreferenced (B);
-      use type Types.Request_Kind;
-      use type Types.Id;
-      use type Types.Count;
-      Found : Boolean := False;
    begin
-      for I in Request_Cache'Range loop
-         if
-            not Request_Cache (I).Free
-            and then Request_Cache (I).Processed
-            and then not Request_Cache (I).Ready
-            and then Request_Cache (I).S_Request.Kind = Types.Write
-            and then Request_Cache (I).S_Request.Start = S
-            and then Request_Cache (I).S_Request.Length = L
-         then
-            Instance.Write (Server, Request_Cache (I).S_Request, D);
-            Found := True;
-            exit;
-         end if;
-      end loop;
-      if not Found then
-         Cai.Log.Client.Warning (Log, "No matching server write request in cache");
-         D := (others => 0);
-      end if;
+      Instance.Write (Server, Request_Cache (I).S_Request, D);
    end Write;
 
    procedure Read (C : Types.Client_Instance;
-                   B : Types.Size;
-                   S : Types.Id;
-                   L : Types.Count;
+                   I : Request_Id;
                    D : Buffer)
    is
       pragma Unreferenced (C);
-      pragma Unreferenced (B);
-      use type Types.Request_Kind;
-      use type Types.Id;
-      use type Types.Count;
-      Found : Boolean := False;
    begin
-      for I in Request_Cache'Range loop
-         if
-            not Request_Cache (I).Free
-            and then Request_Cache (I).Processed
-            and then not Request_Cache (I).Ready
-            and then Request_Cache (I).S_Request.Kind = Types.Read
-            and then Request_Cache (I).S_Request.Start = S
-            and then Request_Cache (I).S_Request.Length = L
-         then
-            Instance.Read (Server, Request_Cache (I).S_Request, D);
-            Found := True;
-            exit;
-         end if;
-      end loop;
-      if not Found then
-         Cai.Log.Client.Warning (Log, "No matching server read request in cache");
-      end if;
+      Instance.Read (Server, Request_Cache (I).S_Request, D);
    end Read;
 
 end Block.Server;
