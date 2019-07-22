@@ -2,6 +2,7 @@
 with Componolit.Interfaces.Log;
 with Componolit.Interfaces.Log.Client;
 with Config;
+with Jitter;
 
 package body Block.Server with
    SPARK_Mode
@@ -117,8 +118,9 @@ is
    procedure Handle_Incoming_Request (Stop : out Boolean)
    is
       use type Componolit.Interfaces.Timer.Time;
-      Recv_Time : constant Componolit.Interfaces.Timer.Time := Time.Clock (Timer);
-      Index     : Request_Id;
+      Recv_Time  : constant Componolit.Interfaces.Timer.Time := Time.Clock (Timer);
+      Index      : Request_Id;
+      Send_Delay : Duration := Config.Get_Delay;
    begin
       Get_Free_Cache_Entry (Index, Stop);
       Stop := not Stop;
@@ -130,7 +132,13 @@ is
       if Stop then
          return;
       end if;
-      Request_Cache (Index).Send_Time := Recv_Time + Config.Get_Delay;
+      case Config.Get_Jitter_Distribution is
+         when Config.Uniform =>
+            Jitter.Apply (Send_Delay);
+         when others =>
+            null;
+      end case;
+      Request_Cache (Index).Send_Time := Recv_Time + Send_Delay;
    end Handle_Incoming_Request;
 
    procedure Process_Requests;
@@ -182,9 +190,9 @@ is
          Time.Set_Timeout (Timer, Next_Interrupt);
          --  FIXME: too short delays or removing this output cause the program to hang
          --  when no request is in flight and no time is scheduled
-         Cai.Log.Client.Info (Log, "Event time: " & Cai.Log.Image (Duration (Get_Next_Ready_Time))
-                                   & " " & Cai.Log.Image (Duration (Time.Clock (Timer)))
-                                   & " " & Cai.Log.Image (Next_Interrupt));
+         --  Cai.Log.Client.Info (Log, "Event time: " & Cai.Log.Image (Duration (Get_Next_Ready_Time))
+         --                            & " " & Cai.Log.Image (Duration (Time.Clock (Timer)))
+         --                            & " " & Cai.Log.Image (Next_Interrupt));
          Instance.Unblock_Client (Server);
       end if;
    end Event;
@@ -228,6 +236,7 @@ is
    is
       pragma Unreferenced (S);
       pragma Unreferenced (B);
+      Seed : Duration;
    begin
       if not Cai.Log.Client.Initialized (Log) then
          Cai.Log.Client.Initialize (Log, Capability, L);
@@ -239,6 +248,13 @@ is
          if Time.Initialized (Timer) then
             if not Instance_Client.Initialized (Client) then
                Instance_Client.Initialize (Client, Capability, Config.Get_Client_Id);
+               Seed := Duration (Time.Clock (Timer));
+               case Config.Get_Jitter_Distribution is
+                  when Config.Uniform =>
+                     Jitter.Seed (Seed, Config.Get_Jitter);
+                  when others =>
+                     null;
+               end case;
             else
                Cai.Log.Client.Warning (Log, "Client connection unexpectedly already initialized.");
             end if;

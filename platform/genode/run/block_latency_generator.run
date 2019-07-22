@@ -53,7 +53,7 @@ append config {
         <resource name="RAM" quantum="4M"/>
         <config>
             <xml>
-                <test delay="0.1" device="dev0"/>
+                <test delay="0.1" jitter="0.1" distribution="uniform" device="dev0"/>
             </xml>
         </config>
         <provides>
@@ -90,6 +90,7 @@ set boot_modules {
     ld.lib.so
     spark.lib.so
     ada_interface.lib.so
+    libsparkcrypto.lib.so
     timer
     log_terminal
     test-block-server

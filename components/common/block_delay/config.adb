@@ -50,7 +50,7 @@ is
       end if;
    end Check_Client;
 
-   procedure Set_Delay (D : String)
+   function Duration_Value (D : String) return Duration
    is
       Dot        : Positive := (if D'Last < Positive'Last then D'Last + 1 else D'Last);
       Delay_Int  : Duration := 0.0;
@@ -78,8 +78,20 @@ is
             end if;
          end loop;
       end if;
-      Request_Delay := Delay_Int + Delay_Frac;
-   end Set_Delay;
+      return Delay_Int + Delay_Frac;
+   end Duration_Value;
+
+   function Get_Jitter return Duration
+   is
+   begin
+      return Jitter;
+   end Get_Jitter;
+
+   function Get_Jitter_Distribution return Distribution
+   is
+   begin
+      return J_Distribution;
+   end Get_Jitter_Distribution;
 
    procedure Parse (Data : String)
    is
@@ -105,8 +117,22 @@ is
                and then SXML.Query.Has_Attribute (State, Document, "device")
             then
                Check_Client (SXML.Query.Attribute (State, Document, "device"));
-               Set_Delay (SXML.Query.Attribute (State, Document, "delay"));
+               Request_Delay := Duration_Value (SXML.Query.Attribute (State, Document, "delay"));
                Is_Initialized := True;
+               if
+                  SXML.Query.Has_Attribute (State, Document, "jitter")
+                  and SXML.Query.Has_Attribute (State, Document, "distribution")
+               then
+                  Jitter := Duration_Value (SXML.Query.Attribute (State, Document, "jitter"));
+                  if SXML.Query.Attribute (State, Document, "distribution") = "uniform" then
+                     J_Distribution := Uniform;
+                  else
+                     J_Distribution := None;
+                  end if;
+               else
+                  J_Distribution := None;
+                  Jitter := 0.0;
+               end if;
             end if;
          end if;
       end if;
