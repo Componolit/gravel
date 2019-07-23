@@ -16,7 +16,9 @@ is
    Cache : Request_Cache := (others => Cache_Entry'(S => Instance.Null_Request,
                                                     C => Instance_Client.Null_Request));
 
-   Capability : Cai.Types.Capability;
+   Hash_Mod   : Interfaces.Unsigned_8;
+   Hash_Part  : Interfaces.Unsigned_8;
+   Drop_Count : Interfaces.Unsigned_64;
    Client     : Types.Client_Session := Instance_Client.Create;
 
    procedure Allocate (I : out Request_Id;
@@ -35,11 +37,27 @@ is
       end loop;
    end Allocate;
 
-   procedure Set_Capability (Cap : Cai.Types.Capability)
+   procedure Eager_Initialize (Capability :     Cai.Types.Capability;
+                               Device     :     String;
+                               Modulo     :     Interfaces.Unsigned_8;
+                               Part       :     Interfaces.Unsigned_8;
+                               Count      :     Interfaces.Unsigned_64;
+                               Success    : out Boolean)
    is
    begin
-      Capability := Cap;
-   end Set_Capability;
+      Success := False;
+      if not Instance_Client.Initialized (Client) then
+         Instance_Client.Initialize (Client, Capability, "");
+      end if;
+      if Instance_Client.Initialized (Client) then
+         Success := True;
+      else
+         return;
+      end if;
+      Hash_Mod   := Modulo;
+      Hash_Part  := Part;
+      Drop_Count := Count;
+   end Eager_Initialize;
 
    procedure Initialize (S : Types.Server_Instance;
                          L : String;
@@ -49,9 +67,7 @@ is
       pragma Unreferenced (L);
       pragma Unreferenced (B);
    begin
-      if not Instance_Client.Initialized (Client) then
-         Instance_Client.Initialize (Client, Capability, "");
-      end if;
+      null;
    end Initialize;
 
    procedure Event

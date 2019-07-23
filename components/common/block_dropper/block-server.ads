@@ -2,6 +2,7 @@
 with Componolit.Interfaces.Types;
 with Componolit.Interfaces.Block.Client;
 with Componolit.Interfaces.Block.Server;
+with Interfaces;
 
 package Block.Server with
    SPARK_Mode
@@ -9,7 +10,12 @@ is
 
    package Cai renames Componolit.Interfaces;
 
-   procedure Set_Capability (Cap : Cai.Types.Capability);
+   procedure Eager_Initialize (Capability :     Cai.Types.Capability;
+                               Device     :     String;
+                               Modulo     :     Interfaces.Unsigned_8;
+                               Part       :     Interfaces.Unsigned_8;
+                               Count      :     Interfaces.Unsigned_64;
+                               Success    : out Boolean);
 
    procedure Event;
    function Block_Count (S : Types.Server_Instance) return Types.Count;
