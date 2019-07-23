@@ -4,7 +4,7 @@ set build_components {
     timer
     server/log_terminal
     test/block/server
-    server/block_delay
+    server/block_drop
     test/completeness
 }
 
@@ -49,11 +49,11 @@ append config {
         </provides>
     </start>
 
-    <start name="block_delay">
+    <start name="block_dropper">
         <resource name="RAM" quantum="4M"/>
         <config>
             <xml>
-                <test delay="1.0" jitter="0.1" distribution="uniform" device="dev0"/>
+                <test part="1/4" count="2" device="dev0"/>
             </xml>
         </config>
         <provides>
@@ -68,7 +68,7 @@ append config {
     <start name="block-test-completeness">
         <resource name="RAM" quantum="16M"/>
         <route>
-            <service name="Block"><child name="block_delay"/></service>
+            <service name="Block"><child name="block_dropper"/></service>
             <!--
             <service name="Block"><child name="test-block-server"/></service>
             -->
@@ -97,7 +97,7 @@ set boot_modules {
     timer
     log_terminal
     test-block-server
-    block_delay
+    block_dropper
     block-test-completeness
 }
 
