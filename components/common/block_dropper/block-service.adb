@@ -8,7 +8,8 @@ is
                     Device  :     String;
                     Modulo  :     Interfaces.Unsigned_8;
                     Part    :     Interfaces.Unsigned_8;
-                    Count   :     Interfaces.Unsigned_64)
+                    Count   :     Interfaces.Unsigned_64;
+                    Drop    :     Boolean)
    is
    begin
       if not Instance.Initialized (Dispatcher) then
@@ -16,7 +17,7 @@ is
       end if;
       Success := Instance.Initialized (Dispatcher);
       if Success then
-         Block.Server.Eager_Initialize (Cap, Device, Modulo, Part, Count, Success);
+         Block.Server.Eager_Initialize (Cap, Device, Modulo, Part, Count, Drop, Success);
          Instance.Register (Dispatcher);
       end if;
    end Start;

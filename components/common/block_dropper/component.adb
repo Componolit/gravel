@@ -113,12 +113,27 @@ is
       end if;
       if not SXML.Query.Has_Attribute (State, Doc, "count") then
          Fail ("Missing attribute: count");
+         return;
+      end if;
+      if not SXML.Query.Has_Attribute (State, Doc, "operation") then
+         Fail ("Missing attribute: operation");
+         return;
       end if;
       declare
          use type Interfaces.Unsigned_64;
-         Part_String : String := SXML.Query.Attribute (State, Doc, "part");
-         Delimiter   : Positive := Part_String'First;
+         Part_String : constant String := SXML.Query.Attribute (State, Doc, "part");
+         Operation   : constant String := SXML.Query.Attribute (State, Doc, "operation");
+         Delimiter   : Positive        := Part_String'First;
+         Drop        : Boolean;
       begin
+         if Operation = "drop" then
+            Drop := True;
+         elsif Operation = "modify" then
+            Drop := False;
+         else
+            Fail ("Invalid operation: " & Operation);
+            return;
+         end if;
          for I in Part_String'Range loop
             if Part_String (I) = '/' then
                Delimiter := I;
@@ -130,7 +145,8 @@ is
              SXML.Query.Attribute (State, Doc, "device"),
              Interfaces.Unsigned_8 (Parse_Int (Part_String (Delimiter + 1 .. Part_String'Last)) mod 256),
              Interfaces.Unsigned_8 (Parse_Int (Part_String (Part_String'First .. Delimiter - 1)) mod 256),
-             Parse_Int (SXML.Query.Attribute (State, Doc, "count")));
+             Parse_Int (SXML.Query.Attribute (State, Doc, "count")),
+             Drop);
       end;
       if not Success then
          Fail ("Failed to start block server");

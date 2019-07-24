@@ -15,6 +15,7 @@ is
                                Modulo     :     Interfaces.Unsigned_8;
                                Part       :     Interfaces.Unsigned_8;
                                Count      :     Interfaces.Unsigned_64;
+                               Drop       :     Boolean;
                                Success    : out Boolean);
 
    procedure Event;

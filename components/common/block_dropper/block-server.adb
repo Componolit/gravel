@@ -36,7 +36,9 @@ is
    Hash_Part  : Interfaces.Unsigned_8;
    Drop_Count : Interfaces.Unsigned_64;
    Dropped    : Interfaces.Unsigned_64;
+   Modified   : Interfaces.Unsigned_64;
    Hash_Value : Hash;
+   Do_Drop    : Boolean;
    Client     : Types.Client_Session := Instance_Client.Create;
 
 
@@ -71,6 +73,7 @@ is
                                Modulo     :     Interfaces.Unsigned_8;
                                Part       :     Interfaces.Unsigned_8;
                                Count      :     Interfaces.Unsigned_64;
+                               Drop       :     Boolean;
                                Success    : out Boolean)
    is
       use type Interfaces.Unsigned_64;
@@ -78,7 +81,7 @@ is
    begin
       Success := False;
       if not Instance_Client.Initialized (Client) then
-         Instance_Client.Initialize (Client, Capability, "");
+         Instance_Client.Initialize (Client, Capability, Device);
       end if;
       if Instance_Client.Initialized (Client) then
          Success := True;
@@ -89,6 +92,8 @@ is
       Hash_Part  := Part;
       Drop_Count := Count;
       Dropped    := 0;
+      Modified   := 0;
+      Do_Drop    := Drop;
       Null_Hash (Null_Hash'First .. Null_Hash'First + 2) :=
          (Hash_Mod, Hash_Part, Interfaces.Unsigned_8 (Count mod 256));
       Hash_Value := Iterate (To_Message (Null_Hash));
@@ -132,8 +137,9 @@ is
       end loop;
       loop
          if
-            (Dropped > 0 and Dropped <= Drop_Count)
-            or (Dropped = 0 and (Hash_Value (Hash_Value'First) mod Hash_Mod) < Hash_Part)
+            Do_Drop
+            and ((Dropped > 0 and Dropped <= Drop_Count)
+                 or (Dropped = 0 and (Hash_Value (Hash_Value'First) mod Hash_Mod) < Hash_Part))
          then
             Instance.Process (Server, Null_Req);
             exit when Instance.Status (Null_Req) /= Types.Pending;
@@ -208,8 +214,20 @@ is
                     D : out Buffer)
    is
       pragma Unreferenced (C);
+      use type Interfaces.Unsigned_8;
+      use type Interfaces.Unsigned_64;
    begin
       Instance.Write (Server, Cache (I).S, D);
+      if
+         not Do_Drop
+         and ((Modified > 0 and Modified <= Drop_Count)
+              or (Modified = 0 and (Hash_Value (Hash_Value'First) mod Hash_Mod) < Hash_Part))
+      then
+         D (D'First) := (if D (D'First) = Byte'First then Byte'Last else Byte'First);
+         Modified    := Modified + 1;
+      else
+         Modified := 0;
+      end if;
    end Write;
 
    procedure Read (C : Types.Client_Instance;
@@ -217,8 +235,21 @@ is
                    D : Buffer)
    is
       pragma Unreferenced (C);
+      use type Interfaces.Unsigned_8;
+      use type Interfaces.Unsigned_64;
+      First : constant Byte := (if D (D'First) = Byte'First then Byte'Last else Byte'First);
    begin
-      Instance.Read (Server, Cache (I).S, D);
+      if
+         not Do_Drop
+         and ((Modified > 0 and Modified <= Drop_Count)
+              or (Modified = 0 and (Hash_Value (Hash_Value'First) mod Hash_Mod) < Hash_Part))
+      then
+         Modified    := Modified + 1;
+         Instance.Read (Server, Cache (I).S, First & (D (D'First + 1 .. D'Last)));
+      else
+         Modified := 0;
+         Instance.Read (Server, Cache (I).S, D);
+      end if;
    end Read;
 
 end Block.Server;
