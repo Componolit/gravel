@@ -8,6 +8,7 @@ with SXML.Parser;
 with SXML.Query;
 with Block;
 with Block.Service;
+with Interfaces;
 
 package body Component with
    SPARK_Mode
@@ -50,6 +51,23 @@ is
          Fail ("Failed to initialize config rom");
       end if;
    end Construct;
+
+   function Parse_Int (S : String) return Interfaces.Unsigned_64;
+
+   function Parse_Int (S : String) return Interfaces.Unsigned_64
+   is
+      use type Interfaces.Unsigned_64;
+      Result : Interfaces.Unsigned_64 := 0;
+   begin
+      for I in S'Range loop
+         if S (I) in '0' .. '9' then
+            Result := Result + Character'Pos (S (I)) - 48;
+            exit when I = S'Last;
+            Result := Result * 10;
+         end if;
+      end loop;
+      return Result;
+   end Parse_Int;
 
    procedure Parse (Data : String)
    is
@@ -96,11 +114,24 @@ is
       if not SXML.Query.Has_Attribute (State, Doc, "count") then
          Fail ("Missing attribute: count");
       end if;
-      Block.Service.Start (Cap, Success,
-                           SXML.Query.Attribute (State, Doc, "device"),
-                           0,
-                           0,
-                           0);
+      declare
+         use type Interfaces.Unsigned_64;
+         Part_String : String := SXML.Query.Attribute (State, Doc, "part");
+         Delimiter   : Positive := Part_String'First;
+      begin
+         for I in Part_String'Range loop
+            if Part_String (I) = '/' then
+               Delimiter := I;
+               exit;
+            end if;
+         end loop;
+         Block.Service.Start
+            (Cap, Success,
+             SXML.Query.Attribute (State, Doc, "device"),
+             Interfaces.Unsigned_8 (Parse_Int (Part_String (Delimiter + 1 .. Part_String'Last)) mod 256),
+             Interfaces.Unsigned_8 (Parse_Int (Part_String (Part_String'First .. Delimiter - 1)) mod 256),
+             Parse_Int (SXML.Query.Attribute (State, Doc, "count")));
+      end;
       if not Success then
          Fail ("Failed to start block server");
       end if;

@@ -1,4 +1,8 @@
 
+with LSC.Types;
+with LSC.SHA1;
+with LSC.SHA1_Generic;
+
 package body Block.Server with
    SPARK_Mode
 is
@@ -10,6 +14,18 @@ is
 
    type Request_Cache is array (Request_Id) of Cache_Entry;
 
+   type Hash is array (LSC.SHA1.Hash_Index) of Interfaces.Unsigned_8;
+   type Message is array (LSC.Types.Natural_Index range <>) of Interfaces.Unsigned_8;
+
+   function Iterate is new LSC.SHA1_Generic.Hash (LSC.Types.Natural_Index,
+                                                  Interfaces.Unsigned_8,
+                                                  Message,
+                                                  LSC.SHA1.Hash_Index,
+                                                  Interfaces.Unsigned_8,
+                                                  Hash);
+
+   function To_Message (H : Hash) return Message;
+
    procedure Allocate (I : out Request_Id;
                        S : out Boolean);
 
@@ -19,7 +35,10 @@ is
    Hash_Mod   : Interfaces.Unsigned_8;
    Hash_Part  : Interfaces.Unsigned_8;
    Drop_Count : Interfaces.Unsigned_64;
+   Dropped    : Interfaces.Unsigned_64;
+   Hash_Value : Hash;
    Client     : Types.Client_Session := Instance_Client.Create;
+
 
    procedure Allocate (I : out Request_Id;
                        S : out Boolean)
@@ -37,6 +56,16 @@ is
       end loop;
    end Allocate;
 
+   function To_Message (H : Hash) return Message
+   is
+      Msg : Message (H'First .. H'Last) := (others => 0);
+   begin
+      for I in Msg'Range loop
+         Msg (I) := H (I);
+      end loop;
+      return Msg;
+   end To_Message;
+
    procedure Eager_Initialize (Capability :     Cai.Types.Capability;
                                Device     :     String;
                                Modulo     :     Interfaces.Unsigned_8;
@@ -44,6 +73,8 @@ is
                                Count      :     Interfaces.Unsigned_64;
                                Success    : out Boolean)
    is
+      use type Interfaces.Unsigned_64;
+      Null_Hash : Hash := (others => 0);
    begin
       Success := False;
       if not Instance_Client.Initialized (Client) then
@@ -57,6 +88,10 @@ is
       Hash_Mod   := Modulo;
       Hash_Part  := Part;
       Drop_Count := Count;
+      Dropped    := 0;
+      Null_Hash (Null_Hash'First .. Null_Hash'First + 2) :=
+         (Hash_Mod, Hash_Part, Interfaces.Unsigned_8 (Count mod 256));
+      Hash_Value := Iterate (To_Message (Null_Hash));
    end Eager_Initialize;
 
    procedure Initialize (S : Types.Server_Instance;
@@ -74,9 +109,12 @@ is
    is
       use type Types.Request_Status;
       use type Types.Request_Kind;
+      use type Interfaces.Unsigned_8;
+      use type Interfaces.Unsigned_64;
       Handle   : Instance_Client.Request_Handle;
       Index    : Request_Id;
       Success  : Boolean;
+      Null_Req : Instance.Request := Instance.Null_Request;
    begin
       loop
          Instance_Client.Update_Response_Queue (Client, Handle);
@@ -93,10 +131,21 @@ is
          Instance_Client.Release (Client, Cache (Index).C);
       end loop;
       loop
-         Allocate (Index, Success);
-         exit when not Success;
-         Instance.Process (Server, Cache (Index).S);
-         exit when Instance.Status (Cache (Index).S) /= Types.Pending;
+         if
+            (Dropped > 0 and Dropped <= Drop_Count)
+            or (Dropped = 0 and (Hash_Value (Hash_Value'First) mod Hash_Mod) < Hash_Part)
+         then
+            Instance.Process (Server, Null_Req);
+            exit when Instance.Status (Null_Req) /= Types.Pending;
+            Dropped := Dropped + 1;
+         else
+            Dropped := 0;
+            Allocate (Index, Success);
+            exit when not Success;
+            Instance.Process (Server, Cache (Index).S);
+            exit when Instance.Status (Cache (Index).S) /= Types.Pending;
+         end if;
+         Hash_Value := Iterate (To_Message (Hash_Value));
       end loop;
       for I in Cache'Range loop
          if
