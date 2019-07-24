@@ -39,6 +39,7 @@ is
    Modified   : Interfaces.Unsigned_64;
    Hash_Value : Hash;
    Do_Drop    : Boolean;
+   Inited     : Boolean              := False;
    Client     : Types.Client_Session := Instance_Client.Create;
 
 
@@ -107,7 +108,7 @@ is
       pragma Unreferenced (L);
       pragma Unreferenced (B);
    begin
-      null;
+      Inited := True;
    end Initialize;
 
    procedure Event
@@ -204,9 +205,7 @@ is
    is
       pragma Unreferenced (S);
    begin
-      if Instance_Client.Initialized (Client) then
-         Instance_Client.Finalize (Client);
-      end if;
+      Inited := False;
    end Finalize;
 
    procedure Write (C :     Types.Client_Instance;
@@ -251,5 +250,12 @@ is
          Instance.Read (Server, Cache (I).S, D);
       end if;
    end Read;
+
+   function Initialized (S : Types.Server_Instance) return Boolean
+   is
+      pragma Unreferenced (S);
+   begin
+      return Inited;
+   end Initialized;
 
 end Block.Server;

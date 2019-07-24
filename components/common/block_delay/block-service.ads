@@ -9,7 +9,7 @@ is
    procedure Start (Cap     :     Componolit.Interfaces.Types.Capability;
                     Success : out Boolean);
 
-   procedure Request;
+   procedure Request (C : Block.Types.Dispatcher_Capability);
 
    package Instance is new Types.Dispatcher (Block.Server.Instance, Request);
 

@@ -270,6 +270,12 @@ is
       end if;
    end Initialize;
 
+   function Initialized (S : Types.Server_Instance) return Boolean
+   is
+   begin
+      return Instance_Client.Initialized (Client);
+   end Initialized;
+
    procedure Finalize (S : Types.Server_Instance)
    is
       pragma Unreferenced (S);

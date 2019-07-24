@@ -23,6 +23,7 @@ is
    function Block_Size (S : Types.Server_Instance) return Types.Size;
    function Writable (S : Types.Server_Instance) return Boolean;
    function Maximum_Transfer_Size (S : Types.Server_Instance) return Types.Byte_Length;
+   function Initialized (S : Types.Server_Instance) return Boolean;
    procedure Initialize (S : Types.Server_Instance;
                          L : String;
                          B : Types.Byte_Length);
@@ -33,6 +34,7 @@ is
                                          Block_Size,
                                          Writable,
                                          Maximum_Transfer_Size,
+                                         Initialized,
                                          Initialize,
                                          Finalize);
 

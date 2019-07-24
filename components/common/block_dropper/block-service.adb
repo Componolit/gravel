@@ -22,17 +22,19 @@ is
       end if;
    end Start;
 
-   procedure Request
+   procedure Request (C : Block.Types.Dispatcher_Capability)
    is
-      Label : String (1 .. 160);
-      Last  : Natural;
-      Valid : Boolean;
    begin
-      Instance.Session_Request (Dispatcher, Valid, Label, Last);
-      if Valid and not Block.Server.Instance.Initialized (Block.Server.Server) then
-         Instance.Session_Accept (Dispatcher, Block.Server.Server, Label (1 .. Last));
+      if
+         Instance.Valid_Session_Request (Dispatcher, C)
+         and not Block.Server.Instance.Initialized (Block.Server.Server)
+      then
+         Instance.Session_Initialize (Dispatcher, C, Block.Server.Server);
+         if Block.Server.Instance.Initialized (Block.Server.Server) then
+            Instance.Session_Accept (Dispatcher, C, Block.Server.Server);
+         end if;
       end if;
-      Instance.Session_Cleanup (Dispatcher, Block.Server.Server);
+      Instance.Session_Cleanup (Dispatcher, C, Block.Server.Server);
    end Request;
 
 end Block.Service;
