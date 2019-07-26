@@ -5,8 +5,10 @@ CAI_LOG_INC_DIR = $(CAI_INC_DIR)/log
 CAI_TIMER_INC_DIR = $(CAI_INC_DIR)/timer
 CAI_PLATFORM_DIR = $(CAI_INC_DIR)/platform/genode
 CAI_CONFIG_DIR = $(CAI_INC_DIR)/rom
+CAI_COMMON_DIR = $(CAI_INC_DIR)/common
 
 INC_DIR += $(CAI_INC_DIR) \
+	   $(CAI_COMMON_DIR) \
 	   $(CAI_PLATFORM_DIR) \
 	   $(CAI_BLOCK_INC_DIR) \
 	   $(CAI_BLOCK_INC_DIR)/genode \

@@ -18,6 +18,7 @@ SRC_ADS += cxx.ads \
 	   componolit-interfaces-block.ads \
 	   componolit-interfaces-timer.ads \
 	   componolit-interfaces-internal-timer.ads \
+	   componolit-interfaces-log.ads \
 	   cxx-timer.ads \
 	   cxx-timer-client.ads \
 	   componolit-interfaces-rom.ads \
@@ -30,10 +31,11 @@ SRC_ADB += cxx-block-server.adb \
 	   componolit-interfaces-block-client.adb \
 	   componolit-interfaces-block-server.adb \
 	   componolit-interfaces-block-dispatcher.adb \
-	   componolit-interfaces-log.adb \
 	   componolit-interfaces-log-client.adb \
 	   componolit-interfaces-timer-client.adb \
-	   componolit-interfaces-rom-client.adb
+	   componolit-interfaces-rom-client.adb \
+	   componolit-interfaces-strings.adb \
+	   componolit-interfaces-strings_generic.adb
 
 SRC_CC += cai_factory.cc \
 	  block_client.cc \
@@ -72,10 +74,12 @@ vpath componolit-interfaces-block-client.adb $(CAI_BLOCK_INC_DIR)/client/genode
 vpath componolit-interfaces-block-server.adb $(CAI_BLOCK_INC_DIR)/server/genode
 vpath componolit-interfaces-block-dispatcher.adb $(CAI_BLOCK_INC_DIR)/server/genode
 vpath componolit-interfaces-block-util.adb $(CAI_BLOCK_INC_DIR)/genode
-vpath componolit-interfaces-log.adb $(CAI_LOG_INC_DIR)
+vpath componolit-interfaces-log.ads $(CAI_LOG_INC_DIR)
 vpath componolit-interfaces-log-client.adb $(CAI_LOG_INC_DIR)/client/genode
 vpath componolit-interfaces-timer-client.adb $(CAI_TIMER_INC_DIR)/client/genode
 vpath componolit-interfaces-rom-client.adb $(CAI_CONFIG_DIR)/client/genode
+vpath componolit-interfaces-strings.adb $(CAI_COMMON_DIR)
+vpath componolit-interfaces-strings_generic.adb $(CAI_COMMON_DIR)
 vpath cai_factory.cc $(CAI_PLATFORM_DIR)
 vpath block_client.cc $(CAI_BLOCK_INC_DIR)/client/genode
 vpath block_dispatcher.cc $(CAI_BLOCK_INC_DIR)/server/genode
