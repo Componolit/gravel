@@ -1,5 +1,6 @@
 
 with Componolit.Interfaces.Log.Client;
+with Componolit.Interfaces.Strings;
 
 package body Run is
 
@@ -39,7 +40,7 @@ package body Run is
    begin
       if F in R'Range then
          if not Printed then
-            Cai.Log.Client.Info (Log, Cai.Log.Image (F)  & " .. ", False);
+            Cai.Log.Client.Info (Log, Cai.Strings.Image (F)  & " .. ", False);
             Printed := True;
          end if;
          Iter.Receive (C, R (F), Log);
@@ -68,17 +69,17 @@ package body Run is
                   Log     : in out Cai.Log.Client_Session)
    is
    begin
-      Cai.Log.Client.Info (Xml_Log, "<run burst_size=""" & Cai.Log.Image (Long_Integer (R (R'First).Data'Length))
-                                    & """ iterations=""" & Cai.Log.Image (Long_Integer (R'Length))
+      Cai.Log.Client.Info (Xml_Log, "<run burst_size=""" & Cai.Strings.Image (Long_Integer (R (R'First).Data'Length))
+                                    & """ iterations=""" & Cai.Strings.Image (Long_Integer (R'Length))
                                     & """ operation=""" & (case Operation is
                                                            when Block.Read  => "READ",
                                                            when Block.Write => "WRITE",
                                                            when others      => "INVALID")
-                                    & (if Operation = Block.Read then """ cold=""" & Cai.Log.Image (Cold) else "")
+                                    & (if Operation = Block.Read then """ cold=""" & Cai.Strings.Image (Cold) else "")
                                     & """ transfer_size=""1"">");
       for I in R'Range loop
-         Cai.Log.Client.Info (Log, Cai.Log.Image (I) & " .. ", False);
-         Cai.Log.Client.Info (Xml_Log, "<iteration num=""" & Cai.Log.Image (I) & """>");
+         Cai.Log.Client.Info (Log, Cai.Strings.Image (I) & " .. ", False);
+         Cai.Log.Client.Info (Xml_Log, "<iteration num=""" & Cai.Strings.Image (I) & """>");
          Iter.Xml (Xml_Log, R (I).Data, R (I).Offset);
          Cai.Log.Client.Info (Xml_Log, "</iteration>");
       end loop;

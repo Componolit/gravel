@@ -3,6 +3,7 @@ with Componolit.Interfaces.Block.Client;
 with Componolit.Interfaces.Timer;
 with Componolit.Interfaces.Timer.Client;
 with Componolit.Interfaces.Log.Client;
+with Componolit.Interfaces.Strings;
 with Component;
 
 package body Completeness with
@@ -162,16 +163,16 @@ is
             end case;
          end loop;
          Cai.Log.Client.Info (Log, "Stats: "
-                                   & Cai.Log.Image (Long_Integer (Completeness.Received))
-                                   & "/" & Cai.Log.Image (Long_Integer (Completeness.Sent))
-                                   & " (" & Cai.Log.Image (Long_Integer (Completeness.Ok))
-                                   & "/" & Cai.Log.Image (Long_Integer (Completeness.Error))
-                                   & "/" & Cai.Log.Image (Long_Integer (Completeness.Timeout))
+                                   & Cai.Strings.Image (Completeness.Received)
+                                   & "/" & Cai.Strings.Image (Completeness.Sent)
+                                   & " (" & Cai.Strings.Image (Completeness.Ok)
+                                   & "/" & Cai.Strings.Image (Completeness.Error)
+                                   & "/" & Cai.Strings.Image (Completeness.Timeout)
                                    & ")");
          Cai.Log.Client.Info (Log, "Cache: "
-                                   & Cai.Log.Image (Long_Integer (Completeness.Raw))
-                                   & "/" & Cai.Log.Image (Long_Integer (Completeness.Pending))
-                                   & "/" & Cai.Log.Image (Long_Integer (Completeness.Other)));
+                                   & Cai.Strings.Image (Completeness.Raw)
+                                   & "/" & Cai.Strings.Image (Completeness.Pending)
+                                   & "/" & Cai.Strings.Image (Completeness.Other));
          Current := Timer_Client.Clock (Timer);
          if Current < Next_Timeout then
             Timer_Client.Set_Timeout (Timer, Duration (Next_Timeout) - Duration (Current));

@@ -1,6 +1,7 @@
 
 with Componolit.Interfaces.Log.Client;
 with Componolit.Interfaces.Timer.Client;
+with Componolit.Interfaces.Strings;
 
 package body Iteration is
 
@@ -156,9 +157,9 @@ package body Iteration is
                   B       :        Block.Id)
    is
    begin
-      Cai.Log.Client.Info (Xml_Log, "<request id=""" & Cai.Log.Image (Long_Integer (B))
-                                    & """ sent=""" & Cai.Log.Image (Duration (R.Start))
-                                    & """ received=""" & Cai.Log.Image (Duration (R.Finish))
+      Cai.Log.Client.Info (Xml_Log, "<request id=""" & Cai.Strings.Image (Long_Integer (B))
+                                    & """ sent=""" & Cai.Strings.Image (Duration (R.Start))
+                                    & """ received=""" & Cai.Strings.Image (Duration (R.Finish))
                                     & """ status=""" & (if R.Success then "OK" else "ERROR")
                                     & """/>");
    end Xml;

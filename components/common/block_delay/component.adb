@@ -4,6 +4,7 @@ with Block.Service;
 with Config;
 with Componolit.Interfaces.Log;
 with Componolit.Interfaces.Log.Client;
+with Componolit.Interfaces.Strings;
 
 package body Component with
    SPARK_Mode
@@ -23,10 +24,10 @@ is
          Cai.Log.Client.Info (Log, "Delay server");
          Config.Initialize (Cap, Success);
          if Success and then Config.Initialized then
-            Cai.Log.Client.Info (Log, "Delay: " & Cai.Log.Image (Config.Get_Delay));
+            Cai.Log.Client.Info (Log, "Delay: " & Cai.Strings.Image (Config.Get_Delay));
             Cai.Log.Client.Info (Log, "Client: " & Config.Get_Client_Id);
             Cai.Log.Client.Info
-               (Log, "Jitter: " & Cai.Log.Image (Config.Get_Jitter) & " ("
+               (Log, "Jitter: " & Cai.Strings.Image (Config.Get_Jitter) & " ("
                      & (if Config.Get_Jitter_Distribution = Config.Uniform then "uniform" else "none")
                      & ")");
             Block.Service.Start (Cap, Success);

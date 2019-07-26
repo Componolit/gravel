@@ -3,6 +3,7 @@ with Componolit.Interfaces.Log;
 with Componolit.Interfaces.Log.Client;
 with Componolit.Interfaces.Block;
 with Componolit.Interfaces.Block.Client;
+with Componolit.Interfaces.Strings;
 with Rwr;
 
 package body Component with
@@ -214,7 +215,7 @@ is
       then
          Cai.Log.Client.Info (Log, "Tests finished, writing data...");
          Cai.Log.Client.Info (Xml, "<test name=""Latency"" platform=""Genode"" hardware=""Qemu"" block_size="""
-                                   & Cai.Log.Image (Long_Integer (Block_Client.Block_Size (Client)))
+                                   & Cai.Strings.Image (Long_Integer (Block_Client.Block_Size (Client)))
                                    & """>");
          Cai.Log.Client.Info (Log, "Simple...");
          Simple.Xml (Xml, Simple_Data, Log);

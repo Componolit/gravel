@@ -7,6 +7,7 @@ with Componolit.Interfaces.Rom;
 with Componolit.Interfaces.Rom.Client;
 with Componolit.Interfaces.Timer;
 with Componolit.Interfaces.Timer.Client;
+with Componolit.Interfaces.Strings;
 with SXML;
 with SXML.Parser;
 with SXML.Query;
@@ -154,9 +155,9 @@ is
                      end if;
                      if Count > 1 then
                         Cai.Log.Client.Info (Log, "Testing disk: ");
-                        Cai.Log.Client.Info (Log, Cai.Log.Image (Count)
+                        Cai.Log.Client.Info (Log, Cai.Strings.Image (Count)
                                                   & " x "
-                                                  & Cai.Log.Image (Size)
+                                                  & Cai.Strings.Image (Size)
                                                   & "b ("
                                                   & Output.Byte_Image ((if
                                                                            Long_Integer'Last / Count > Size
@@ -170,14 +171,14 @@ is
                         Event;
                      else
                         Cai.Log.Client.Error (Log, "Invalid block count: "
-                                                & Cai.Log.Image (Count));
+                                                & Cai.Strings.Image (Count));
                      end if;
                   else
                      if not Block_Client.Initialized (Client) then
                         Cai.Log.Client.Error (Log, "Failed to initialize block session.");
                      else
                         Cai.Log.Client.Error (Log, "Invalid block size: "
-                                              & Cai.Log.Image (Long_Integer (Block_Client.Block_Size (Client))));
+                                              & Cai.Strings.Image (Long_Integer (Block_Client.Block_Size (Client))));
                      end if;
                   end if;
                end if;
@@ -270,7 +271,7 @@ is
             end if;
          else
             Cai.Log.Client.Error (Log, "Unsupported block size: "
-                                  & Cai.Log.Image (Long_Integer (Block_Client.Block_Size (Client))));
+                                  & Cai.Strings.Image (Long_Integer (Block_Client.Block_Size (Client))));
             Success := False;
          end if;
 

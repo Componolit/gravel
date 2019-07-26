@@ -4,6 +4,7 @@ with LSC.Internal.Types;
 with LSC.Internal.SHA256;
 with LSC.AES_Generic;
 with LSC.AES_Generic.CBC;
+with Componolit.Interfaces.Strings_Generic;
 with Permutation;
 with Output;
 
@@ -12,6 +13,9 @@ use all type LSC.Internal.SHA256.Message_Index;
 
 package body Correctness
 is
+
+   function Image is new Cai.Strings_Generic.Image_Ranged (Block.Count);
+   function Image is new Cai.Strings_Generic.Image_Modular (Block.Id);
 
    package Write_Permutation is new Permutation (Block.Id);
    package Read_Permutation is new Permutation (Block.Id);
@@ -135,7 +139,7 @@ is
          Success := Client.Status (Cache (Id)) = Block.Error;
          if not Success then
             Cai.Log.Client.Error (L, "Bounds check failed, block "
-                                     & Cai.Log.Image (Cai.Log.Unsigned (Client.Start (Cache (Id))))
+                                     & Image (Client.Start (Cache (Id)))
                                      & " should not be: "
                                      & (case Client.Status (Cache (Id)) is
                                         when Block.Raw          => "Raw",
@@ -203,8 +207,8 @@ is
                Success := Client.Status (Cache (Id)) = Block.Ok;
                if not Success then
                   Cai.Log.Client.Error (L, "Write received erroneous request "
-                                           & Cai.Log.Image (Cai.Log.Unsigned (Client.Start (Cache (Id)))) & "/"
-                                           & Cai.Log.Image (Long_Integer (Client.Block_Count (C))));
+                                           & Image (Client.Start (Cache (Id))) & "/"
+                                           & Image (Client.Block_Count (C)));
                end if;
                Client.Release (C, Cache (Id));
             when Block.Read =>
@@ -217,8 +221,8 @@ is
                   Success := True;
                else
                   Cai.Log.Client.Error (L, "Read received erroneous request "
-                                           & Cai.Log.Image (Cai.Log.Unsigned (Client.Start (Cache (Id)))) & "/"
-                                           & Cai.Log.Image (Long_Integer (Client.Block_Count (C))));
+                                           & Image (Client.Start (Cache (Id))) & "/"
+                                           & Image (Client.Block_Count (C)));
                   Success := False;
                end if;
                Client.Release (C, Cache (Id));
@@ -355,7 +359,7 @@ is
                Read_Ring.Add (T.Read_Data, Start);
             else
                Cai.Log.Client.Error (L, "Tried to insert duplicated block: "
-                                        & Cai.Log.Image (Cai.Log.Unsigned (Start)));
+                                        & Image (Start));
                Success := False;
             end if;
             T.Sent := T.Sent + 1;

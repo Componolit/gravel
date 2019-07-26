@@ -1,4 +1,6 @@
 
+with Componolit.Interfaces.Strings;
+
 package body Output with
    SPARK_Mode
 is
@@ -40,9 +42,9 @@ is
       if
          Bytes < (1024 ** 3) * 10
       then
-         return Cai.Log.Image (Bytes / 1024 ** 2) & " MiB";
+         return Cai.Strings.Image (Bytes / 1024 ** 2) & " MiB";
       else
-         return Cai.Log.Image (Bytes / 1024 ** 3) & " GiB";
+         return Cai.Strings.Image (Bytes / 1024 ** 3) & " GiB";
       end if;
    end Byte_Image;
 
@@ -82,9 +84,9 @@ is
          P := (if Todo > 999 then Done / (Todo / 1000) else 0);
          declare
             S : constant String := Prefix & "... ("
-                                          & Cai.Log.Image (P / 10)
+                                          & Cai.Strings.Image (P / 10)
                                           & "."
-                                          & Cai.Log.Image (P rem 10)
+                                          & Cai.Strings.Image (P rem 10)
                                           & "%, " & Byte_Image (Safe_Multiply (Done, Size))
                                           & " / " & Byte_Image (Safe_Multiply (Todo, Size))
                                           & ")";
@@ -101,9 +103,9 @@ is
             or (Start < 0.0 and then Cai.Timer.Time'Last + Start >= Now)
          then
             Cai.Log.Client.Info (Log, "Elapsed: "
-                                      & Cai.Log.Image (Duration (Now - Start))
+                                      & Cai.Strings.Image (Duration (Now - Start))
                                       & " Remaining: "
-                                      & Cai.Log.Image (Remain (Start, Now, P)));
+                                      & Cai.Strings.Image (Remain (Start, Now, P)));
          end if;
       end if;
    end Progress;
