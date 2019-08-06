@@ -23,7 +23,7 @@ is
    type Unsigned_Long is range 0 .. 2 ** 63 - 1;
    type Buffer is array (Unsigned_Long range <>) of Byte;
 
-   type Request_Id is mod 256;
+   type Request_Id is mod 2 ** 6;
 
    procedure Parse (S : String);
 

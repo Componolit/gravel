@@ -6,7 +6,6 @@ with Componolit.Interfaces.Block.Client;
 with Componolit.Interfaces.Timer;
 with Componolit.Interfaces.Timer.Client;
 with LSC.Internal.SHA256;
-with Ringbuffer;
 
 generic
    with package Block is new Componolit.Interfaces.Block (<>);
@@ -21,38 +20,34 @@ is
    use type Block.Size;
    use type Block.Buffer_Index;
 
-   type Buffer_Index is mod 256;
    subtype Block_Buffer is Block.Buffer (1 .. 4096);
-
-   type Request_Cache is array (Client.Request_Id'Range) of Client.Request;
-
-   Cache : Request_Cache := (others => Client.Null_Request);
-
    Null_Buffer : constant Block_Buffer := (others => Block.Byte'First);
 
-   type Write_Cache is record
-      Buffer  : Block_Buffer;
-      Context : LSC.Internal.SHA256.Context_Type;
+   type Request_Cache_Entry is limited record
+      R : Client.Request; --  Request
+      P : Boolean;        --  Preallocated
+      S : Block.Id;       --  Preallocated request id
+      B : Block_Buffer;   --  Preallocated block (Write) / Received, unhandled block (Read)
    end record;
 
-   Null_Cache : constant Write_Cache := (Null_Buffer, LSC.Internal.SHA256.SHA256_Context_Init);
+   type Request_Cache is array (Client.Request_Id'Range) of Request_Cache_Entry;
 
-   package Read_Ring is new Ringbuffer (Block, Buffer_Index, Block_Buffer, Null_Buffer);
-   package Write_Ring is new Ringbuffer (Block, Buffer_Index, Write_Cache, Null_Cache);
+   Cache : Request_Cache := (others => (R => Client.Null_Request,
+                                        P => False,
+                                        S => 0,
+                                        B => (others => Block.Byte'First)));
 
    type Test_State is record
-      Last           : Block.Id;
-      Last_Finished  : Boolean;
-      Sent           : Block.Count;
-      Written        : Block.Count;
-      Read           : Block.Count;
+      Write          : Client.Request_Id;
+      Read           : Client.Request_Id;
+      Generated      : Block.Count;
+      Write_Recv     : Block.Count;
+      Read_Recv      : Block.Count;
       Count          : Block.Count;
       Bounds_Checked : Boolean;
       Compared       : Boolean;
       Write_Context  : LSC.Internal.SHA256.Context_Type;
       Read_Context   : LSC.Internal.SHA256.Context_Type;
-      Read_Data      : Read_Ring.Cycle;
-      Write_Data     : Write_Ring.Cycle;
    end record;
 
    function State_Initialized return Boolean with
@@ -122,15 +117,11 @@ is
    procedure Block_Read (T : in out Test_State;
                          I :        Client.Request_Id;
                          D :        Block.Buffer) with
-      Pre => Read_Ring.Has_Block (T.Read_Data, Client.Start (Cache (I)))
-             and D'Length <= Block_Buffer'Length;
+      Pre => D'Length <= Block_Buffer'Length;
 
    procedure Block_Write (T : in out Test_State;
                           I :        Client.Request_Id;
                           D :    out Block.Buffer) with
       Pre => D'Length <= Block_Buffer'Length;
-
-   procedure Allocate_Request (I : out Client.Request_Id;
-                               S : out Boolean);
 
 end Correctness;
