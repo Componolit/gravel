@@ -6,6 +6,7 @@ CC_CXX_OPT += -Wno-attributes
 SRC_ADS += cxx.ads \
 	   cxx-block.ads \
 	   cxx-block-client.ads \
+	   cxx-block-server.ads \
 	   cxx-genode.ads \
 	   cxx-log.ads \
 	   cxx-log-client.ads \
@@ -15,7 +16,6 @@ SRC_ADS += cxx.ads \
 	   componolit-interfaces.ads \
 	   componolit-interfaces-types.ads \
 	   componolit-interfaces-internal-types.ads \
-	   componolit-interfaces-block.ads \
 	   componolit-interfaces-timer.ads \
 	   componolit-interfaces-internal-timer.ads \
 	   componolit-interfaces-log.ads \
@@ -26,8 +26,8 @@ SRC_ADS += cxx.ads \
 	   cxx-configuration-client.ads \
 	   componolit-interfaces-internal-rom.ads
 
-SRC_ADB += cxx-block-server.adb \
-	   cxx-block-dispatcher.adb \
+SRC_ADB += cxx-block-dispatcher.adb \
+	   componolit-interfaces-block.adb \
 	   componolit-interfaces-block-client.adb \
 	   componolit-interfaces-block-server.adb \
 	   componolit-interfaces-block-dispatcher.adb \
@@ -50,6 +50,7 @@ LIBS = base spark
 vpath cxx.ads $(CAI_PLATFORM_DIR)
 vpath cxx-block.ads $(CAI_BLOCK_INC_DIR)/genode
 vpath cxx-block-client.ads $(CAI_BLOCK_INC_DIR)/client/genode
+vpath cxx-block-server.ads $(CAI_BLOCK_INC_DIR)/server/genode
 vpath cxx-genode.ads $(CAI_PLATFORM_DIR)
 vpath cxx-log.ads $(CAI_LOG_INC_DIR)/genode
 vpath cxx-log-client.ads $(CAI_LOG_INC_DIR)/client/genode
@@ -59,7 +60,6 @@ vpath componolit-interfaces-internal-log.ads $(CAI_LOG_INC_DIR)/genode
 vpath componolit-interfaces.ads $(CAI_INC_DIR)
 vpath componolit-interfaces-types.ads $(CAI_INC_DIR)
 vpath componolit-interfaces-internal-types.ads $(CAI_PLATFORM_DIR)
-vpath componolit-interfaces-block.ads $(CAI_BLOCK_INC_DIR)
 vpath componolit-interfaces-timer.ads $(CAI_TIMER_INC_DIR)
 vpath componolit-interfaces-internal-timer.ads $(CAI_TIMER_INC_DIR)/genode
 vpath cxx-timer.ads $(CAI_TIMER_INC_DIR)/genode
@@ -68,8 +68,8 @@ vpath componolit-interfaces-rom.ads $(CAI_CONFIG_DIR)
 vpath cxx-configuration.ads $(CAI_CONFIG_DIR)/client/genode
 vpath cxx-configuration-client.ads $(CAI_CONFIG_DIR)/client/genode
 vpath componolit-interfaces-internal-rom.ads $(CAI_CONFIG_DIR)/genode
-vpath cxx-block-server.adb $(CAI_BLOCK_INC_DIR)/server/genode
 vpath cxx-block-dispatcher.adb $(CAI_BLOCK_INC_DIR)/server/genode
+vpath componolit-interfaces-block.adb $(CAI_BLOCK_INC_DIR)/genode
 vpath componolit-interfaces-block-client.adb $(CAI_BLOCK_INC_DIR)/client/genode
 vpath componolit-interfaces-block-server.adb $(CAI_BLOCK_INC_DIR)/server/genode
 vpath componolit-interfaces-block-dispatcher.adb $(CAI_BLOCK_INC_DIR)/server/genode
