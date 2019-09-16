@@ -4,7 +4,8 @@ with LSC.Internal.Types;
 with LSC.Internal.SHA256;
 with LSC.AES_Generic;
 with LSC.AES_Generic.CBC;
-with Componolit.Interfaces.Strings_Generic;
+with Componolit.Gneiss.Log.Client;
+with Componolit.Gneiss.Strings_Generic;
 with Permutation;
 with Output;
 
@@ -58,7 +59,7 @@ is
          Write_Permutation.Next (Cache (T.Write).S);
          Generate_Block (Cache (T.Write).S, Cache (T.Write).B (1 .. Block.Count'(1) * B));
          Hash_Block (T.Write_Context, Cache (T.Write).B (1 .. Block.Count'(1) * B));
-         T.Write := Client.Request_Id'Succ (T.Write);
+         T.Write := Block.Request_Id'Succ (T.Write);
       end loop;
    end Update_Write_Cache;
 
@@ -73,7 +74,7 @@ is
          Cache (T.Write).P := True;
          T.Generated := T.Generated + 1;
          Read_Permutation.Next (Cache (T.Write).S);
-         T.Write := Client.Request_Id'Succ (T.Write);
+         T.Write := Block.Request_Id'Succ (T.Write);
       end loop;
    end Update_Read_Cache;
 
@@ -82,8 +83,8 @@ is
                          Max :        Block.Count)
    is
    begin
-      T.Write          := Client.Request_Id'First;
-      T.Read           := Client.Request_Id'First;
+      T.Write          := Block.Request_Id'First;
+      T.Read           := Block.Request_Id'First;
       T.Generated      := 0;
       T.Count          := Max;
       T.Bounds_Checked := False;
@@ -92,7 +93,7 @@ is
       T.Read_Context   := LSC.Internal.SHA256.SHA256_Context_Init;
       Write_Permutation.Initialize (Block.Id (Max - 1));
       Read_Permutation.Initialize (Block.Id (Max - 1));
-      Update_Write_Cache (T, Client.Block_Size (C));
+      Update_Write_Cache (T, Block.Block_Size (C));
       Update_Read_Cache (T);
    end Initialize;
 
@@ -103,6 +104,7 @@ is
                            Timer   :        Cai.Timer.Client_Session)
    is
       use type Block.Request_Status;
+      Result : Block.Result;
    begin
       Success := True;
       if Client.Status (Cache (Cache'First).R) = Block.Pending then
@@ -131,9 +133,10 @@ is
          Client.Allocate_Request (C,
                                   Cache (Cache'First).R,
                                   Block.Read,
-                                  Block.Id (Client.Block_Count (C)),
+                                  Block.Id (Block.Block_Count (C)),
                                   1,
-                                  Cache'First);
+                                  Cache'First,
+                                  Result);
       end if;
       if Client.Status (Cache (Cache'First).R) = Block.Allocated then
          Client.Enqueue (C, Cache (Cache'First).R);
@@ -173,6 +176,7 @@ is
    is
       use type Block.Request_Status;
       Current : Cai.Timer.Time;
+      Result  : Block.Result;
    begin
       Success := True;
       for I in Cache'Range loop
@@ -197,7 +201,8 @@ is
                                      Block.Write,
                                      Cache (I).S,
                                      1,
-                                     I);
+                                     I,
+                                     Result);
          end if;
          if Client.Status (Cache (I).R) = Block.Allocated then
             Client.Enqueue (C, Cache (I).R);
@@ -216,14 +221,14 @@ is
                            Long_Integer (T.Count) * 2
                         else
                            Long_Integer'Last),
-                       Long_Integer (Client.Block_Size (C)),
+                       Long_Integer (Block.Block_Size (C)),
                        Start,
                        Current,
                        Last,
                        L);
       if Write_Finished (T) then
-         T.Write     := Client.Request_Id'First;
-         T.Read      := Client.Request_Id'First;
+         T.Write     := Block.Request_Id'First;
+         T.Read      := Block.Request_Id'First;
          T.Generated := 0;
          for I in Cache'Range loop
             Client.Release (C, Cache (I).R);
@@ -232,7 +237,7 @@ is
          end loop;
          Update_Read_Cache (T);
       else
-         Update_Write_Cache (T, Client.Block_Size (C));
+         Update_Write_Cache (T, Block.Block_Size (C));
       end if;
    end Write;
 
@@ -252,6 +257,7 @@ is
       Current : Cai.Timer.Time;
       Done    : Long_Integer;
       Todo    : Long_Integer;
+      Result  : Block.Result;
    begin
       Success := True;
       for I in Cache'Range loop
@@ -272,7 +278,7 @@ is
          T.Read_Recv := T.Read_Recv + 1;
          Client.Read (C, Cache (T.Read).R);
          Client.Release (C, Cache (T.Read).R);
-         T.Read := Client.Request_Id'Succ (T.Read);
+         T.Read := Block.Request_Id'Succ (T.Read);
       end loop;
       for I in Cache'Range loop
          if Client.Status (Cache (I).R) = Block.Raw and Cache (I).P then
@@ -281,7 +287,8 @@ is
                                      Block.Read,
                                      Cache (I).S,
                                      1,
-                                     I);
+                                     I,
+                                     Result);
          end if;
          if Client.Status (Cache (I).R) = Block.Allocated then
             Client.Enqueue (C, Cache (I).R);
@@ -293,7 +300,7 @@ is
       if not Read_Finished (T) then
          Update_Read_Cache (T);
       end if;
-      if Timer_Client.Initialized (Timer) then
+      if Cai.Timer.Initialized (Timer) then
          Current := Timer_Client.Clock (Timer);
       else
          Current := Cai.Timer.Time'First;
@@ -311,7 +318,7 @@ is
       Output.Progress ("Reading",
                        Done,
                        Todo,
-                       Long_Integer (Client.Block_Size (C)),
+                       Long_Integer (Block.Block_Size (C)),
                        Start,
                        Current,
                        Last,
@@ -343,7 +350,7 @@ is
    end Compare_Finished;
 
    procedure Block_Read (T : in out Test_State;
-                         I :        Client.Request_Id;
+                         I :        Block.Request_Id;
                          D :        Block.Buffer)
    is
       pragma Unreferenced (I);
@@ -375,7 +382,7 @@ is
    end Generate_Block;
 
    procedure Block_Write (T : in out Test_State;
-                          I :        Client.Request_Id;
+                          I :        Block.Request_Id;
                           D :    out Block.Buffer)
    is
       pragma Unreferenced (T);

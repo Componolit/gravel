@@ -1,12 +1,11 @@
 
-with Componolit.Interfaces.Log;
-with Componolit.Interfaces.Log.Client;
-with Componolit.Interfaces.Timer;
+with Componolit.Gneiss.Log;
+with Componolit.Gneiss.Timer;
 
 package Output with
    SPARK_Mode
 is
-   package Cai renames Componolit.Interfaces;
+   package Cai renames Componolit.Gneiss;
 
    use type Cai.Timer.Time;
 
@@ -18,13 +17,13 @@ is
                        Now    :        Cai.Timer.Time;
                        Last   : in out Cai.Timer.Time;
                        Log    : in out Cai.Log.Client_Session) with
-     Pre  => Cai.Log.Client.Initialized (Log)
+     Pre  => Cai.Log.Initialized (Log)
              and Prefix'Length <= 50
              and Prefix'First = 1
              and Done >= 0
              and Todo >= 0
              and Size >= 0,
-     Post => Cai.Log.Client.Initialized (Log);
+     Post => Cai.Log.Initialized (Log);
 
    function Byte_Image (Bytes : Long_Integer) return String with
      Post => Byte_Image'Result'Length < 25;

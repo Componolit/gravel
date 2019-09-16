@@ -1,13 +1,13 @@
 
-with Componolit.Interfaces.Log;
-with Componolit.Interfaces.Log.Client;
-with Componolit.Interfaces.Block;
-with Componolit.Interfaces.Block.Client;
-with Componolit.Interfaces.Rom;
-with Componolit.Interfaces.Rom.Client;
-with Componolit.Interfaces.Timer;
-with Componolit.Interfaces.Timer.Client;
-with Componolit.Interfaces.Strings;
+with Componolit.Gneiss.Log;
+with Componolit.Gneiss.Log.Client;
+with Componolit.Gneiss.Block;
+with Componolit.Gneiss.Block.Client;
+with Componolit.Gneiss.Rom;
+with Componolit.Gneiss.Rom.Client;
+with Componolit.Gneiss.Timer;
+with Componolit.Gneiss.Timer.Client;
+with Componolit.Gneiss.Strings;
 with SXML;
 with SXML.Parser;
 with SXML.Query;
@@ -25,23 +25,25 @@ is
 
    type Request_Id is mod 2 ** 6;
 
+   type Session_Id is new Boolean;
+
    procedure Parse (S : String);
 
    package Config is new Cai.Rom.Client (Character, Positive, String, Parse);
-   package Block is new Cai.Block (Byte, Unsigned_Long, Buffer);
+   package Block is new Cai.Block (Byte, Unsigned_Long, Buffer, Session_Id, Request_Id);
    package Timer_Client is new Cai.Timer.Client (Event);
 
-   procedure Read (C : Block.Client_Instance;
-                   I : Request_Id;
-                   D : Buffer);
+   procedure Read (C : in out Block.Client_Session;
+                   I :        Request_Id;
+                   D :        Buffer);
 
-   procedure Write (C :     Block.Client_Instance;
-                    I :     Request_Id;
-                    D : out Buffer);
+   procedure Write (C : in out Block.Client_Session;
+                    I :        Request_Id;
+                    D :    out Buffer);
 
    function Str_To_Long (S : String) return Long_Integer;
 
-   package Block_Client is new Block.Client (Request_Id, Event, Read, Write);
+   package Block_Client is new Block.Client (Event, Read, Write);
    package Disk_Test is new Correctness (Block, Block_Client, Timer_Client);
 
    procedure Transfer_State_1 with
@@ -56,27 +58,27 @@ is
       Contract_Cases => (Initialized => Disk_Test.State_Initialized,
                          not Initialized => not Disk_Test.State_Initialized);
 
-   Conf   : Cai.Rom.Client_Session := Config.Create;
-   Client : Block.Client_Session             := Block_Client.Create;
-   Timer  : Cai.Timer.Client_Session         := Timer_Client.Create;
-   Log    : Cai.Log.Client_Session           := Cai.Log.Client.Create;
+   Conf   : Cai.Rom.Client_Session;
+   Client : Block.Client_Session;
+   Timer  : Cai.Timer.Client_Session;
+   Log    : Cai.Log.Client_Session;
    Data   : Disk_Test.Test_State;
 
    Success    : Boolean := True;
    Capability : Cai.Types.Capability;
 
-   procedure Write (C :     Block.Client_Instance;
-                    I :     Request_Id;
-                    D : out Buffer)
+   procedure Write (C : in out Block.Client_Session;
+                    I :        Request_Id;
+                    D :    out Buffer)
    is
       pragma Unreferenced (C);
    begin
       Disk_Test.Block_Write (Data, I, D);
    end Write;
 
-   procedure Read (C : Block.Client_Instance;
-                   I : Request_Id;
-                   D : Buffer)
+   procedure Read (C : in out Block.Client_Session;
+                   I :        Request_Id;
+                   D :        Buffer)
    is
       pragma Unreferenced (C);
    begin
@@ -118,8 +120,8 @@ is
          SXML.Parser.Parse (S, Document, Result, Position);
          pragma Warnings (On, "unused assignment to ""Position""");
       end if;
-      if Cai.Log.Client.Initialized (Log) then
-         if not Block_Client.Initialized (Client) and Result = SXML.Parser.Match_OK then
+      if Cai.Log.Initialized (Log) then
+         if not Block.Initialized (Client) and Result = SXML.Parser.Match_OK then
             State := SXML.Query.Init (Document);
             pragma Assert (Document'Length > 0);
             pragma Assert (State.Result = SXML.Result_OK);
@@ -134,24 +136,27 @@ is
                   and then SXML.Query.Is_Open (Document, State)
                   and then SXML.Query.Has_Attribute (State, Document, "location")
                then
-                  Block_Client.Initialize (Client, Capability, SXML.Query.Attribute (State, Document, "location"));
+                  Block_Client.Initialize (Client,
+                                           Capability,
+                                           SXML.Query.Attribute (State, Document, "location"),
+                                           True);
                   if
-                     Block_Client.Initialized (Client)
-                     and then Block_Client.Block_Size (Client) <= 4096
-                     and then Block_Client.Block_Size (Client) > 0
-                     and then Block_Client.Block_Size (Client) mod (LSC.Internal.SHA256.Block_Size / 8) = 0
+                     Block.Initialized (Client)
+                     and then Block.Block_Size (Client) <= 4096
+                     and then Block.Block_Size (Client) > 0
+                     and then Block.Block_Size (Client) mod (LSC.Internal.SHA256.Block_Size / 8) = 0
                   then
-                     Size  := Long_Integer (Block_Client.Block_Size (Client));
+                     Size  := Long_Integer (Block.Block_Size (Client));
                      if SXML.Query.Has_Attribute (State, Document, "size") then
                         Count := Str_To_Long (SXML.Query.Attribute (State, Document, "size")) / Size;
                         Count := (if
-                                     Count > Long_Integer (Block_Client.Block_Count (Client))
+                                     Count > Long_Integer (Block.Block_Count (Client))
                                   then
-                                     Long_Integer (Block_Client.Block_Count (Client))
+                                     Long_Integer (Block.Block_Count (Client))
                                   else
                                      Count);
                      else
-                        Count := Long_Integer (Block_Client.Block_Count (Client));
+                        Count := Long_Integer (Block.Block_Count (Client));
                      end if;
                      if Count > 1 then
                         Cai.Log.Client.Info (Log, "Testing disk: ");
@@ -174,18 +179,18 @@ is
                                                 & Cai.Strings.Image (Count));
                      end if;
                   else
-                     if not Block_Client.Initialized (Client) then
+                     if not Block.Initialized (Client) then
                         Cai.Log.Client.Error (Log, "Failed to initialize block session.");
                      else
                         Cai.Log.Client.Error (Log, "Invalid block size: "
-                                              & Cai.Strings.Image (Long_Integer (Block_Client.Block_Size (Client))));
+                                              & Cai.Strings.Image (Long_Integer (Block.Block_Size (Client))));
                      end if;
                   end if;
                end if;
             end if;
          end if;
       else
-         Correctness_Test.Vacate (Capability, Correctness_Test.Failure);
+         Main.Vacate (Capability, Main.Failure);
       end if;
    end Parse;
 
@@ -193,30 +198,30 @@ is
    is
    begin
       Capability := Cap;
-      if not Cai.Log.Client.Initialized (Log) then
+      if not Cai.Log.Initialized (Log) then
          Cai.Log.Client.Initialize (Log, Cap, "Correctness");
       end if;
-      if not Config.Initialized (Conf) then
+      if not Cai.Rom.Initialized (Conf) then
          Config.Initialize (Conf, Capability);
       end if;
-      if not Timer_Client.Initialized (Timer) then
+      if not Cai.Timer.Initialized (Timer) then
          Timer_Client.Initialize (Timer, Cap);
       end if;
-      if Cai.Log.Client.Initialized (Log) and Config.Initialized (Conf) then
+      if Cai.Log.Initialized (Log) and Cai.Rom.Initialized (Conf) then
          Cai.Log.Client.Info (Log, "Correctness");
          Config.Load (Conf);
       else
-         Correctness_Test.Vacate (Cap, Correctness_Test.Failure);
+         Main.Vacate (Cap, Main.Failure);
       end if;
    end Construct;
 
    procedure Destruct
    is
    begin
-      if Block_Client.Initialized (Client) then
+      if Block.Initialized (Client) then
          Block_Client.Finalize (Client);
       end if;
-      if Cai.Log.Client.Initialized (Log) then
+      if Cai.Log.Initialized (Log) then
          Cai.Log.Client.Finalize (Log);
       end if;
    end Destruct;
@@ -229,9 +234,9 @@ is
    begin
       Transfer_State_2;
       if
-         Cai.Log.Client.Initialized (Log)
-         and Block_Client.Initialized (Client)
-         and Timer_Client.Initialized (Timer)
+         Cai.Log.Initialized (Log)
+         and Block.Initialized (Client)
+         and Cai.Timer.Initialized (Timer)
       then
          if
             Success
@@ -249,9 +254,9 @@ is
          end if;
 
          if
-            Block_Client.Block_Size (Client) > 0
-            and Block_Client.Block_Size (Client) <= 4096
-            and Block_Client.Block_Size (Client) mod (LSC.Internal.SHA256.Block_Size / 8) = 0
+            Block.Block_Size (Client) > 0
+            and Block.Block_Size (Client) <= 4096
+            and Block.Block_Size (Client) mod (LSC.Internal.SHA256.Block_Size / 8) = 0
          then
             if
                Success
@@ -271,7 +276,7 @@ is
             end if;
          else
             Cai.Log.Client.Error (Log, "Unsupported block size: "
-                                  & Cai.Strings.Image (Long_Integer (Block_Client.Block_Size (Client))));
+                                  & Cai.Strings.Image (Long_Integer (Block.Block_Size (Client))));
             Success := False;
          end if;
 
@@ -292,14 +297,13 @@ is
              and Disk_Test.Compare_Finished (Data))
             or not Success
          then
-            pragma Assert (Cai.Log.Client.Initialized (Log));
+            pragma Assert (Cai.Log.Initialized (Log));
             Cai.Log.Client.Info (Log, "Correctness test "
                                  & (if Success then "succeeded." else "failed."));
-            Correctness_Test.Vacate (Capability,
-                                     (if Success then Correctness_Test.Success else Correctness_Test.Failure));
+            Main.Vacate (Capability, (if Success then Main.Success else Main.Failure));
          end if;
       else
-         Correctness_Test.Vacate (Capability, Correctness_Test.Failure);
+         Main.Vacate (Capability, Main.Failure);
       end if;
    end Event;
 

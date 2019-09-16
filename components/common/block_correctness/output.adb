@@ -1,5 +1,6 @@
 
-with Componolit.Interfaces.Strings;
+with Componolit.Gneiss.Log.Client;
+with Componolit.Gneiss.Strings;
 
 package body Output with
    SPARK_Mode
@@ -91,9 +92,9 @@ is
                                           & " / " & Byte_Image (Safe_Multiply (Todo, Size))
                                           & ")";
          begin
-            if S'Length > Cai.Log.Client.Maximum_Message_Length (Log) then
-               Cai.Log.Client.Info (Log, S (S'First  .. S'First + Cai.Log.Client.Maximum_Message_Length (Log) - 2));
-               Cai.Log.Client.Info (Log, S (S'First + Cai.Log.Client.Maximum_Message_Length (Log) - 1 .. S'Last));
+            if S'Length > Cai.Log.Maximum_Message_Length (Log) then
+               Cai.Log.Client.Info (Log, S (S'First  .. S'First + Cai.Log.Maximum_Message_Length (Log) - 2));
+               Cai.Log.Client.Info (Log, S (S'First + Cai.Log.Maximum_Message_Length (Log) - 1 .. S'Last));
             else
                Cai.Log.Client.Info (Log, S);
             end if;
