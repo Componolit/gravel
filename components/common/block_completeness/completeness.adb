@@ -1,46 +1,41 @@
 
-with Componolit.Interfaces.Block.Client;
-with Componolit.Interfaces.Timer;
-with Componolit.Interfaces.Timer.Client;
-with Componolit.Interfaces.Log.Client;
-with Componolit.Interfaces.Strings;
+with Componolit.Gneiss.Block.Client;
+with Componolit.Gneiss.Timer;
+with Componolit.Gneiss.Timer.Client;
+with Componolit.Gneiss.Log.Client;
+with Componolit.Gneiss.Strings;
 with Component;
 
 package body Completeness with
    SPARK_Mode
 is
 
-   procedure Read (C : Component.Block.Client_Instance;
-                   I : Component.Request_Id;
-                   D : Component.Buffer);
+   procedure Read (C : in out Component.Block.Client_Session;
+                   I :        Component.Request_Id;
+                   D :        Component.Buffer);
 
-   procedure Write (C :     Component.Block.Client_Instance;
-                    I :     Component.Request_Id;
-                    D : out Component.Buffer);
-
-   procedure Allocate (Id      : out Component.Request_Id;
-                       Success : out Boolean);
+   procedure Write (C : in out Component.Block.Client_Session;
+                    I :        Component.Request_Id;
+                    D :    out Component.Buffer);
 
    function Next_Timeout return Cai.Timer.Time;
 
-   package Block_Client is new Component.Block.Client (Component.Request_Id,
-                                                       Component.Event,
+   package Block_Client is new Component.Block.Client (Component.Event,
                                                        Read,
                                                        Write);
    package Timer_Client is new Cai.Timer.Client (Component.Event);
 
    type Request_Entry is record
       Request : Block_Client.Request;
-      Sent    : Cai.Timer.Time;
+      Sent    : Cai.Timer.Time := 0.0;
    end record;
 
    type Request_Cache is array (Component.Request_Id) of Request_Entry;
 
-   Cache : Request_Cache := (others => (Request => Block_Client.Null_Request,
-                                        Sent    => 0.0));
+   Cache : Request_Cache;
 
-   Client      : Component.Block.Client_Session := Block_Client.Create;
-   Timer       : Cai.Timer.Client_Session       := Timer_Client.Create;
+   Client      : Component.Block.Client_Session;
+   Timer       : Cai.Timer.Client_Session;
    Timeout_Val : Duration;
 
    function Next_Timeout return Cai.Timer.Time
@@ -56,40 +51,25 @@ is
       return Next;
    end Next_Timeout;
 
-   procedure Allocate (Id      : out Component.Request_Id;
-                       Success : out Boolean)
-   is
-      use type Component.Block.Request_Status;
-   begin
-      Success := False;
-      for I in Cache'Range loop
-         if Block_Client.Status (Cache (I).Request) = Component.Block.Raw then
-            Success := True;
-            Id      := I;
-            return;
-         end if;
-      end loop;
-   end Allocate;
-
    procedure Initialize (C : Cai.Types.Capability;
                          T : Duration;
                          L : String)
    is
    begin
-      if Block_Client.Initialized (Client) and Timer_Client.Initialized (Timer) then
+      if Component.Block.Initialized (Client) and Cai.Timer.Initialized (Timer) then
          return;
       end if;
-      if not Block_Client.Initialized (Client) then
-         Block_Client.Initialize (Client, C, L);
+      if not Component.Block.Initialized (Client) then
+         Block_Client.Initialize (Client, C, L, Component.Session_Id (True));
       end if;
-      if not Block_Client.Initialized (Client) then
+      if not Component.Block.Initialized (Client) then
          return;
       end if;
-      if not Timer_Client.Initialized (Timer) then
+      if not Cai.Timer.Initialized (Timer) then
          Timer_Client.Initialize (Timer, C);
       end if;
-      if not Timer_Client.Initialized (Timer) then
-         if Block_Client.Initialized (Client) then
+      if not Cai.Timer.Initialized (Timer) then
+         if Component.Block.Initialized (Client) then
             Block_Client.Finalize (Client);
          end if;
          return;
@@ -102,52 +82,51 @@ is
       use type Interfaces.Unsigned_64;
       use type Cai.Timer.Time;
       use type Component.Block.Request_Status;
-      Index   : Component.Request_Id;
-      Handle  : Block_Client.Request_Handle;
       Current : Cai.Timer.Time;
-      Success : Boolean;
+      Result  : Component.Block.Result;
    begin
       loop
-         loop
-            Block_Client.Update_Response_Queue (Client, Handle);
-            exit when not Block_Client.Valid (Handle);
-            Index := Block_Client.Identifier (Handle);
-            if Block_Client.Status (Cache (Index).Request) = Component.Block.Pending then
-               Block_Client.Update_Request (Client, Cache (Index).Request, Handle);
-               Received := Received + 1;
-               if Block_Client.Status (Cache (Index).Request) = Component.Block.Ok then
-                  Ok := Ok + 1;
-               else
-                  Error := Error + 1;
-               end if;
-               Block_Client.Release (Client, Cache (Index).Request);
-            end if;
-         end loop;
-         Current := Timer_Client.Clock (Timer);
          for I in Cache'Range loop
-            if
-               Block_Client.Status (Cache (I).Request) = Component.Block.Pending
-               and Current - Timeout_Val > Cache (I).Sent
-            then
-               Timeout := Timeout + 1;
-               Block_Client.Release (Client, Cache (I).Request);
+            Current := Timer_Client.Clock (Timer);
+            if Block_Client.Status (Cache (I).Request) = Component.Block.Pending then
+               Block_Client.Update_Request (Client, Cache (I).Request);
+               case Block_Client.Status (Cache (I).Request) is
+                  when Component.Block.Pending =>
+                     if Current - Timeout_Val > Cache (I).Sent then
+                        Block_Client.Release (Client, Cache (I).Request);
+                        Timeout := Timeout + 1;
+                     end if;
+                  when Component.Block.Ok =>
+                     Ok := Ok + 1;
+                     Received := Received + 1;
+                     Block_Client.Release (Client, Cache (I).Request);
+                  when Component.Block.Error =>
+                     Error := Error + 1;
+                     Received := Received + 1;
+                     Block_Client.Release (Client, Cache (I).Request);
+                  when others => null;
+               end case;
+            end if;
+            if Block_Client.Status (Cache (I).Request) = Component.Block.Raw then
+               Block_Client.Allocate_Request (Client,
+                                              Cache (I).Request,
+                                              Component.Block.Read,
+                                              Component.Block.Id
+                                               (Sent mod Interfaces.Unsigned_64
+                                                  (Component.Block.Block_Count (Client))),
+                                              1,
+                                              I,
+                                              Result);
+            end if;
+            if Block_Client.Status (Cache (I).Request) = Component.Block.Allocated then
+               Block_Client.Enqueue (Client, Cache (I).Request);
+               if Block_Client.Status (Cache (I).Request) = Component.Block.Pending then
+                  Cache (I).Sent := Timer_Client.Clock (Timer);
+                  Sent := Sent + 1;
+               end if;
             end if;
          end loop;
-         loop
-            Allocate (Index, Success);
-            exit when not Success;
-            Block_Client.Allocate_Request (Client,
-                                           Cache (Index).Request,
-                                           Component.Block.Read,
-                                           Component.Block.Id
-                                              (Sent mod Interfaces.Unsigned_64 (Block_Client.Block_Count (Client))),
-                                           1,
-                                           Index);
-            exit when Block_Client.Status (Cache (Index).Request) /= Component.Block.Allocated;
-            Cache (Index).Sent := Timer_Client.Clock (Timer);
-            Block_Client.Enqueue (Client, Cache (Index).Request);
-            Sent := Sent + 1;
-         end loop;
+
          Block_Client.Submit (Client);
          Raw     := 0;
          Pending := 0;
@@ -175,15 +154,15 @@ is
                                    & "/" & Cai.Strings.Image (Completeness.Other));
          Current := Timer_Client.Clock (Timer);
          if Current < Next_Timeout then
-            Timer_Client.Set_Timeout (Timer, Duration (Next_Timeout) - Duration (Current));
+            Timer_Client.Set_Timeout (Timer, (Duration (Next_Timeout) - Duration (Current)) / 2.0);
             exit;
          end if;
       end loop;
    end Event;
 
-   procedure Read (C : Component.Block.Client_Instance;
-                   I : Component.Request_Id;
-                   D : Component.Buffer)
+   procedure Read (C : in out Component.Block.Client_Session;
+                   I :        Component.Request_Id;
+                   D :        Component.Buffer)
    is
       pragma Unreferenced (C);
       pragma Unreferenced (I);
@@ -192,9 +171,9 @@ is
       null;
    end Read;
 
-   procedure Write (C :     Component.Block.Client_Instance;
+   procedure Write (C : in out Component.Block.Client_Session;
                     I :     Component.Request_Id;
-                    D : out Component.Buffer)
+                    D :    out Component.Buffer)
    is
       pragma Unreferenced (C);
       pragma Unreferenced (I);

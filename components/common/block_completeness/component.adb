@@ -1,6 +1,6 @@
 
-with Componolit.Interfaces.Log;
-with Componolit.Interfaces.Log.Client;
+with Componolit.Gneiss.Log;
+with Componolit.Gneiss.Log.Client;
 with Completeness;
 
 package body Component with
@@ -8,16 +8,16 @@ package body Component with
 is
 
    Capability : Cai.Types.Capability;
-   Log        : Cai.Log.Client_Session := Cai.Log.Client.Create;
+   Log        : Cai.Log.Client_Session;
 
    procedure Construct (C : Cai.Types.Capability)
    is
    begin
       Capability := C;
-      if not Cai.Log.Client.Initialized (Log) then
+      if not Cai.Log.Initialized (Log) then
          Cai.Log.Client.Initialize (Log, Capability, "Completeness");
       end if;
-      if not Cai.Log.Client.Initialized (Log) then
+      if not Cai.Log.Initialized (Log) then
          Main.Vacate (Capability, Main.Failure);
          return;
       end if;
@@ -27,7 +27,7 @@ is
    procedure Destruct
    is
    begin
-      if Cai.Log.Client.Initialized (Log) then
+      if Cai.Log.Initialized (Log) then
          Cai.Log.Client.Finalize (Log);
       end if;
    end Destruct;

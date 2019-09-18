@@ -1,12 +1,12 @@
 
-with Componolit.Interfaces.Types;
-with Componolit.Interfaces.Log;
+with Componolit.Gneiss.Types;
+with Componolit.Gneiss.Log;
 with Interfaces;
 
 package Completeness with
    SPARK_Mode
 is
-   package Cai renames Componolit.Interfaces;
+   package Cai renames Componolit.Gneiss;
 
    Sent     : Interfaces.Unsigned_64 := 0;
    Received : Interfaces.Unsigned_64 := 0;
