@@ -1,13 +1,13 @@
 
-with Componolit.Interfaces.Rom;
-with Componolit.Interfaces.Rom.Client;
-with Componolit.Interfaces.Types;
+with Componolit.Gneiss.Rom;
+with Componolit.Gneiss.Rom.Client;
+with Componolit.Gneiss.Types;
 
 package Config with
    SPARK_Mode
 is
 
-   package Cai renames Componolit.Interfaces;
+   package Cai renames Componolit.Gneiss;
 
    procedure Initialize (Cap     :     Cai.Types.Capability;
                          Success : out Boolean);
@@ -28,7 +28,7 @@ private
 
    function Duration_Value (D : String) return Duration;
 
-   Config_Client : Cai.Rom.Client_Session := Instance.Create;
+   Config_Client  : Cai.Rom.Client_Session;
    Request_Delay  : Duration := 0.0;
    Client_Id      : String (1 .. 160) := (others => Character'First);
    Is_Initialized : Boolean;

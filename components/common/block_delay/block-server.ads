@@ -1,54 +1,52 @@
 
-with Componolit.Interfaces.Types;
-with Componolit.Interfaces.Timer;
-with Componolit.Interfaces.Timer.Client;
-with Componolit.Interfaces.Block.Client;
-with Componolit.Interfaces.Block.Server;
+with Componolit.Gneiss.Types;
+with Componolit.Gneiss.Timer;
+with Componolit.Gneiss.Timer.Client;
+with Componolit.Gneiss.Block.Client;
+with Componolit.Gneiss.Block.Server;
 
 package Block.Server with
    SPARK_Mode
 is
 
-   procedure Set_Capability (Cap : Componolit.Interfaces.Types.Capability);
+   procedure Set_Capability (Cap : Componolit.Gneiss.Types.Capability);
 
    procedure Event;
-   function Block_Count (S : Types.Server_Instance) return Types.Count;
-   function Block_Size (S : Types.Server_Instance) return Types.Size;
-   function Writable (S : Types.Server_Instance) return Boolean;
-   function Maximum_Transfer_Size (S : Types.Server_Instance) return Types.Byte_Length;
-   function Initialized (S : Types.Server_Instance) return Boolean;
-   procedure Initialize (S : Types.Server_Instance;
-                         L : String;
-                         B : Types.Byte_Length);
-   procedure Finalize (S : Types.Server_Instance);
+   function Block_Count (S : Types.Server_Session) return Types.Count;
+   function Block_Size (S : Types.Server_Session) return Types.Size;
+   function Writable (S : Types.Server_Session) return Boolean;
+   function Initialized (S : Types.Server_Session) return Boolean;
+   procedure Initialize (S : in out Types.Server_Session;
+                         L :        String;
+                         B :        Types.Byte_Length);
+   procedure Finalize (S : in out Types.Server_Session);
 
    package Instance is new Types.Server (Event,
                                          Block_Count,
                                          Block_Size,
                                          Writable,
-                                         Maximum_Transfer_Size,
                                          Initialized,
                                          Initialize,
                                          Finalize);
 
-   Server : Types.Server_Session := Block.Server.Instance.Create;
+   Server : Types.Server_Session;
 
 private
 
-   procedure Write (C :     Types.Client_Instance;
-                    I :     Request_Id;
-                    D : out Buffer);
+   procedure Write (C : in out Types.Client_Session;
+                    I :        Request_Id;
+                    D :    out Buffer);
 
-   procedure Read (C : Types.Client_Instance;
-                   I : Request_Id;
-                   D : Buffer);
+   procedure Read (C : in out Types.Client_Session;
+                   I :        Request_Id;
+                   D :        Buffer);
 
-   package Instance_Client is new Types.Client (Request_Id, Event, Read, Write);
+   package Instance_Client is new Types.Client (Event, Read, Write);
 
-   package Time is new Componolit.Interfaces.Timer.Client (Event);
+   package Time is new Componolit.Gneiss.Timer.Client (Event);
 
-   Client : Types.Client_Session := Instance_Client.Create;
-   Timer  : Componolit.Interfaces.Timer.Client_Session := Time.Create;
+   Client : Types.Client_Session;
+   Timer  : Componolit.Gneiss.Timer.Client_Session;
 
    --  Free := Status (S_Request) = Raw and Status (C_Request) = Raw
    --  Ready := Status (C_Request) = Ok | Error
@@ -56,7 +54,7 @@ private
    type Cache_Entry is record
       S_Request : Instance.Request;
       C_Request : Instance_Client.Request;
-      Send_Time : Componolit.Interfaces.Timer.Time;
+      Send_Time : Componolit.Gneiss.Timer.Time := 0.0;
    end record;
 
    type Cache is array (Request_Id'Range) of Cache_Entry;

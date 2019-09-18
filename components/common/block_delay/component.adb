@@ -2,25 +2,25 @@
 with Block;
 with Block.Service;
 with Config;
-with Componolit.Interfaces.Log;
-with Componolit.Interfaces.Log.Client;
-with Componolit.Interfaces.Strings;
+with Componolit.Gneiss.Log;
+with Componolit.Gneiss.Log.Client;
+with Componolit.Gneiss.Strings;
 
 package body Component with
    SPARK_Mode
 is
 
-   Log : Cai.Log.Client_Session := Cai.Log.Client.Create;
+   Log : Cai.Log.Client_Session;
 
    procedure Construct (Cap : Cai.Types.Capability)
    is
       use type Config.Distribution;
       Success : Boolean;
    begin
-      if not Cai.Log.Client.Initialized (Log) then
+      if not Cai.Log.Initialized (Log) then
          Cai.Log.Client.Initialize (Log, Cap, "");
       end if;
-      if Cai.Log.Client.Initialized (Log) then
+      if Cai.Log.Initialized (Log) then
          Cai.Log.Client.Info (Log, "Delay server");
          Config.Initialize (Cap, Success);
          if Success and then Config.Initialized then
@@ -49,7 +49,7 @@ is
    procedure Destruct
    is
    begin
-      if Cai.Log.Client.Initialized (Log) then
+      if Cai.Log.Initialized (Log) then
          Cai.Log.Client.Finalize (Log);
       end if;
    end Destruct;

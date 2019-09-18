@@ -11,10 +11,10 @@ is
                          Success : out Boolean)
    is
    begin
-      if not Instance.Initialized (Config_Client) then
+      if not Cai.Rom.Initialized (Config_Client) then
          Instance.Initialize (Config_Client, Cap);
       end if;
-      Success := Instance.Initialized (Config_Client);
+      Success := Cai.Rom.Initialized (Config_Client);
       if Success then
          Instance.Load (Config_Client);
       end if;
