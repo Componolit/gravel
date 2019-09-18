@@ -1,5 +1,5 @@
 
-with Componolit.Interfaces.Log.Client;
+with Componolit.Gneiss.Log.Client;
 
 package body Rwr is
 

@@ -1,17 +1,17 @@
-with Componolit.Interfaces.Types;
-with Componolit.Interfaces.Block;
-with Componolit.Interfaces.Block.Client;
-with Componolit.Interfaces.Log;
-with Componolit.Interfaces.Timer;
+with Componolit.Gneiss.Types;
+with Componolit.Gneiss.Block;
+with Componolit.Gneiss.Block.Client;
+with Componolit.Gneiss.Log;
+with Componolit.Gneiss.Timer;
 
 generic
-   with package Block is new Componolit.Interfaces.Block (<>);
+   with package Block is new Componolit.Gneiss.Block (<>);
    with package Client is new Block.Client (<>);
    Request_Count : Block.Count;
    Operation     : Block.Request_Kind;
 package Iteration
 is
-   package Cai renames Componolit.Interfaces;
+   package Cai renames Componolit.Gneiss;
 
    use all type Block.Id;
    use all type Block.Count;
@@ -33,12 +33,9 @@ is
       Data      : Burst (0 .. Long_Integer (Request_Count - 1));
    end record;
 
-   type Request_Cache is array (Client.Request_Id'Range) of Client.Request;
+   type Request_Cache is array (Block.Request_Id'Range) of Client.Request;
 
-   Cache : Request_Cache := (others => Client.Null_Request);
-
-   procedure Allocate_Request (Id      : out Client.Request_Id;
-                               Success : out Boolean);
+   Cache : Request_Cache;
 
    procedure Initialize (T      : out Test;
                          Offset :     Block.Count;

@@ -1,9 +1,9 @@
 
-with Componolit.Interfaces.Log;
-with Componolit.Interfaces.Log.Client;
-with Componolit.Interfaces.Block;
-with Componolit.Interfaces.Block.Client;
-with Componolit.Interfaces.Strings;
+with Componolit.Gneiss.Log;
+with Componolit.Gneiss.Log.Client;
+with Componolit.Gneiss.Block;
+with Componolit.Gneiss.Block.Client;
+with Componolit.Gneiss.Strings;
 with Rwr;
 
 package body Component with
@@ -19,16 +19,17 @@ is
    type Buffer is array (Long_Natural range <>) of Byte;
 
    type Request_Id is mod 2 ** 5;
+   subtype Session_Id is Boolean;
 
-   package Block is new Cai.Block (Byte, Long_Natural, Buffer);
+   package Block is new Cai.Block (Byte, Long_Natural, Buffer, Session_Id, Request_Id);
 
-   procedure Write (C :     Block.Client_Instance;
+   procedure Write (C : in out Block.Client_Session;
+                    I :        Request_Id;
+                    D :    out Buffer);
+
+   procedure Write (C : in out Block.Client_Session;
                     I :     Request_Id;
-                    D : out Buffer);
-
-   procedure Write (C :     Block.Client_Instance;
-                    I :     Request_Id;
-                    D : out Buffer)
+                    D :    out Buffer)
    is
       pragma Unreferenced (C);
       pragma Unreferenced (I);
@@ -36,13 +37,13 @@ is
       D := (others => 0);
    end Write;
 
-   procedure Read (C : Block.Client_Instance;
-                   I : Request_Id;
-                   D : Buffer);
+   procedure Read (C : in out Block.Client_Session;
+                   I :        Request_Id;
+                   D :        Buffer);
 
-   procedure Read (C : Block.Client_Instance;
-                   I : Request_Id;
-                   D : Buffer)
+   procedure Read (C : in out Block.Client_Session;
+                   I :        Request_Id;
+                   D :        Buffer)
    is
       pragma Unreferenced (C);
       pragma Unreferenced (I);
@@ -55,7 +56,7 @@ is
       Temp := D;
    end Read;
 
-   package Block_Client is new Block.Client (Request_Id, Event, Read, Write);
+   package Block_Client is new Block.Client (Event, Read, Write);
    Client : Block.Client_Session;
    Log    : Cai.Log.Client_Session;
    Xml    : Cai.Log.Client_Session;
@@ -144,7 +145,7 @@ is
       Cai.Log.Client.Initialize (Log, Cap, "Latency");
       Cai.Log.Client.Info (Log, "Initializing test data");
       Cai.Log.Client.Initialize (Xml, Cap, "XML");
-      Block_Client.Initialize (Client, Cap, "");
+      Block_Client.Initialize (Client, Cap, "", True);
       Simple.Initialize (Simple_Data, Cap);
 --      Small_1.Initialize (Small_1_Data, Cap);
 --      Small_2.Initialize (Small_2_Data, Cap);
@@ -215,7 +216,7 @@ is
       then
          Cai.Log.Client.Info (Log, "Tests finished, writing data...");
          Cai.Log.Client.Info (Xml, "<test name=""Latency"" platform=""Genode"" hardware=""Qemu"" block_size="""
-                                   & Cai.Strings.Image (Long_Integer (Block_Client.Block_Size (Client)))
+                                   & Cai.Strings.Image (Long_Integer (Block.Block_Size (Client)))
                                    & """>");
          Cai.Log.Client.Info (Log, "Simple...");
          Simple.Xml (Xml, Simple_Data, Log);
@@ -250,13 +251,13 @@ is
    procedure Destruct
    is
    begin
-      if Block_Client.Initialized (Client) then
+      if Block.Initialized (Client) then
          Block_Client.Finalize (Client);
       end if;
-      if Cai.Log.Client.Initialized (Log) then
+      if Cai.Log.Initialized (Log) then
          Cai.Log.Client.Finalize (Log);
       end if;
-      if Cai.Log.Client.Initialized (Xml) then
+      if Cai.Log.Initialized (Xml) then
          Cai.Log.Client.Finalize (Xml);
       end if;
    end Destruct;

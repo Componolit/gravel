@@ -1,6 +1,6 @@
 
-with Componolit.Interfaces.Log.Client;
-with Componolit.Interfaces.Strings;
+with Componolit.Gneiss.Log.Client;
+with Componolit.Gneiss.Strings;
 
 package body Run is
 

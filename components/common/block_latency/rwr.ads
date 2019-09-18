@@ -1,18 +1,18 @@
 
-with Componolit.Interfaces.Types;
-with Componolit.Interfaces.Block;
-with Componolit.Interfaces.Block.Client;
-with Componolit.Interfaces.Log;
+with Componolit.Gneiss.Types;
+with Componolit.Gneiss.Block;
+with Componolit.Gneiss.Block.Client;
+with Componolit.Gneiss.Log;
 with Run;
 
 generic
-   with package Block is new Componolit.Interfaces.Block (<>);
+   with package Block is new Componolit.Gneiss.Block (<>);
    with package Client is new Block.Client (<>);
    Request_Count : Block.Count;
    Iterations    : Positive;
 package Rwr is
 
-   package Cai renames Componolit.Interfaces;
+   package Cai renames Componolit.Gneiss;
 
    package RR1 is new Run (Block, Client, Request_Count, Iterations, Block.Read);
    package WR is new Run (Block, Client, Request_Count, Iterations, Block.Write);

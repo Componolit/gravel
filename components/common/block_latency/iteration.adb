@@ -1,7 +1,7 @@
 
-with Componolit.Interfaces.Log.Client;
-with Componolit.Interfaces.Timer.Client;
-with Componolit.Interfaces.Strings;
+with Componolit.Gneiss.Log.Client;
+with Componolit.Gneiss.Timer.Client;
+with Componolit.Gneiss.Strings;
 
 package body Iteration is
 
@@ -16,24 +16,9 @@ package body Iteration is
       null;
    end Event;
 
-   procedure Allocate_Request (Id      : out Client.Request_Id;
-                               Success : out Boolean)
-   is
-   begin
-      Success := False;
-      Id := Client.Request_Id'First;
-      for I in Cache'Range loop
-         if Client.Status (Cache (I)) = Block.Raw then
-            Id := I;
-            Success := True;
-            exit;
-         end if;
-      end loop;
-   end Allocate_Request;
-
    package Timer_Client is new Cai.Timer.Client (Event);
 
-   Timer : Cai.Timer.Client_Session := Timer_Client.Create;
+   Timer : Cai.Timer.Client_Session;
 
    procedure Start (Item   :        Client.Request;
                     Offset :        Block.Count;
@@ -76,7 +61,7 @@ package body Iteration is
       for I in T.Data'Range loop
          T.Data (I) := (Success => False, others => Cai.Timer.Time'First);
       end loop;
-      if not Timer_Client.Initialized (Timer) then
+      if not Cai.Timer.Initialized (Timer) then
          Timer_Client.Initialize (Timer, Cap);
       end if;
    end Initialize;
@@ -84,25 +69,35 @@ package body Iteration is
    procedure Send (C   : in out Block.Client_Session;
                    T   : in out Test;
                    Log : in out Cai.Log.Client_Session) is
-      Id    : Client.Request_Id;
-      Ready : Boolean;
+      Result : Block.Result;
    begin
-      if T.Sent < T.Data'Last then
-         if Client.Initialized (C) then
-            for I in T.Sent .. T.Data'Last - 1 loop
-               Allocate_Request (Id, Ready);
-               exit when not Ready;
-               Client.Allocate_Request (C, Cache (Id), Operation, Block.Id (I + 1) + T.Offset, 1, Id);
-               exit when Client.Status (Cache (Id)) = Block.Raw;
-               Start (Cache (Id), T.Offset, T.Data);
-               Client.Enqueue (C, Cache (Id));
-               T.Sent := T.Sent + 1;
-            end loop;
-            Client.Submit (C);
-         else
-            Cai.Log.Client.Error (Log, "Failed to run test, client not initialized");
+      for I in Cache'Range loop
+         exit when T.Sent >= T.Data'Last;
+         if Client.Status (Cache (I)) = Block.Raw then
+            Client.Allocate_Request (C,
+                                     Cache (I),
+                                     Operation,
+                                     Block.Id (T.Sent + 1) + T.Offset,
+                                     1,
+                                     I,
+                                     Result);
+            case Result is
+               when Block.Success =>
+                  T.Sent := T.Sent + 1;
+               when Block.Unsupported =>
+                  Cai.Log.Client.Error (Log, "Failed to send request");
+               when others =>
+                  null;
+            end case;
          end if;
-      end if;
+         if Client.Status (Cache (I)) = Block.Allocated then
+            Client.Enqueue (C, Cache (I));
+            if Client.Status (Cache (I)) = Block.Pending then
+               Start (Cache (I), T.Offset, T.Data);
+            end if;
+         end if;
+      end loop;
+      Client.Submit (C);
       if T.Sent = T.Data'Last and T.Received = T.Data'Last then
          if Operation = Block.Write and T.Sync then
             null;
@@ -116,33 +111,27 @@ package body Iteration is
                       T   : in out Test;
                       Log : in out Cai.Log.Client_Session)
    is
-      Id : Client.Request_Id;
-      Rc : Client.Request_Handle;
    begin
-      if Client.Initialized (C) then
-         while T.Received < T.Data'Last loop
-            Client.Update_Response_Queue (C, Rc);
-            exit when not Client.Valid (Rc);
-            Id := Client.Identifier (Rc);
-            Client.Update_Request (C, Cache (Id), Rc);
-            if Client.Kind (Cache (Id)) = Operation then
-               if
-                  Client.Kind (Cache (Id)) = Block.Write
-                  and then Client.Status (Cache (Id)) = Block.Ok
-               then
-                  Client.Read (C, Cache (Id));
-               end if;
-               Finish (Cache (Id), T.Offset, T.Data);
-               T.Received := T.Received + 1;
-               Client.Release (C, Cache (Id));
-            else
-               Cai.Log.Client.Warning (Log, "Received unexpected request");
-               Client.Release (C, Cache (Id));
-            end if;
-         end loop;
-      else
-         Cai.Log.Client.Error (Log, "Failed to run test, client not Initialized");
-      end if;
+      for I in Cache'Range loop
+         if Client.Status (Cache (I)) = Block.Pending then
+            Client.Update_Request (C, Cache (I));
+            case Client.Status (Cache (I)) is
+               when Block.Ok =>
+                  if Client.Kind (Cache (I)) = Block.Read then
+                     Client.Read (C, Cache (I));
+                  end if;
+                  Finish (Cache (I), T.Offset, T.Data);
+                  T.Received := T.Received + 1;
+                  Client.Release (C, Cache (I));
+               when Block.Error =>
+                  Finish (Cache (I), T.Offset, T.Data);
+                  Cai.Log.Client.Warning (Log, "Request failed");
+                  Client.Release (C, Cache (I));
+               when others =>
+                  null;
+            end case;
+         end if;
+      end loop;
       if T.Sent = T.Data'Last and T.Received = T.Data'Last then
          T.Finished := True;
       end if;
