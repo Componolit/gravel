@@ -1,13 +1,13 @@
 
-with Componolit.Interfaces.Types;
-with Componolit.Interfaces.Block.Dispatcher;
+with Componolit.Gneiss.Types;
+with Componolit.Gneiss.Block.Dispatcher;
 with Interfaces;
 with Block.Server;
 
 package Block.Service with
    SPARK_Mode
 is
-   procedure Start (Cap     :     Componolit.Interfaces.Types.Capability;
+   procedure Start (Cap     :     Componolit.Gneiss.Types.Capability;
                     Success : out Boolean;
                     Device  :     String;
                     Modulo  :     Interfaces.Unsigned_8;
@@ -15,12 +15,13 @@ is
                     Count   :     Interfaces.Unsigned_64;
                     Drop    :     Boolean);
 
-   procedure Request (C : Block.Types.Dispatcher_Capability);
+   procedure Request (D : in out Types.Dispatcher_Session;
+                      C :        Block.Types.Dispatcher_Capability);
 
    package Instance is new Types.Dispatcher (Block.Server.Instance, Request);
 
 private
 
-   Dispatcher : Types.Dispatcher_Session := Instance.Create;
+   Dispatcher : Types.Dispatcher_Session;
 
 end Block.Service;

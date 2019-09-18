@@ -1,8 +1,8 @@
 
-with Componolit.Interfaces.Log;
-with Componolit.Interfaces.Log.Client;
-with Componolit.Interfaces.Rom;
-with Componolit.Interfaces.Rom.Client;
+with Componolit.Gneiss.Log;
+with Componolit.Gneiss.Log.Client;
+with Componolit.Gneiss.Rom;
+with Componolit.Gneiss.Rom.Client;
 with SXML;
 with SXML.Parser;
 with SXML.Query;
@@ -20,8 +20,8 @@ is
    package Config is new Cai.Rom.Client (Character, Positive, String, Parse);
 
    Cap  : Cai.Types.Capability;
-   Log  : Cai.Log.Client_Session        := Cai.Log.Client.Create;
-   Conf : Cai.Rom.Client_Session        := Config.Create;
+   Log  : Cai.Log.Client_Session;
+   Conf : Cai.Rom.Client_Session;
    Doc  : SXML.Document_Type (1 .. 100) := (others => SXML.Null_Node);
 
    procedure Fail (Message : String)
@@ -35,17 +35,17 @@ is
    is
    begin
       Cap := C;
-      if not Cai.Log.Client.Initialized (Log) then
+      if not Cai.Log.Initialized (Log) then
          Cai.Log.Client.Initialize (Log, C, "Drop");
       end if;
-      if not Cai.Log.Client.Initialized (Log) then
+      if not Cai.Log.Initialized (Log) then
          Main.Vacate (C, Main.Failure);
          return;
       end if;
-      if not Config.Initialized (Conf) then
+      if not Cai.Rom.Initialized (Conf) then
          Config.Initialize (Conf, C);
       end if;
-      if Config.Initialized (Conf) then
+      if Cai.Rom.Initialized (Conf) then
          Config.Load (Conf);
       else
          Fail ("Failed to initialize config rom");
@@ -156,7 +156,7 @@ is
    procedure Destruct
    is
    begin
-      if Cai.Log.Client.Initialized (Log) then
+      if Cai.Log.Initialized (Log) then
          Cai.Log.Client.Finalize (Log);
       end if;
    end Destruct;
