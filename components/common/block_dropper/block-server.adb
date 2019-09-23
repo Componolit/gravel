@@ -34,7 +34,7 @@ is
    Dropped    : Interfaces.Unsigned_64;
    Modified   : Interfaces.Unsigned_64;
    Hash_Value : Hash;
-   Do_Drop    : Boolean;
+   Do_Op      : Operation;
    Inited     : Boolean              := False;
    Client     : Types.Client_Session;
 
@@ -53,7 +53,7 @@ is
                                Modulo     :     Interfaces.Unsigned_8;
                                Part       :     Interfaces.Unsigned_8;
                                Count      :     Interfaces.Unsigned_64;
-                               Drop       :     Boolean;
+                               Op         :     Operation;
                                Success    : out Boolean)
    is
       use type Interfaces.Unsigned_64;
@@ -73,7 +73,7 @@ is
       Drop_Count := Count;
       Dropped    := 0;
       Modified   := 0;
-      Do_Drop    := Drop;
+      Do_Op      := Op;
       Null_Hash (Null_Hash'First .. Null_Hash'First + 2) :=
          (Hash_Mod, Hash_Part, Interfaces.Unsigned_8 (Count mod 256));
       Hash_Value := Iterate (To_Message (Null_Hash));
@@ -119,7 +119,7 @@ is
                Instance_Client.Release (Client, Cache (I).C);
             end if;
             if
-               Do_Drop
+               Do_Op = Drop
                and ((Dropped > 0 and Dropped <= Drop_Count)
                     or (Dropped = 0 and (Hash_Value (Hash_Value'First) mod Hash_Mod) < Hash_Part))
             then
@@ -188,7 +188,7 @@ is
    begin
       Instance.Write (Server, Cache (I).S, D);
       if
-         not Do_Drop
+         Do_Op = Modify
          and ((Modified > 0 and Modified <= Drop_Count)
               or (Modified = 0 and (Hash_Value (Hash_Value'First) mod Hash_Mod) < Hash_Part))
       then
@@ -209,7 +209,7 @@ is
       First : constant Byte := (if D (D'First) = Byte'First then Byte'Last else Byte'First);
    begin
       if
-         not Do_Drop
+         Do_Op = Modify
          and ((Modified > 0 and Modified <= Drop_Count)
               or (Modified = 0 and (Hash_Value (Hash_Value'First) mod Hash_Mod) < Hash_Part))
       then

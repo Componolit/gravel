@@ -10,12 +10,14 @@ is
 
    package Cai renames Componolit.Gneiss;
 
+   type Operation is (Drop, Modify, Reject);
+
    procedure Eager_Initialize (Capability :     Cai.Types.Capability;
                                Device     :     String;
                                Modulo     :     Interfaces.Unsigned_8;
                                Part       :     Interfaces.Unsigned_8;
                                Count      :     Interfaces.Unsigned_64;
-                               Drop       :     Boolean;
+                               Op         :     Operation;
                                Success    : out Boolean);
 
    procedure Event;

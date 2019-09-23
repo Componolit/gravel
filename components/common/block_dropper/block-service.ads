@@ -13,7 +13,7 @@ is
                     Modulo  :     Interfaces.Unsigned_8;
                     Part    :     Interfaces.Unsigned_8;
                     Count   :     Interfaces.Unsigned_64;
-                    Drop    :     Boolean);
+                    Op      :     Block.Server.Operation);
 
    procedure Request (D : in out Types.Dispatcher_Session;
                       C :        Block.Types.Dispatcher_Capability);

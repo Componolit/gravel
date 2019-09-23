@@ -7,6 +7,7 @@ with SXML;
 with SXML.Parser;
 with SXML.Query;
 with Block;
+with Block.Server;
 with Block.Service;
 with Interfaces;
 
@@ -124,12 +125,12 @@ is
          Part_String : constant String := SXML.Query.Attribute (State, Doc, "part");
          Operation   : constant String := SXML.Query.Attribute (State, Doc, "operation");
          Delimiter   : Positive        := Part_String'First;
-         Drop        : Boolean;
+         Op          : Block.Server.Operation;
       begin
          if Operation = "drop" then
-            Drop := True;
+            Op := Block.Server.Drop;
          elsif Operation = "modify" then
-            Drop := False;
+            Op := Block.Server.Modify;
          else
             Fail ("Invalid operation: " & Operation);
             return;
@@ -146,7 +147,7 @@ is
              Interfaces.Unsigned_8 (Parse_Int (Part_String (Delimiter + 1 .. Part_String'Last)) mod 256),
              Interfaces.Unsigned_8 (Parse_Int (Part_String (Part_String'First .. Delimiter - 1)) mod 256),
              Parse_Int (SXML.Query.Attribute (State, Doc, "count")),
-             Drop);
+             Op);
       end;
       if not Success then
          Fail ("Failed to start block server");

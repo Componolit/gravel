@@ -9,7 +9,7 @@ is
                     Modulo  :     Interfaces.Unsigned_8;
                     Part    :     Interfaces.Unsigned_8;
                     Count   :     Interfaces.Unsigned_64;
-                    Drop    :     Boolean)
+                    Op      :     Block.Server.Operation)
    is
    begin
       if not Types.Initialized (Dispatcher) then
@@ -17,7 +17,7 @@ is
       end if;
       Success := Types.Initialized (Dispatcher);
       if Success then
-         Block.Server.Eager_Initialize (Cap, Device, Modulo, Part, Count, Drop, Success);
+         Block.Server.Eager_Initialize (Cap, Device, Modulo, Part, Count, Op, Success);
          Instance.Register (Dispatcher);
       end if;
    end Start;
