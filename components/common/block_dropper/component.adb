@@ -131,6 +131,8 @@ is
             Op := Block.Server.Drop;
          elsif Operation = "modify" then
             Op := Block.Server.Modify;
+         elsif Operation = "reject" then
+            Op := Block.Server.Reject;
          else
             Fail ("Invalid operation: " & Operation);
             return;

@@ -32,6 +32,7 @@ is
    Hash_Part  : Interfaces.Unsigned_8;
    Drop_Count : Interfaces.Unsigned_64;
    Dropped    : Interfaces.Unsigned_64;
+   Rejected   : Interfaces.Unsigned_64;
    Modified   : Interfaces.Unsigned_64;
    Hash_Value : Hash;
    Do_Op      : Operation;
@@ -72,6 +73,7 @@ is
       Hash_Part  := Part;
       Drop_Count := Count;
       Dropped    := 0;
+      Rejected   := 0;
       Modified   := 0;
       Do_Op      := Op;
       Null_Hash (Null_Hash'First .. Null_Hash'First + 2) :=
@@ -132,16 +134,26 @@ is
          end if;
 
          if Instance.Status (Cache (I).S) = Types.Pending then
-            if Instance_Client.Status (Cache (I).C) = Types.Raw then
-               Instance_Client.Allocate_Request (Client,
-                                                 Cache (I).C,
-                                                 Instance.Kind (Cache (I).S),
-                                                 Instance.Start (Cache (I).S),
-                                                 Instance.Length (Cache (I).S),
-                                                 I, Result);
-            end if;
-            if Instance_Client.Status (Cache (I).C) = Types.Allocated then
-               Instance_Client.Enqueue (Client, Cache (I).C);
+            if
+               Do_Op = Reject
+               and ((Rejected > 0 and Rejected <= Drop_Count)
+                    or (Rejected = 0 and (Hash_Value (Hash_Value'First) mod Hash_Mod) < Hash_Part))
+            then
+               Instance.Acknowledge (Server, Cache (I).S, Types.Error);
+               Rejected := Rejected + 1;
+            else
+               Rejected := 0;
+               if Instance_Client.Status (Cache (I).C) = Types.Raw then
+                  Instance_Client.Allocate_Request (Client,
+                                                    Cache (I).C,
+                                                    Instance.Kind (Cache (I).S),
+                                                    Instance.Start (Cache (I).S),
+                                                    Instance.Length (Cache (I).S),
+                                                    I, Result);
+               end if;
+               if Instance_Client.Status (Cache (I).C) = Types.Allocated then
+                  Instance_Client.Enqueue (Client, Cache (I).C);
+               end if;
             end if;
          end if;
          Hash_Value := Iterate (To_Message (Hash_Value));
