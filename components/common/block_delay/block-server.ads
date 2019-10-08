@@ -33,6 +33,10 @@ is
 
 private
 
+   function Round_Up (Time  : Componolit.Gneiss.Timer.Time;
+                      Slice : Duration) return Componolit.Gneiss.Timer.Time with
+      Pre => Slice /= 0.0;
+
    procedure Write (C : in out Types.Client_Session;
                     I :        Request_Id;
                     D :    out Buffer);

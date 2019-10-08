@@ -1,4 +1,5 @@
 
+with Ada.Unchecked_Conversion;
 with Componolit.Gneiss.Log;
 with Componolit.Gneiss.Log.Client;
 with Config;
@@ -34,6 +35,16 @@ is
       end loop;
       return Next;
    end Get_Next_Ready_Time;
+
+   function Round_Up (Time  : Componolit.Gneiss.Timer.Time;
+                      Slice : Duration) return Componolit.Gneiss.Timer.Time
+   is
+      use type Componolit.Gneiss.Timer.Time;
+      function Convert is new Ada.Unchecked_Conversion (Long_Integer, Duration);
+      function Convert is new Ada.Unchecked_Conversion (Duration, Long_Integer);
+   begin
+      return Time + (Slice - Convert (Convert ( Duration (Time)) mod Convert (Slice)));
+   end Round_Up;
 
    procedure Set_Capability (Cap : Componolit.Gneiss.Types.Capability)
    is
@@ -84,14 +95,19 @@ is
                   if Instance_Client.Status (Request_Cache (I).C_Request) = Types.Raw then
                      Instance.Process (Server, Request_Cache (I).S_Request);
                      if Instance.Status (Request_Cache (I).S_Request) = Types.Pending then
-                        Send_Delay := Config.Get_Delay;
-                        case Config.Get_Jitter_Distribution is
-                           when Config.Uniform =>
-                              Jitter.Apply (Send_Delay);
-                           when others =>
-                              null;
+                        case Config.Get_Mode is
+                           when Config.Default =>
+                              Send_Delay := Config.Get_Delay;
+                              case Config.Get_Jitter_Distribution is
+                                 when Config.Uniform =>
+                                    Jitter.Apply (Send_Delay);
+                                 when others =>
+                                    null;
+                              end case;
+                              Request_Cache (I).Send_Time := Time.Clock (Timer) + Send_Delay;
+                           when Config.Sliced =>
+                              Request_Cache (I).Send_Time := Round_Up (Time.Clock (Timer), Config.Get_Slice);
                         end case;
-                        Request_Cache (I).Send_Time := Time.Clock (Timer) + Send_Delay;
                      end if;
                   end if;
                end if;
@@ -110,7 +126,13 @@ is
                end if;
             end loop;
 
-            Next_Interrupt := Duration (Get_Next_Ready_Time - Time.Clock (Timer));
+            case Config.Get_Mode is
+               when Config.Default =>
+                  Next_Interrupt := Duration (Get_Next_Ready_Time - Time.Clock (Timer));
+               when Config.Sliced =>
+                  Current := Time.Clock (Timer);
+                  Next_Interrupt := Duration (Round_Up (Current, Config.Get_Slice) - Current);
+            end case;
             exit when Next_Interrupt > 0.0;
          end loop;
          Time.Set_Timeout (Timer, Next_Interrupt);

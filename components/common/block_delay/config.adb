@@ -93,6 +93,18 @@ is
       return J_Distribution;
    end Get_Jitter_Distribution;
 
+   function Get_Mode return Mode
+   is
+   begin
+      return Op_Mode;
+   end Get_Mode;
+
+   function Get_Slice return Duration
+   is
+   begin
+      return Slice;
+   end Get_Slice;
+
    procedure Parse (Data : String)
    is
       use type SXML.Parser.Match_Type;
@@ -111,28 +123,39 @@ is
                State := SXML.Query.Path (State, Document, "/test");
             end if;
             if
-               State.Result = SXML.Result_OK
-               and then SXML.Query.Is_Open (Document, State)
-               and then SXML.Query.Has_Attribute (State, Document, "delay")
-               and then SXML.Query.Has_Attribute (State, Document, "device")
+               State.Result /= SXML.Result_OK
+               or else not SXML.Query.Is_Open (Document, State)
             then
-               Check_Client (SXML.Query.Attribute (State, Document, "device"));
-               Request_Delay := Duration_Value (SXML.Query.Attribute (State, Document, "delay"));
-               Is_Initialized := True;
+               return;
+            end if;
+            if
+               not SXML.Query.Has_Attribute (State, Document, "mode")
+               or else not SXML.Query.Has_Attribute (State, Document, "device")
+            then
+               return;
+            end if;
+            Check_Client (SXML.Query.Attribute (State, Document, "device"));
+            if SXML.Query.Attribute (State, Document, "mode") = "default" then
+               Op_Mode := Default;
                if
-                  SXML.Query.Has_Attribute (State, Document, "jitter")
-                  and SXML.Query.Has_Attribute (State, Document, "distribution")
+                  not SXML.Query.Has_Attribute (State, Document, "delay")
+                  or else not SXML.Query.Has_Attribute (State, Document, "jitter")
+                  or else not SXML.Query.Has_Attribute (State, Document, "distribution")
                then
-                  Jitter := Duration_Value (SXML.Query.Attribute (State, Document, "jitter"));
-                  if SXML.Query.Attribute (State, Document, "distribution") = "uniform" then
-                     J_Distribution := Uniform;
-                  else
-                     J_Distribution := None;
-                  end if;
+                  return;
+               end if;
+               Request_Delay := Duration_Value (SXML.Query.Attribute (State, Document, "delay"));
+               Jitter        := Duration_Value (SXML.Query.Attribute (State, Document, "jitter"));
+               if SXML.Query.Attribute (State, Document, "distribution") = "uniform" then
+                  J_Distribution := Uniform;
                else
                   J_Distribution := None;
-                  Jitter := 0.0;
                end if;
+               Is_Initialized := True;
+            elsif SXML.Query.Attribute (State, Document, "mode") = "sliced" then
+               Op_Mode := Sliced;
+               Slice   := Duration_Value (SXML.Query.Attribute (State, Document, "slice"));
+               Is_Initialized := True;
             end if;
          end if;
       end if;

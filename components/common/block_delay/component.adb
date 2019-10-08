@@ -15,6 +15,7 @@ is
    procedure Construct (Cap : Cai.Types.Capability)
    is
       use type Config.Distribution;
+      use type Config.Mode;
       Success : Boolean;
    begin
       if not Cai.Log.Initialized (Log) then
@@ -24,12 +25,18 @@ is
          Cai.Log.Client.Info (Log, "Delay server");
          Config.Initialize (Cap, Success);
          if Success and then Config.Initialized then
-            Cai.Log.Client.Info (Log, "Delay: " & Cai.Strings.Image (Config.Get_Delay));
+            Cai.Log.Client.Info (Log, "Mode: " & (if Config.Get_Mode = Config.Default then "default" else "sliced"));
             Cai.Log.Client.Info (Log, "Client: " & Config.Get_Client_Id);
-            Cai.Log.Client.Info
-               (Log, "Jitter: " & Cai.Strings.Image (Config.Get_Jitter) & " ("
-                     & (if Config.Get_Jitter_Distribution = Config.Uniform then "uniform" else "none")
-                     & ")");
+            case Config.Get_Mode is
+               when Config.Default =>
+                  Cai.Log.Client.Info (Log, "Delay: " & Cai.Strings.Image (Config.Get_Delay));
+                  Cai.Log.Client.Info
+                     (Log, "Jitter: " & Cai.Strings.Image (Config.Get_Jitter) & " ("
+                           & (if Config.Get_Jitter_Distribution = Config.Uniform then "uniform" else "none")
+                           & ")");
+               when Config.Sliced =>
+                  Cai.Log.Client.Info (Log, "Slice: " & Cai.Strings.Image (Config.Get_Slice));
+            end case;
             Block.Service.Start (Cap, Success);
             if Success then
                Cai.Log.Client.Info (Log, "Delay server started...");
