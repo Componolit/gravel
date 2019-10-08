@@ -2,7 +2,6 @@
 with Ada.Unchecked_Conversion;
 with LSC.Types;
 with LSC.SHA1;
-with Interfaces;
 
 package body Jitter with
    SPARK_Mode
@@ -36,11 +35,10 @@ is
 
    function Normalize (D : Duration) return Duration
    is
-      use type Interfaces.Unsigned_64;
-      function Convert is new Ada.Unchecked_Conversion (Duration, Interfaces.Unsigned_64);
-      function Convert is new Ada.Unchecked_Conversion (Interfaces.Unsigned_64, Duration);
+      function Convert is new Ada.Unchecked_Conversion (Duration, Long_Integer);
+      function Convert is new Ada.Unchecked_Conversion (Long_Integer, Duration);
    begin
-      return Convert (Convert (D) mod Convert (Normalization));
+      return Convert (Convert (D) rem Convert (Normalization));
    end Normalize;
 
    procedure Seed (D : Duration;
