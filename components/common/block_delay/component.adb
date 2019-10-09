@@ -25,10 +25,12 @@ is
          Cai.Log.Client.Info (Log, "Delay server");
          Config.Initialize (Cap, Success);
          if Success and then Config.Initialized then
-            Cai.Log.Client.Info (Log, "Mode: " & (if Config.Get_Mode = Config.Default then "default" else "sliced"));
+            Cai.Log.Client.Info (Log, "Mode: " & (if Config.Get_Mode = Config.Continuous
+                                                  then "continuous"
+                                                  else "sliced"));
             Cai.Log.Client.Info (Log, "Client: " & Config.Get_Client_Id);
             case Config.Get_Mode is
-               when Config.Default =>
+               when Config.Continuous =>
                   Cai.Log.Client.Info (Log, "Delay: " & Cai.Strings.Image (Config.Get_Delay));
                   Cai.Log.Client.Info
                      (Log, "Jitter: " & Cai.Strings.Image (Config.Get_Jitter) & " ("

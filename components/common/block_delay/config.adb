@@ -135,8 +135,8 @@ is
                return;
             end if;
             Check_Client (SXML.Query.Attribute (State, Document, "device"));
-            if SXML.Query.Attribute (State, Document, "mode") = "default" then
-               Op_Mode := Default;
+            if SXML.Query.Attribute (State, Document, "mode") = "continuous" then
+               Op_Mode := Continuous;
                if
                   not SXML.Query.Has_Attribute (State, Document, "delay")
                   or else not SXML.Query.Has_Attribute (State, Document, "jitter")

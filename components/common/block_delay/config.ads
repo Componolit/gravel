@@ -12,7 +12,7 @@ is
    procedure Initialize (Cap     :     Cai.Types.Capability;
                          Success : out Boolean);
 
-   type Mode is (Default, Sliced);
+   type Mode is (Continuous, Sliced);
    type Distribution is (None, Uniform);
 
    function Get_Delay return Duration;

@@ -96,7 +96,7 @@ is
                      Instance.Process (Server, Request_Cache (I).S_Request);
                      if Instance.Status (Request_Cache (I).S_Request) = Types.Pending then
                         case Config.Get_Mode is
-                           when Config.Default =>
+                           when Config.Continuous =>
                               Send_Delay := Config.Get_Delay;
                               case Config.Get_Jitter_Distribution is
                                  when Config.Uniform =>
@@ -127,7 +127,7 @@ is
             end loop;
 
             case Config.Get_Mode is
-               when Config.Default =>
+               when Config.Continuous =>
                   Next_Interrupt := Duration (Get_Next_Ready_Time - Time.Clock (Timer));
                when Config.Sliced =>
                   Current := Time.Clock (Timer);
