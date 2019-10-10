@@ -38,14 +38,18 @@ is
 
    package Block_Client is new Block.Client (Block_Event, Read, Write);
 
-   Test_Buffer : Buffer (1 .. Internal_Buffer_Size);
+   type Request_Cache is array (Request_Id'Range) of Block_Client.Request;
 
-   Capability   : Gns.Types.Capability;
-   Log          : Gns.Log.Client_Session;
-   Rom          : Gns.Rom.Client_Session;
-   Client       : Block.Client_Session;
-   Request_Size : Block.Size;
-   Data_Size    : Block.Byte_Length;
+   Test_Buffer   : Buffer (1 .. Internal_Buffer_Size);
+   Cache         : Request_Cache;
+   Capability    : Gns.Types.Capability;
+   Log           : Gns.Log.Client_Session;
+   Rom           : Gns.Rom.Client_Session;
+   Client        : Block.Client_Session;
+   Request_Count : Unsigned_Long;
+   Current       : Block.Id      := 0;
+   Sent          : Unsigned_Long := 0;
+   Received      : Unsigned_Long := 0;
 
    procedure Construct (Cap : Gns.Types.Capability)
    is
@@ -105,6 +109,7 @@ is
       for I in Test_Buffer'Range loop
          Test_Buffer (I) := Byte (I mod 2 ** 8);
       end loop;
+      Request_Count := Unsigned_Long (Conf.Data_Size / Block.Byte_Length (Conf.Request_Size));
       Gns.Log.Client.Info (Log, "Starting test");
       Block_Event;
    end Construct;
@@ -125,8 +130,60 @@ is
 
    procedure Block_Event
    is
+      use type Block.Size;
+      use type Block.Request_Kind;
+      use type Block.Request_Status;
+      use type Block.Count;
+      Progress : Boolean := True;
+      Result   : Block.Result;
+      Count    : Block.Count;
    begin
-      null;
+      Count := Block.Count (Conf.Request_Size / Block.Block_Size (Client));
+      while Progress loop
+         Progress := False;
+         for I in Cache'Range loop
+            case Block_Client.Status (Cache (I)) is
+               when Block.Raw =>
+                  if Sent < Request_Count then
+                     Block_Client.Allocate_Request (Client,
+                                                    Cache (I),
+                                                    Conf.Operation,
+                                                    Current,
+                                                    Count,
+                                                    I,
+                                                    Result);
+                     case Result is
+                        when Block.Success =>
+                           Sent     := Sent + 1;
+                           Progress := True;
+                           Current  := Current + Count;
+                        when Block.Unsupported =>
+                           Gns.Log.Client.Error (Log, "Unable to allocate request");
+                           Main.Vacate (Capability, Main.Failure);
+                           return;
+                        when others =>
+                           null;
+                     end case;
+                  end if;
+               when Block.Allocated =>
+                  Block_Client.Enqueue (Client, Cache (I));
+               when Block.Pending =>
+                  Block_Client.Update_Request (Client, Cache (I));
+                  Progress := Progress or else Block_Client.Status (Cache (I)) = Block.Pending;
+               when Block.Ok =>
+                  if Block_Client.Kind (Cache (I)) = Block.Read then
+                     Block_Client.Read (Client, Cache (I));
+                  end if;
+                  Received := Received + 1;
+                  Block_Client.Release (Client, Cache (I));
+               when Block.Error =>
+                  Block_Client.Release (Client, Cache (I));
+                  Gns.Log.Client.Error (Log, "Request failed");
+                  Main.Vacate (Capability, Main.Failure);
+                  return;
+            end case;
+         end loop;
+      end loop;
    end Block_Event;
 
    procedure Read (C : in out Block.Client_Session;
