@@ -5,8 +5,11 @@ with Componolit.Gneiss.Log;
 with Componolit.Gneiss.Log.Client;
 with Componolit.Gneiss.Rom;
 with Componolit.Gneiss.Rom.Client;
-with Config;
+with Componolit.Gneiss.Timer;
+with Componolit.Gneiss.Timer.Client;
 with Componolit.Gneiss.Strings_Generic;
+with Config;
+with Output;
 
 package body Component with
    SPARK_Mode
@@ -23,10 +26,12 @@ is
    package Conf is new Config (Block);
    package Conf_Client is new Gns.Rom.Client (Character, Positive, String, Conf.Parse);
 
-   function Image is new Gns.Strings_Generic.Image_Ranged (Block.Byte_Length);
+   function Image is new Output.Byte_Image (Block.Byte_Length);
    function Image is new Gns.Strings_Generic.Image_Ranged (Block.Size);
+   function Image is new Gns.Strings_Generic.Image_Ranged (Block.Count);
 
    procedure Block_Event;
+   procedure Timer_Event;
 
    procedure Read (C : in out Block.Client_Session;
                    I :        Request_Id;
@@ -37,6 +42,7 @@ is
                     D :    out Buffer);
 
    package Block_Client is new Block.Client (Block_Event, Read, Write);
+   package Timer_Client is new Gns.Timer.Client (Timer_Event);
 
    type Request_Cache is array (Request_Id'Range) of Block_Client.Request;
 
@@ -44,15 +50,19 @@ is
    Cache         : Request_Cache;
    Capability    : Gns.Types.Capability;
    Log           : Gns.Log.Client_Session;
+   Xml           : Gns.Log.Client_Session;
    Rom           : Gns.Rom.Client_Session;
+   Timer         : Gns.Timer.Client_Session;
    Client        : Block.Client_Session;
    Request_Count : Unsigned_Long;
-   Current       : Block.Id      := 0;
-   Sent          : Unsigned_Long := 0;
-   Received      : Unsigned_Long := 0;
+   Current       : Block.Id       := 0;
+   Sent          : Unsigned_Long  := 0;
+   Received      : Unsigned_Long  := 0;
+   Start         : Gns.Timer.Time := Gns.Timer.Time'First;
 
    procedure Construct (Cap : Gns.Types.Capability)
    is
+      use type Block.Count;
       use type Block.Size;
       use type Block.Byte_Length;
    begin
@@ -73,12 +83,23 @@ is
          Main.Vacate (Capability, Main.Failure);
          return;
       end if;
+      if not Gns.Timer.Initialized (Timer) then
+         Timer_Client.Initialize (Timer, Capability);
+      end if;
+      if not Gns.Timer.Initialized (Timer) then
+         Gns.Log.Client.Error (Log, "Failed to initialize timer");
+         Main.Vacate (Capability, Main.Failure);
+         return;
+      end if;
       Conf_Client.Load (Rom);
       if not Conf.Initialized then
          Gns.Log.Client.Error (Log, "Failed to read configuration:");
          Gns.Log.Client.Error (Log, Conf.Failure_Reason);
          Main.Vacate (Capability, Main.Failure);
          return;
+      end if;
+      if not Gns.Log.Initialized (Xml) then
+         Gns.Log.Client.Initialize (Xml, Capability, "XML");
       end if;
       Gns.Log.Client.Info (Log, "Device: " & Conf.Device);
       Gns.Log.Client.Info (Log, "Request size: " & Image (Conf.Request_Size));
@@ -105,18 +126,53 @@ is
          Main.Vacate (Capability, Main.Failure);
          return;
       end if;
+      Gns.Log.Client.Info (Log, "Block device with " & Image (Block.Block_Count (Client))
+                                & " blocks @ " & Image (Block.Block_Size (Client))
+                                & " b ("
+                                & Image (Block.Byte_Length (Block.Block_Count (Client)
+                                                            * Block.Count (Block.Block_Size (Client))))
+                                & ")");
+      if Gns.Log.Initialized (Xml) then
+         Output.Xml_Start (Xml,
+                           Long_Integer (Conf.Request_Size),
+                           Long_Integer (Conf.Data_Size),
+                           (case Conf.Operation is
+                              when Block.Read      => "read",
+                              when Block.Write     => "write",
+                              when Block.Sync      => "sync",
+                              when Block.Trim      => "trim",
+                              when Block.None      => "none",
+                              when Block.Undefined => "Undefined"),
+                           Long_Integer (Conf.Buffer_Size),
+                           Long_Integer (Cache'Length));
+      else
+         Gns.Log.Client.Warning (Log, "Failed to initialize XML output");
+      end if;
       Gns.Log.Client.Info (Log, "Initializing buffer...");
       for I in Test_Buffer'Range loop
          Test_Buffer (I) := Byte (I mod 2 ** 8);
       end loop;
       Request_Count := Unsigned_Long (Conf.Data_Size / Block.Byte_Length (Conf.Request_Size));
       Gns.Log.Client.Info (Log, "Starting test");
+      Start := Timer_Client.Clock (Timer);
+      Timer_Client.Set_Timeout (Timer, 1.0);
       Block_Event;
    end Construct;
 
    procedure Destruct
    is
+      Current : Gns.Timer.Time;
    begin
+      if Gns.Timer.Initialized (Timer) and then Conf.Initialized then
+         Current := Timer_Client.Clock (Timer);
+         if Gns.Log.Initialized (Log) then
+            Output.Info (Log, Start, Current, Received, Long_Integer (Conf.Request_Size));
+         end if;
+         if Gns.Log.Initialized (Xml) then
+            Output.Xml_Element (Xml, Start, Current, Received);
+            Output.Xml_End (Xml);
+         end if;
+      end if;
       if Gns.Log.Initialized (Log) then
          Gns.Log.Client.Finalize (Log);
       end if;
@@ -125,6 +181,9 @@ is
       end if;
       if Block.Initialized (Client) then
          Block_Client.Finalize (Client);
+      end if;
+      if Gns.Timer.Initialized (Timer) then
+         Timer_Client.Finalize (Timer);
       end if;
    end Destruct;
 
@@ -169,13 +228,14 @@ is
                   Block_Client.Enqueue (Client, Cache (I));
                when Block.Pending =>
                   Block_Client.Update_Request (Client, Cache (I));
-                  Progress := Progress or else Block_Client.Status (Cache (I)) = Block.Pending;
+                  Progress := Progress or else Block_Client.Status (Cache (I)) /= Block.Pending;
                when Block.Ok =>
                   if Block_Client.Kind (Cache (I)) = Block.Read then
                      Block_Client.Read (Client, Cache (I));
                   end if;
                   Received := Received + 1;
                   Block_Client.Release (Client, Cache (I));
+                  Progress := True;
                when Block.Error =>
                   Block_Client.Release (Client, Cache (I));
                   Gns.Log.Client.Error (Log, "Request failed");
@@ -184,7 +244,22 @@ is
             end case;
          end loop;
       end loop;
+      if Received >= Request_Count then
+         Main.Vacate (Capability, Main.Success);
+      end if;
    end Block_Event;
+
+   procedure Timer_Event
+   is
+      Current : Gns.Timer.Time;
+   begin
+      Current := Timer_Client.Clock (Timer);
+      Output.Info (Log, Start, Current, Received, Long_Integer (Conf.Request_Size));
+      if Gns.Log.Initialized (Xml) then
+         Output.Xml_Element (Xml, Start, Current, Received);
+      end if;
+      Timer_Client.Set_Timeout (Timer, 1.0);
+   end Timer_Event;
 
    procedure Read (C : in out Block.Client_Session;
                    I :        Request_Id;
