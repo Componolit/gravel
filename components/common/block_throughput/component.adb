@@ -180,6 +180,9 @@ is
          Conf_Client.Finalize (Rom);
       end if;
       if Block.Initialized (Client) then
+         for I in Cache'Range loop
+            Block_Client.Release (Client, Cache (I));
+         end loop;
          Block_Client.Finalize (Client);
       end if;
       if Gns.Timer.Initialized (Timer) then
