@@ -109,7 +109,7 @@ is
          Block_Client.Initialize (Client, Capability, Conf.Device, 42, Conf.Buffer_Size);
       end if;
       if not Block.Initialized (Client) then
-         Gns.Log.Client.Error (Log, "Failed to initialized block device");
+         Gns.Log.Client.Error (Log, "Failed to initialize block device");
          Main.Vacate (Capability, Main.Failure);
          return;
       end if;
@@ -163,7 +163,11 @@ is
    is
       Current : Gns.Timer.Time;
    begin
-      if Gns.Timer.Initialized (Timer) and then Conf.Initialized then
+      if
+         Gns.Timer.Initialized (Timer)
+         and then Conf.Initialized
+         and then Block.Initialized (Client)
+      then
          Current := Timer_Client.Clock (Timer);
          if Gns.Log.Initialized (Log) then
             Output.Info (Log, Start, Current, Received, Long_Integer (Conf.Request_Size));
