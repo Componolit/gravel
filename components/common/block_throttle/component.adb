@@ -164,75 +164,69 @@ package body Component is
                pragma Loop_Invariant (Block.Initialized (Client));
                pragma Loop_Invariant (Block.Initialized (Server));
                pragma Loop_Invariant (Initialized (Server));
-               if Block_Server.Status (Cache (I).S) = Block.Raw then
-                  if
-                     Block_Client.Status (Cache (I).C) in Block.Ok | Block.Error
-                     and then Block_Client.Assigned (Client, Cache (I).C)
-                  then
-                     Block_Client.Release (Client, Cache (I).C);
-                     Cache (I).A := False;
-                  end if;
-                  if Block_Client.Status (Cache (I).C) = Block.Raw then
-                     Block_Server.Process (Server, Cache (I).S);
-                     Pr := Pr or else Block_Server.Status (Cache (I).S) = Block.Pending;
-                  end if;
-               end if;
-               if
-                  Block_Server.Status (Cache (I).S) = Block.Error
-                  and then Block_Server.Assigned (Server, Cache (I).S)
-               then
-                  Block_Server.Acknowledge (Server, Cache (I).S, Block.Error);
-                  Pr := Pr or else Block_Server.Status (Cache (I).S) = Block.Raw;
-               end if;
-               if Block_Server.Status (Cache (I).S) = Block.Pending then
-                  if
-                     Block_Client.Status (Cache (I).C) = Block.Pending
-                     and then Block_Client.Assigned (Client, Cache (I).C)
-                  then
-                     Block_Client.Update_Request (Client, Cache (I).C);
-                     Pr := Pr or else Block_Client.Status (Cache (I).C) /= Block.Pending;
-                  end if;
-                  if
-                     Block_Client.Status (Cache (I).C) in Block.Ok | Block.Error
-                     and then Block_Client.Assigned (Client, Cache (I).C)
-                  then
-                     if
-                        Block_Client.Status (Cache (I).C) = Block.Ok
-                        and then Block_Client.Kind (Cache (I).C) = Block.Read
-                     then
-                        Block_Client.Read (Client, Cache (I).C);
-                     end if;
+               case Block_Server.Status (Cache (I).S) is
+                  when Block.Raw =>
+                     case Block_Client.Status (Cache (I).C) is
+                        when Block.Raw =>
+                           Block_Server.Process (Server, Cache (I).S);
+                           Pr := Pr or else Block_Server.Status (Cache (I).S) = Block.Pending;
+                        when Block.Ok | Block.Error =>
+                           if Block_Client.Assigned (Client, Cache (I).C) then
+                              Block_Client.Release (Client, Cache (I).C);
+                              Cache (I).A := False;
+                           end if;
+                        when others =>
+                           null;
+                     end case;
+                  when Block.Pending =>
+                     case Block_Client.Status (Cache (I).C) is
+                        when Block.Raw =>
+                           Block_Client.Allocate_Request (Client,
+                                                          Cache (I).C,
+                                                          Block_Server.Kind (Cache (I).S),
+                                                          Block_Server.Start (Cache (I).S),
+                                                          Block_Server.Length (Cache (I).S),
+                                                          I,
+                                                          Re);
+                           case Re is
+                              when Block.Success =>
+                                 Block_Client.Enqueue (Client, Cache (I).C);
+                              when Block.Retry =>
+                                 null;
+                              when others =>
+                                 Cache (I).A := True;
+                           end case;
+                        when Block.Allocated =>
+                           if Block_Client.Assigned (Client, Cache (I).C) then
+                              Block_Client.Enqueue (Client, Cache (I).C);
+                           end if;
+                        when Block.Pending =>
+                           if Block_Client.Assigned (Client, Cache (I).C) then
+                              Block_Client.Update_Request (Client, Cache (I).C);
+                              Pr := Pr or else Block_Client.Status (Cache (I).C) /= Block.Pending;
+                           end if;
+                        when Block.Ok | Block.Error =>
+                           if Block_Client.Assigned (Client, Cache (I).C) then
+                              if
+                                 Block_Client.Status (Cache (I).C) = Block.Ok
+                                 and then Block_Client.Kind (Cache (I).C) = Block.Read
+                              then
+                                 Block_Client.Read (Client, Cache (I).C);
+                              end if;
+                              if Block_Server.Assigned (Server, Cache (I).S) then
+                                 Block_Server.Acknowledge (Server, Cache (I).S, Block_Client.Status (Cache (I).C));
+                                 Pr := Pr or else Block_Server.Status (Cache (I).S) = Block.Raw;
+                              end if;
+                           end if;
+                     end case;
+                  when Block.Error =>
                      if Block_Server.Assigned (Server, Cache (I).S) then
-                        Block_Server.Acknowledge (Server, Cache (I).S, Block_Client.Status (Cache (I).C));
+                        Block_Server.Acknowledge (Server, Cache (I).S, Block.Error);
                         Pr := Pr or else Block_Server.Status (Cache (I).S) = Block.Raw;
                      end if;
-                  end if;
-                  if Block_Client.Status (Cache (I).C) = Block.Raw then
-                     Block_Client.Allocate_Request (Client,
-                                                    Cache (I).C,
-                                                    Block_Server.Kind (Cache (I).S),
-                                                    Block_Server.Start (Cache (I).S),
-                                                    Block_Server.Length (Cache (I).S),
-                                                    I,
-                                                    Re);
-                     case Re is
-                        when Block.Success =>
-                           Block_Client.Enqueue (Client, Cache (I).C);
-                           null;
-                        when Block.Retry =>
-                           null;
-                        when others =>
-                           Cache (I).A := True;
-                     end case;
-                  end if;
-                  if
-                     Block_Client.Status (Cache (I).C) = Block.Allocated
-                     and then Block_Client.Assigned (Client, Cache (I).C)
-                  then
-                     Block_Client.Enqueue (Client, Cache (I).C);
+                  when others =>
                      null;
-                  end if;
-               end if;
+               end case;
             end loop;
             Block_Client.Submit (Client);
          end loop;
