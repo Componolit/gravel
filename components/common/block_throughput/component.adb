@@ -55,10 +55,11 @@ is
    Timer         : Gns.Timer.Client_Session;
    Client        : Block.Client_Session;
    Request_Count : Unsigned_Long;
-   Current       : Block.Id       := 0;
-   Sent          : Unsigned_Long  := 0;
-   Received      : Unsigned_Long  := 0;
-   Start         : Gns.Timer.Time := Gns.Timer.Time'First;
+   Current       : Block.Id          := 0;
+   Sent          : Unsigned_Long     := 0;
+   Received      : Unsigned_Long     := 0;
+   Start         : Gns.Timer.Time    := Gns.Timer.Time'First;
+   Data_Size     : Block.Byte_Length := 0;
 
    procedure Construct (Cap : Gns.Types.Capability)
    is
@@ -118,6 +119,12 @@ is
          Main.Vacate (Capability, Main.Failure);
          return;
       end if;
+      Data_Size := Block.Block_Size (Client) * Block.Block_Count (Client);
+      if Data_Size < Conf.Data_Size then
+         Gns.Log.Client.Info (Log, "Disk: " & Image (Data_Size));
+      else
+         Data_Size := Conf.Data_Size;
+      end if;
       if
          Block.Byte_Length (Conf.Request_Size) > Internal_Buffer_Size
          or else Block.Byte_Length (Conf.Request_Size) > Conf.Buffer_Size
@@ -135,7 +142,7 @@ is
       if Gns.Log.Initialized (Xml) then
          Output.Xml_Start (Xml,
                            Long_Integer (Conf.Request_Size),
-                           Long_Integer (Conf.Data_Size),
+                           Long_Integer (Data_Size),
                            (case Conf.Operation is
                               when Block.Read      => "read",
                               when Block.Write     => "write",
@@ -152,7 +159,7 @@ is
       for I in Test_Buffer'Range loop
          Test_Buffer (I) := Byte (I mod 2 ** 8);
       end loop;
-      Request_Count := Unsigned_Long (Conf.Data_Size / Block.Byte_Length (Conf.Request_Size));
+      Request_Count := Unsigned_Long (Data_Size / Block.Byte_Length (Conf.Request_Size));
       Gns.Log.Client.Info (Log, "Starting test");
       Start := Timer_Client.Clock (Timer);
       Timer_Client.Set_Timeout (Timer, 1.0);
