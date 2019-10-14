@@ -1,7 +1,10 @@
 
 with Componolit.Gneiss.Log;
 with Componolit.Gneiss.Log.Client;
+with Componolit.Gneiss.Rom;
+with Componolit.Gneiss.Rom.Client;
 with Componolit.Gneiss.Strings_Generic;
+with Config;
 
 package body Component is
 
@@ -11,33 +14,56 @@ package body Component is
    use type Block.Request_Kind;
    use type Block.Request_Status;
 
+   package Rom is new Gns.Rom.Client (Character, Positive, String, Config.Parse);
+
    Dispatcher : Block.Dispatcher_Session;
-   Client : Block.Client_Session;
-   Server : Block.Server_Session;
+   Client     : Block.Client_Session;
+   Server     : Block.Server_Session;
+   Conf_Rom   : Gns.Rom.Client_Session;
 
-   Capability : Componolit.Gneiss.Types.Capability;
+   Capability : Gns.Types.Capability;
 
-   Log : Componolit.Gneiss.Log.Client_Session;
+   Log : Gns.Log.Client_Session;
 
-   function Image is new Componolit.Gneiss.Strings_Generic.Image_Modular (Byte);
-   function Image is new Componolit.Gneiss.Strings_Generic.Image_Modular (Block.Id);
-   function Image is new Componolit.Gneiss.Strings_Generic.Image_Ranged (Unsigned_Long);
+   function Image is new Gns.Strings_Generic.Image_Modular (Byte);
+   function Image is new Gns.Strings_Generic.Image_Modular (Block.Id);
+   function Image is new Gns.Strings_Generic.Image_Ranged (Unsigned_Long);
+   function Image is new Gns.Strings_Generic.Image_Ranged (Natural);
 
-   procedure Construct (Cap : Componolit.Gneiss.Types.Capability)
+   procedure Construct (Cap : Gns.Types.Capability)
    is
    begin
       Capability := Cap;
-      if not Componolit.Gneiss.Log.Initialized (Log) then
-         Componolit.Gneiss.Log.Client.Initialize (Log, Cap, "log_block_proxy");
+      if not Gns.Log.Initialized (Log) then
+         Gns.Log.Client.Initialize (Log, Cap, "log_block_throttle");
       end if;
-      if Componolit.Gneiss.Log.Initialized (Log) then
+      if Gns.Log.Initialized (Log) then
+         if not Gns.Rom.Initialized (Conf_Rom) then
+            Rom.Initialize (Conf_Rom, Cap);
+         end if;
+         if not Gns.Rom.Initialized (Conf_Rom) then
+            Gns.Log.Client.Error (Log, "Failed to initialize rom session");
+            Main.Vacate (Capability, Main.Failure);
+            return;
+         end if;
+         Rom.Load (Conf_Rom);
+         if not Config.Initialized then
+            Gns.Log.Client.Error (Log, "Failed to parse config: "
+                                       & Config.Reason);
+            Main.Vacate (Cap, Main.Failure);
+            return;
+         end if;
          if not Block.Initialized (Dispatcher) then
             Block_Dispatcher.Initialize (Dispatcher, Cap, 42);
          end if;
          if Block.Initialized (Dispatcher) then
             Block_Dispatcher.Register (Dispatcher);
+            Gns.Log.Client.Info (Log, "Throttle ready.");
+            Gns.Log.Client.Info (Log, "Device: " & Config.Device);
+            Gns.Log.Client.Info (Log, "Request rate: " & Image (Config.Rate) & "/s");
+            Gns.Log.Client.Info (Log, "Ack frequency: " & Image (Config.Frequency) & "/s");
          else
-            Componolit.Gneiss.Log.Client.Error (Log, "Failed to initialize Dispatcher");
+            Gns.Log.Client.Error (Log, "Failed to initialize Dispatcher");
             Main.Vacate (Capability, Main.Failure);
          end if;
       else
@@ -48,8 +74,8 @@ package body Component is
    procedure Destruct
    is
    begin
-      if Componolit.Gneiss.Log.Initialized (Log) then
-         Componolit.Gneiss.Log.Client.Finalize (Log);
+      if Gns.Log.Initialized (Log) then
+         Gns.Log.Client.Finalize (Log);
       end if;
       if Block.Initialized (Dispatcher) then
          Block_Dispatcher.Finalize (Dispatcher);
@@ -69,7 +95,7 @@ package body Component is
    procedure Print_Buffer (I : Request_Index;
                            D : Buffer;
                            E : Boolean) with
-      Pre => Componolit.Gneiss.Log.Initialized (Log)
+      Pre => Gns.Log.Initialized (Log)
              and then Block_Server.Status (Cache (I).S) = Block.Pending
              and then Block_Server.Kind (Cache (I).S) in Block.Read | Block.Write;
 
@@ -85,12 +111,12 @@ package body Component is
          return;
       end if;
       if Block_Server.Kind (Cache (I).S) = Block.Write then
-         Componolit.Gneiss.Log.Client.Info (Log, "Write @ " & Image (Block_Server.Start (Cache (I).S)));
+         Gns.Log.Client.Info (Log, "Write @ " & Image (Block_Server.Start (Cache (I).S)));
       else
-         Componolit.Gneiss.Log.Client.Info (Log, "Read @ " & Image (Block_Server.Start (Cache (I).S)));
+         Gns.Log.Client.Info (Log, "Read @ " & Image (Block_Server.Start (Cache (I).S)));
       end if;
       while J < D'Last and then D'Last - J > 16 loop
-         Componolit.Gneiss.Log.Client.Info
+         Gns.Log.Client.Info
             (Log, Image (J - D'First, 16, False) & ": "
                   & Pad (Image (D (J), 16, False))      & Pad (Image (D (J + 1), 16, False)) & " "
                   & Pad (Image (D (J + 2), 16, False))  & Pad (Image (D (J + 3), 16, False)) & " "
