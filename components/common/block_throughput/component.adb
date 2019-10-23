@@ -240,6 +240,7 @@ is
                   end if;
                when Block.Allocated =>
                   Block_Client.Enqueue (Client, Cache (I));
+                  Progress := Progress or else Block_Client.Status (Cache (I)) = Block.Pending;
                when Block.Pending =>
                   Block_Client.Update_Request (Client, Cache (I));
                   Progress := Progress or else Block_Client.Status (Cache (I)) /= Block.Pending;
