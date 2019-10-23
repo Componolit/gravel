@@ -3,41 +3,53 @@ with Componolit.Gneiss.Log;
 with Componolit.Gneiss.Log.Client;
 with Componolit.Gneiss.Rom;
 with Componolit.Gneiss.Rom.Client;
+with Componolit.Gneiss.Timer;
+with Componolit.Gneiss.Timer.Client;
 with Componolit.Gneiss.Strings_Generic;
+with Componolit.Gneiss.Containers.Fifo;
 with Config;
 
 package body Component is
-
-   --  Print the content of each Read and Write package seen
-   Print_Content : constant Boolean := False;
 
    use type Block.Request_Kind;
    use type Block.Request_Status;
 
    package Rom is new Gns.Rom.Client (Character, Positive, String, Config.Parse);
+   package Queue is new Gns.Containers.Fifo (Request_Index);
+   procedure Timer_Event;
+   package Timer_Client is new Gns.Timer.Client (Timer_Event);
 
    Dispatcher : Block.Dispatcher_Session;
    Client     : Block.Client_Session;
    Server     : Block.Server_Session;
    Conf_Rom   : Gns.Rom.Client_Session;
-
    Capability : Gns.Types.Capability;
+   Log        : Gns.Log.Client_Session;
+   Timer      : Gns.Timer.Client_Session;
+   Rate       : Natural;
+   Current    : Natural := 0;
+   Interval   : Duration;
+   Ack_Queue  : Queue.Queue (2 ** 8);
 
-   Log : Gns.Log.Client_Session;
-
-   function Image is new Gns.Strings_Generic.Image_Modular (Byte);
-   function Image is new Gns.Strings_Generic.Image_Modular (Block.Id);
-   function Image is new Gns.Strings_Generic.Image_Ranged (Unsigned_Long);
    function Image is new Gns.Strings_Generic.Image_Ranged (Natural);
 
    procedure Construct (Cap : Gns.Types.Capability)
    is
    begin
+      Queue.Initialize (Ack_Queue, Request_Index'First);
       Capability := Cap;
       if not Gns.Log.Initialized (Log) then
          Gns.Log.Client.Initialize (Log, Cap, "log_block_throttle");
       end if;
       if Gns.Log.Initialized (Log) then
+         if not Gns.Timer.Initialized (Timer) then
+            Timer_Client.Initialize (Timer, Cap);
+         end if;
+         if not Gns.Timer.Initialized (Timer) then
+            Gns.Log.Client.Error (Log, "Failed to initialize timer");
+            Main.Vacate (Capability, Main.Failure);
+            return;
+         end if;
          if not Gns.Rom.Initialized (Conf_Rom) then
             Rom.Initialize (Conf_Rom, Cap);
          end if;
@@ -57,6 +69,8 @@ package body Component is
             Block_Dispatcher.Initialize (Dispatcher, Cap, 42);
          end if;
          if Block.Initialized (Dispatcher) then
+            Rate     := Config.Rate / Config.Frequency;
+            Interval := 1.0 / Duration (Config.Frequency);
             Block_Dispatcher.Register (Dispatcher);
             Gns.Log.Client.Info (Log, "Throttle ready.");
             Gns.Log.Client.Info (Log, "Device: " & Config.Device);
@@ -86,50 +100,12 @@ package body Component is
       C : Block_Client.Request;
       S : Block_Server.Request;
       A : Boolean := False;
+      Q : Boolean := False;
    end record;
 
    type Registry is array (Request_Index'Range) of Cache_Entry;
 
    Cache : Registry;
-
-   procedure Print_Buffer (I : Request_Index;
-                           D : Buffer;
-                           E : Boolean) with
-      Pre => Gns.Log.Initialized (Log)
-             and then Block_Server.Status (Cache (I).S) = Block.Pending
-             and then Block_Server.Kind (Cache (I).S) in Block.Read | Block.Write;
-
-   procedure Print_Buffer (I : Request_Index;
-                           D : Buffer;
-                           E : Boolean)
-   is
-      J : Unsigned_Long := D'First;
-      function Pad (S : String) return String is
-         (if S'Length = 1 then '0' & S else S);
-   begin
-      if not E then
-         return;
-      end if;
-      if Block_Server.Kind (Cache (I).S) = Block.Write then
-         Gns.Log.Client.Info (Log, "Write @ " & Image (Block_Server.Start (Cache (I).S)));
-      else
-         Gns.Log.Client.Info (Log, "Read @ " & Image (Block_Server.Start (Cache (I).S)));
-      end if;
-      while J < D'Last and then D'Last - J > 16 loop
-         Gns.Log.Client.Info
-            (Log, Image (J - D'First, 16, False) & ": "
-                  & Pad (Image (D (J), 16, False))      & Pad (Image (D (J + 1), 16, False)) & " "
-                  & Pad (Image (D (J + 2), 16, False))  & Pad (Image (D (J + 3), 16, False)) & " "
-                  & Pad (Image (D (J + 4), 16, False))  & Pad (Image (D (J + 5), 16, False)) & " "
-                  & Pad (Image (D (J + 6), 16, False))  & Pad (Image (D (J + 7), 16, False)) & " "
-                  & Pad (Image (D (J + 8), 16, False))  & Pad (Image (D (J + 9), 16, False)) & " "
-                  & Pad (Image (D (J + 10), 16, False)) & Pad (Image (D (J + 11), 16, False)) & " "
-                  & Pad (Image (D (J + 12), 16, False)) & Pad (Image (D (J + 13), 16, False)) & " "
-                  & Pad (Image (D (J + 14), 16, False)) & Pad (Image (D (J + 15), 16, False)) & " "
-                  );
-         J := J + 16;
-      end loop;
-   end Print_Buffer;
 
    procedure Write (C : in out Block.Client_Session;
                     I :        Request_Index;
@@ -146,7 +122,6 @@ package body Component is
          and then D'Length = Block_Size (Server) * Block_Server.Length (Cache (I).S)
       then
          Block_Server.Write (Server, Cache (I).S, D);
-         Print_Buffer (I, D, Print_Content);
       else
          Cache (I).A := True;
       end if;
@@ -166,7 +141,6 @@ package body Component is
          and then Block_Server.Assigned (Server, Cache (I).S)
          and then D'Length = Block_Size (Server) * Block_Server.Length (Cache (I).S)
       then
-         Print_Buffer (I, D, Print_Content);
          Block_Server.Read (Server, Cache (I).S, D);
       else
          Cache (I).A := True;
@@ -232,17 +206,19 @@ package body Component is
                               Pr := Pr or else Block_Client.Status (Cache (I).C) /= Block.Pending;
                            end if;
                         when Block.Ok | Block.Error =>
-                           if Block_Client.Assigned (Client, Cache (I).C) then
+                           if
+                              Block_Client.Assigned (Client, Cache (I).C)
+                              and then not Cache (I).Q
+                           then
                               if
                                  Block_Client.Status (Cache (I).C) = Block.Ok
                                  and then Block_Client.Kind (Cache (I).C) = Block.Read
                               then
                                  Block_Client.Read (Client, Cache (I).C);
                               end if;
-                              if Block_Server.Assigned (Server, Cache (I).S) then
-                                 Block_Server.Acknowledge (Server, Cache (I).S, Block_Client.Status (Cache (I).C));
-                                 Pr := Pr or else Block_Server.Status (Cache (I).S) = Block.Raw;
-                              end if;
+                              Queue.Put (Ack_Queue, I);
+                              Cache (I).Q := True;
+                              Pr := True;
                            end if;
                      end case;
                   when Block.Error =>
@@ -259,6 +235,25 @@ package body Component is
          Block_Server.Unblock_Client (Server);
       end if;
    end Event;
+
+   procedure Timer_Event
+   is
+      Index   : Request_Index;
+   begin
+      Current := 0;
+      while Current < Rate and then Queue.Count (Ack_Queue) > 0 loop
+         Queue.Peek (Ack_Queue, Index);
+         Block_Server.Acknowledge (Server, Cache (Index).S, Block_Client.Status (Cache (Index).C));
+         exit when Block_Server.Status (Cache (Index).S) /= Block.Raw;
+         Current := Current + 1;
+         Cache (Index).Q := False;
+         Queue.Drop (Ack_Queue);
+      end loop;
+      if Initialized (Server) then
+         Timer_Client.Set_Timeout (Timer, Interval);
+         Block_Server.Unblock_Client (Server);
+      end if;
+   end Timer_Event;
 
    procedure Dispatch (I : in out Block.Dispatcher_Session;
                        C :        Block.Dispatcher_Capability)
@@ -292,6 +287,7 @@ package body Component is
          else  --  Genode
             Block_Client.Initialize (Client, Capability, L, 42, B * 2);
          end if;
+         Timer_Client.Set_Timeout (Timer, Interval);
       end if;
       if Block.Initialized (Client) and then not Initialized (S) then
          Block_Client.Finalize (Client);
