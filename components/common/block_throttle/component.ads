@@ -18,7 +18,7 @@ package Component is
    type Byte is mod 2 ** 8;
    subtype Unsigned_Long is Long_Integer range 0 .. Long_Integer'Last;
    type Buffer is array (Unsigned_Long range <>) of Byte;
-   type Request_Index is mod 2 ** 6;
+   type Request_Index is mod 2 ** 8;
 
    package Block is new Gns.Block (Byte, Unsigned_Long, Buffer, Integer, Request_Index);
 
