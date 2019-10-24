@@ -216,9 +216,17 @@ package body Component is
                               then
                                  Block_Client.Read (Client, Cache (I).C);
                               end if;
-                              Queue.Put (Ack_Queue, I);
-                              Cache (I).Q := True;
-                              Pr := True;
+                              if Current < Rate and then Block_Server.Assigned (Server, Cache (I).S) then
+                                 Block_Server.Acknowledge (Server, Cache (I).S, Block_Client.Status (Cache (I).C));
+                                 if Block_Server.Status (Cache (I).S) = Block.Raw then
+                                    Current := Current + 1;
+                                    Pr := True;
+                                 end if;
+                              else
+                                 Queue.Put (Ack_Queue, I);
+                                 Cache (I).Q := True;
+                                 Pr := True;
+                              end if;
                            end if;
                      end case;
                   when Block.Error =>
