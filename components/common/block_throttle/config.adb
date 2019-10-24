@@ -53,7 +53,7 @@ is
       Freq := Parse_Natural (SXML.Query.Attribute (State, Document, "freq"));
       Reqs := Parse_Natural (SXML.Query.Attribute (State, Document, "reqs"));
       declare
-         Raw_Dev : String := SXML.Query.Attribute (State, Document, "device");
+         Raw_Dev : constant String := SXML.Query.Attribute (State, Document, "device");
       begin
          if Raw_Dev'Length <= Dev'Length then
             Dev (Dev'First .. Dev'First + Raw_Dev'Length - 1) := Raw_Dev;
