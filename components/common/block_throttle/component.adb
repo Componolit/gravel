@@ -33,6 +33,15 @@ package body Component is
 
    function Image is new Gns.Strings_Generic.Image_Ranged (Natural);
 
+   procedure Handle_Raw (Progress : in out Boolean;
+                         I        :        Request_Index);
+
+   procedure Handle_Pending (Progress : in out Boolean;
+                             I        :        Request_Index);
+
+   procedure Handle_Acknowledge (Progress : in out Boolean;
+                                 I        :        Request_Index);
+
    procedure Construct (Cap : Gns.Types.Capability)
    is
    begin
@@ -149,7 +158,6 @@ package body Component is
 
    procedure Event
    is
-      Re : Block.Result;
       Pr : Boolean := True;
    begin
       if
@@ -166,69 +174,9 @@ package body Component is
                pragma Loop_Invariant (Initialized (Server));
                case Block_Server.Status (Cache (I).S) is
                   when Block.Raw =>
-                     case Block_Client.Status (Cache (I).C) is
-                        when Block.Raw =>
-                           Block_Server.Process (Server, Cache (I).S);
-                           Pr := Pr or else Block_Server.Status (Cache (I).S) = Block.Pending;
-                        when Block.Ok | Block.Error =>
-                           if Block_Client.Assigned (Client, Cache (I).C) then
-                              Block_Client.Release (Client, Cache (I).C);
-                              Cache (I).A := False;
-                           end if;
-                        when others =>
-                           null;
-                     end case;
+                     Handle_Raw (Pr, I);
                   when Block.Pending =>
-                     case Block_Client.Status (Cache (I).C) is
-                        when Block.Raw =>
-                           Block_Client.Allocate_Request (Client,
-                                                          Cache (I).C,
-                                                          Block_Server.Kind (Cache (I).S),
-                                                          Block_Server.Start (Cache (I).S),
-                                                          Block_Server.Length (Cache (I).S),
-                                                          I,
-                                                          Re);
-                           case Re is
-                              when Block.Success =>
-                                 Block_Client.Enqueue (Client, Cache (I).C);
-                              when Block.Retry =>
-                                 null;
-                              when others =>
-                                 Cache (I).A := True;
-                           end case;
-                        when Block.Allocated =>
-                           if Block_Client.Assigned (Client, Cache (I).C) then
-                              Block_Client.Enqueue (Client, Cache (I).C);
-                           end if;
-                        when Block.Pending =>
-                           if Block_Client.Assigned (Client, Cache (I).C) then
-                              Block_Client.Update_Request (Client, Cache (I).C);
-                              Pr := Pr or else Block_Client.Status (Cache (I).C) /= Block.Pending;
-                           end if;
-                        when Block.Ok | Block.Error =>
-                           if
-                              Block_Client.Assigned (Client, Cache (I).C)
-                              and then not Cache (I).Q
-                           then
-                              if
-                                 Block_Client.Status (Cache (I).C) = Block.Ok
-                                 and then Block_Client.Kind (Cache (I).C) = Block.Read
-                              then
-                                 Block_Client.Read (Client, Cache (I).C);
-                              end if;
-                              if Current < Rate and then Block_Server.Assigned (Server, Cache (I).S) then
-                                 Block_Server.Acknowledge (Server, Cache (I).S, Block_Client.Status (Cache (I).C));
-                                 if Block_Server.Status (Cache (I).S) = Block.Raw then
-                                    Current := Current + 1;
-                                    Pr := True;
-                                 end if;
-                              else
-                                 Queue.Put (Ack_Queue, I);
-                                 Cache (I).Q := True;
-                                 Pr := True;
-                              end if;
-                           end if;
-                     end case;
+                     Handle_Pending (Pr, I);
                   when Block.Error =>
                      if Block_Server.Assigned (Server, Cache (I).S) then
                         Block_Server.Acknowledge (Server, Cache (I).S, Block.Error);
@@ -243,6 +191,88 @@ package body Component is
          Block_Server.Unblock_Client (Server);
       end if;
    end Event;
+
+   procedure Handle_Raw (Progress : in out Boolean;
+                         I        :        Request_Index)
+   is
+   begin
+      case Block_Client.Status (Cache (I).C) is
+         when Block.Raw =>
+            Block_Server.Process (Server, Cache (I).S);
+            Progress := Progress or else Block_Server.Status (Cache (I).S) = Block.Pending;
+         when Block.Ok | Block.Error =>
+            if Block_Client.Assigned (Client, Cache (I).C) then
+               Block_Client.Release (Client, Cache (I).C);
+               Cache (I).A := False;
+            end if;
+         when others =>
+            null;
+      end case;
+   end Handle_Raw;
+
+   procedure Handle_Pending (Progress : in out Boolean;
+                             I        :        Request_Index)
+   is
+      Re : Block.Result;
+   begin
+      case Block_Client.Status (Cache (I).C) is
+         when Block.Raw =>
+            Block_Client.Allocate_Request (Client,
+                                           Cache (I).C,
+                                           Block_Server.Kind (Cache (I).S),
+                                           Block_Server.Start (Cache (I).S),
+                                           Block_Server.Length (Cache (I).S),
+                                           I,
+                                           Re);
+            case Re is
+               when Block.Success =>
+                  Block_Client.Enqueue (Client, Cache (I).C);
+               when Block.Retry =>
+                  null;
+               when others =>
+                  Cache (I).A := True;
+            end case;
+         when Block.Allocated =>
+            if Block_Client.Assigned (Client, Cache (I).C) then
+               Block_Client.Enqueue (Client, Cache (I).C);
+            end if;
+         when Block.Pending =>
+            if Block_Client.Assigned (Client, Cache (I).C) then
+               Block_Client.Update_Request (Client, Cache (I).C);
+               Progress := Progress or else Block_Client.Status (Cache (I).C) /= Block.Pending;
+            end if;
+         when Block.Ok | Block.Error =>
+            Handle_Acknowledge (Progress, I);
+      end case;
+   end Handle_Pending;
+
+   procedure Handle_Acknowledge (Progress : in out Boolean;
+                                 I        :        Request_Index)
+   is
+   begin
+      if
+         Block_Client.Assigned (Client, Cache (I).C)
+         and then not Cache (I).Q
+      then
+         if
+            Block_Client.Status (Cache (I).C) = Block.Ok
+            and then Block_Client.Kind (Cache (I).C) = Block.Read
+         then
+            Block_Client.Read (Client, Cache (I).C);
+         end if;
+         if Current < Rate and then Block_Server.Assigned (Server, Cache (I).S) then
+            Block_Server.Acknowledge (Server, Cache (I).S, Block_Client.Status (Cache (I).C));
+            if Block_Server.Status (Cache (I).S) = Block.Raw then
+               Current := Current + 1;
+               Progress := True;
+            end if;
+         else
+            Queue.Put (Ack_Queue, I);
+            Cache (I).Q := True;
+            Progress := True;
+         end if;
+      end if;
+   end Handle_Acknowledge;
 
    procedure Timer_Event
    is
