@@ -55,6 +55,8 @@ is
    procedure Event
    is
       use type Cai.Timer.Time;
+      use type Types.Result;
+      use type Types.Request_Kind;
       Next_Interrupt : Duration;
       Current : Componolit.Gneiss.Timer.Time;
       Result : Types.Result;
@@ -119,6 +121,12 @@ is
                                                        Instance.Start (Request_Cache (I).S_Request),
                                                        Instance.Length (Request_Cache (I).S_Request),
                                                        I, Result);
+                     if
+                        Result = Types.Success
+                        and then Instance_Client.Kind (Request_Cache (I).C_Request) = Types.Write
+                     then
+                        Instance_Client.Write (Client, Request_Cache (I).C_Request);
+                     end if;
                   end if;
                   if Instance_Client.Status (Request_Cache (I).C_Request) = Types.Allocated then
                      Instance_Client.Enqueue (Client, Request_Cache (I).C_Request);
@@ -226,7 +234,7 @@ is
    is
       pragma Unreferenced (C);
    begin
-      Instance.Write (Server, Request_Cache (I).S_Request, D);
+      Instance.Write (Server, Request_Cache (I).S_Request, D, 0);
    end Write;
 
    procedure Read (C : in out Types.Client_Session;
@@ -235,7 +243,28 @@ is
    is
       pragma Unreferenced (C);
    begin
-      Instance.Read (Server, Request_Cache (I).S_Request, D);
+      Instance.Read (Server, Request_Cache (I).S_Request, D, 0);
    end Read;
+
+   procedure Read (S : in out Types.Server_Session;
+                   I :        Request_Id;
+                   B :    out Buffer)
+   is
+      pragma Unreferenced (S);
+      pragma Unreferenced (I);
+   begin
+      B := (others => 0);
+   end Read;
+
+   procedure Write (S : in out Types.Server_Session;
+                    I :        Request_Id;
+                    B :        Buffer)
+   is
+      pragma Unreferenced (S);
+      pragma Unreferenced (I);
+      pragma Unreferenced (B);
+   begin
+      null;
+   end Write;
 
 end Block.Server;

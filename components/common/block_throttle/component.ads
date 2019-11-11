@@ -56,6 +56,12 @@ package Component is
       Post => Block_Size'Result in 512 | 1024 | 2048 | 4096;
    function Writable (S : Block.Server_Session) return Boolean with
       Pre => Initialized (S);
+   procedure Read (S : in out Block.Server_Session;
+                   I :        Request_Index;
+                   B :    out Buffer);
+   procedure Write (S : in out Block.Server_Session;
+                    I :        Request_Index;
+                    B :        Buffer);
 
    package Block_Server is new Block.Server (Event,
                                              Block_Count,
@@ -63,7 +69,9 @@ package Component is
                                              Writable,
                                              Initialized,
                                              Initialize_Server,
-                                             Finalize_Server);
+                                             Finalize_Server,
+                                             Read,
+                                             Write);
    package Block_Dispatcher is new Block.Dispatcher (Block_Server, Dispatch);
 
 end Component;

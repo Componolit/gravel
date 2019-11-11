@@ -230,6 +230,9 @@ is
                            Sent     := Sent + 1;
                            Progress := True;
                            Current  := Current + Count;
+                           if Block_Client.Kind (Cache (I)) = Block.Write then
+                              Block_Client.Write (Client, Cache (I));
+                           end if;
                         when Block.Unsupported =>
                            Gns.Log.Client.Error (Log, "Unable to allocate request");
                            Main.Vacate (Capability, Main.Failure);
