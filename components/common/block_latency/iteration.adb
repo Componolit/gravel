@@ -84,6 +84,9 @@ package body Iteration is
             case Result is
                when Block.Success =>
                   T.Sent := T.Sent + 1;
+                  if Client.Kind (Cache (I)) = Block.Write then
+                     Client.Write (C, Cache (I));
+                  end if;
                when Block.Unsupported =>
                   Cai.Log.Client.Error (Log, "Failed to send request");
                when others =>

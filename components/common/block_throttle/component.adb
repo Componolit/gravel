@@ -130,7 +130,7 @@ package body Component is
          and then Block_Server.Assigned (Server, Cache (I).S)
          and then D'Length = Block_Size (Server) * Block_Server.Length (Cache (I).S)
       then
-         Block_Server.Write (Server, Cache (I).S, D);
+         Block_Server.Write (Server, Cache (I).S, D, 0);
       else
          Cache (I).A := True;
       end if;
@@ -150,7 +150,7 @@ package body Component is
          and then Block_Server.Assigned (Server, Cache (I).S)
          and then D'Length = Block_Size (Server) * Block_Server.Length (Cache (I).S)
       then
-         Block_Server.Read (Server, Cache (I).S, D);
+         Block_Server.Read (Server, Cache (I).S, D, 0);
       else
          Cache (I).A := True;
       end if;
@@ -226,6 +226,9 @@ package body Component is
                                            Re);
             case Re is
                when Block.Success =>
+                  if Block_Client.Kind (Cache (I).C) = Block.Write then
+                     Block_Client.Write (Client, Cache (I).C);
+                  end if;
                   Block_Client.Enqueue (Client, Cache (I).C);
                when Block.Retry =>
                   null;
@@ -365,5 +368,26 @@ package body Component is
        and then Block.Block_Size (Client) in 512 | 1024 | 2048 | 4096
        and then Block.Block_Count (Client) > 0
        and then Block.Block_Count (Client) < Block.Count'Last / (Block.Count (Block.Block_Size (Client)) / 512));
+
+   procedure Read (S : in out Block.Server_Session;
+                   I :        Request_Index;
+                   B :    out Buffer)
+   is
+      pragma Unreferenced (S);
+      pragma Unreferenced (I);
+   begin
+      B := (others => 0);
+   end Read;
+
+   procedure Write (S : in out Block.Server_Session;
+                    I :        Request_Index;
+                    B :        Buffer)
+   is
+      pragma Unreferenced (S);
+      pragma Unreferenced (I);
+      pragma Unreferenced (B);
+   begin
+      null;
+   end Write;
 
 end Component;

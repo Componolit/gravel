@@ -82,6 +82,8 @@ is
       use type Interfaces.Unsigned_64;
       use type Cai.Timer.Time;
       use type Component.Block.Request_Status;
+      use type Component.Block.Request_Kind;
+      use type Component.Block.Result;
       Current : Cai.Timer.Time;
       Result  : Component.Block.Result;
    begin
@@ -117,6 +119,12 @@ is
                                               1,
                                               I,
                                               Result);
+               if
+                  Result = Component.Block.Success
+                  and then Block_Client.Kind (Cache (I).Request) = Component.Block.Write
+               then
+                  Block_Client.Write (Client, Cache (I).Request);
+               end if;
             end if;
             if Block_Client.Status (Cache (I).Request) = Component.Block.Allocated then
                Block_Client.Enqueue (Client, Cache (I).Request);

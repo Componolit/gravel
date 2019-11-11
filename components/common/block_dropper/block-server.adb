@@ -96,6 +96,7 @@ is
    is
       use type Types.Request_Status;
       use type Types.Request_Kind;
+      use type Types.Result;
       use type Interfaces.Unsigned_8;
       use type Interfaces.Unsigned_64;
       Result   : Types.Result;
@@ -150,6 +151,12 @@ is
                                                     Instance.Start (Cache (I).S),
                                                     Instance.Length (Cache (I).S),
                                                     I, Result);
+                  if
+                     Result = Types.Success
+                     and then Instance_Client.Kind (Cache (I).C) = Types.Write
+                  then
+                     Instance_Client.Write (Client, Cache (I).C);
+                  end if;
                end if;
                if Instance_Client.Status (Cache (I).C) = Types.Allocated then
                   Instance_Client.Enqueue (Client, Cache (I).C);
@@ -198,7 +205,7 @@ is
       use type Interfaces.Unsigned_8;
       use type Interfaces.Unsigned_64;
    begin
-      Instance.Write (Server, Cache (I).S, D);
+      Instance.Write (Server, Cache (I).S, D, 0);
       if
          Do_Op = Modify
          and ((Modified > 0 and Modified <= Drop_Count)
@@ -226,10 +233,10 @@ is
               or (Modified = 0 and (Hash_Value (Hash_Value'First) mod Hash_Mod) < Hash_Part))
       then
          Modified    := Modified + 1;
-         Instance.Read (Server, Cache (I).S, First & (D (D'First + 1 .. D'Last)));
+         Instance.Read (Server, Cache (I).S, First & (D (D'First + 1 .. D'Last)), 0);
       else
          Modified := 0;
-         Instance.Read (Server, Cache (I).S, D);
+         Instance.Read (Server, Cache (I).S, D, 0);
       end if;
    end Read;
 
@@ -239,5 +246,26 @@ is
    begin
       return Inited;
    end Initialized;
+
+   procedure Read (S : in out Types.Server_Session;
+                   I :        Request_Id;
+                   B :    out Buffer)
+   is
+      pragma Unreferenced (S);
+      pragma Unreferenced (I);
+   begin
+      B := (others => 0);
+   end Read;
+
+   procedure Write (S : in out Types.Server_Session;
+                    I :        Request_Id;
+                    B :        Buffer)
+   is
+      pragma Unreferenced (S);
+      pragma Unreferenced (I);
+      pragma Unreferenced (B);
+   begin
+      null;
+   end Write;
 
 end Block.Server;

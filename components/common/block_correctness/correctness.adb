@@ -103,7 +103,9 @@ is
                            L       : in out Cai.Log.Client_Session;
                            Timer   :        Cai.Timer.Client_Session)
    is
+      use type Block.Request_Kind;
       use type Block.Request_Status;
+      use type Block.Result;
       Result : Block.Result;
    begin
       Success := True;
@@ -137,6 +139,12 @@ is
                                   1,
                                   Cache'First,
                                   Result);
+         if
+            Result = Block.Success
+            and then Client.Kind (Cache (Cache'First).R) = Block.Write
+         then
+            Client.Write (C, Cache (Cache'First).R);
+         end if;
       end if;
       if Client.Status (Cache (Cache'First).R) = Block.Allocated then
          Client.Enqueue (C, Cache (Cache'First).R);
@@ -175,6 +183,8 @@ is
                     Timer   :        Cai.Timer.Client_Session)
    is
       use type Block.Request_Status;
+      use type Block.Request_Kind;
+      use type Block.Result;
       Current : Cai.Timer.Time;
       Result  : Block.Result;
    begin
@@ -203,6 +213,12 @@ is
                                      1,
                                      I,
                                      Result);
+            if
+               Result = Block.Success and then
+               Client.Kind (Cache (I).R) = Block.Write
+            then
+               Client.Write (C, Cache (I).R);
+            end if;
          end if;
          if Client.Status (Cache (I).R) = Block.Allocated then
             Client.Enqueue (C, Cache (I).R);

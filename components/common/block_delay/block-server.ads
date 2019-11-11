@@ -20,6 +20,12 @@ is
                          L :        String;
                          B :        Types.Byte_Length);
    procedure Finalize (S : in out Types.Server_Session);
+   procedure Read (S : in out Types.Server_Session;
+                   I :        Request_Id;
+                   B :    out Buffer);
+   procedure Write (S : in out Types.Server_Session;
+                    I :        Request_Id;
+                    B :        Buffer);
 
    package Instance is new Types.Server (Event,
                                          Block_Count,
@@ -27,7 +33,9 @@ is
                                          Writable,
                                          Initialized,
                                          Initialize,
-                                         Finalize);
+                                         Finalize,
+                                         Read,
+                                         Write);
 
    Server : Types.Server_Session;
 
