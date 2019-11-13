@@ -83,22 +83,13 @@ is
       if Duration (Now - Last) > Duration (2) then
          Last     := Now;
          P := (if Todo > 999 then Done / (Todo / 1000) else 0);
-         declare
-            S : constant String := Prefix & "... ("
+         Cai.Log.Client.Info (Log, Prefix & "... ("
                                           & Cai.Strings.Image (P / 10)
                                           & "."
                                           & Cai.Strings.Image (P rem 10)
                                           & "%, " & Byte_Image (Safe_Multiply (Done, Size))
                                           & " / " & Byte_Image (Safe_Multiply (Todo, Size))
-                                          & ")";
-         begin
-            if S'Length > Cai.Log.Maximum_Message_Length (Log) then
-               Cai.Log.Client.Info (Log, S (S'First  .. S'First + Cai.Log.Maximum_Message_Length (Log) - 2));
-               Cai.Log.Client.Info (Log, S (S'First + Cai.Log.Maximum_Message_Length (Log) - 1 .. S'Last));
-            else
-               Cai.Log.Client.Info (Log, S);
-            end if;
-         end;
+                                          & ")");
          if
             (Start > 0.0 and then Cai.Timer.Time'First + Start <= Now)
             or (Start < 0.0 and then Cai.Timer.Time'Last + Start >= Now)
