@@ -175,11 +175,12 @@ is
       end loop;
    end Hash_Block;
 
-   procedure Write (C       : in out Block.Client_Session;
-                    T       : in out Test_State;
-                    Success :    out Boolean;
-                    L       : in out Cai.Log.Client_Session;
-                    Timer   :        Cai.Timer.Client_Session)
+   procedure Write (C        : in out Block.Client_Session;
+                    T        : in out Test_State;
+                    Success  :    out Boolean;
+                    L        : in out Cai.Log.Client_Session;
+                    Timer    :        Cai.Timer.Client_Session;
+                    Progress :    out Boolean)
    is
       use type Block.Request_Status;
       use type Block.Request_Kind;
@@ -188,43 +189,52 @@ is
       Result  : Block.Result;
    begin
       Success := True;
+      Progress := False;
       for I in Cache'Range loop
-         if Client.Status (Cache (I).R) = Block.Pending then
-            Client.Update_Request (C, Cache (I).R);
-         end if;
-         if Client.Status (Cache (I).R) = Block.Ok then
-            Client.Release (C, Cache (I).R);
-            T.Write_Recv   := T.Write_Recv + 1;
-         end if;
-         if Client.Status (Cache (I).R) = Block.Error then
-            Cai.Log.Client.Error (L, "Write request at block "
-                                     & Image (Client.Start (Cache (I).R))
-                                     & " returned with error.");
-            Client.Release (C, Cache (I).R);
-            Success := False;
-            return;
-         end if;
-         if Client.Status (Cache (I).R) = Block.Raw and Cache (I).P then
-            Client.Allocate_Request (C,
-                                     Cache (I).R,
-                                     Block.Write,
-                                     Cache (I).S,
-                                     1,
-                                     I,
-                                     Result);
-            if
-               Result = Block.Success and then
-               Client.Kind (Cache (I).R) = Block.Write
-            then
-               Client.Write (C, Cache (I).R);
-            end if;
-         end if;
-         if Client.Status (Cache (I).R) = Block.Allocated then
-            Client.Enqueue (C, Cache (I).R);
-            if Client.Status (Cache (I).R) = Block.Pending then
-               Cache (I).P := False;
-            end if;
-         end if;
+         case Client.Status (Cache (I).R) is
+            when Block.Raw =>
+               if Cache (I).P then
+                  Client.Allocate_Request (C,
+                                           Cache (I).R,
+                                           Block.Write,
+                                           Cache (I).S,
+                                           1,
+                                           I,
+                                           Result);
+                  case Result is
+                     when Block.Success =>
+                        Progress := True;
+                        if Client.Kind (Cache (I).R) = Block.Write then
+                           Client.Write (C, Cache (I).R);
+                        end if;
+                     when Block.Unsupported =>
+                        Success := False;
+                        return;
+                     when others =>
+                        null;
+                  end case;
+               end if;
+            when Block.Allocated =>
+               Client.Enqueue (C, Cache (I).R);
+               if Client.Status (Cache (I).R) = Block.Pending then
+                  Progress := True;
+                  Cache (I).P := False;
+               end if;
+            when Block.Pending =>
+               Client.Update_Request (C, Cache (I).R);
+               Progress := Progress or else Client.Status (Cache (I).R) in Block.Ok | Block.Error;
+            when Block.Ok =>
+               Client.Release (C, Cache (I).R);
+               T.Write_Recv := T.Write_Recv + 1;
+               Progress := True;
+            when Block.Error =>
+               Cai.Log.Client.Error (L, "Write request at block "
+                                        & Image (Client.Start (Cache (I).R))
+                                        & " returned with error.");
+               Client.Release (C, Cache (I).R);
+               Success := False;
+               return;
+         end case;
       end loop;
       Client.Submit (C);
       Current := Timer_Client.Clock (Timer);
@@ -245,6 +255,7 @@ is
          T.Write     := Block.Request_Id'First;
          T.Read      := Block.Request_Id'First;
          T.Generated := 0;
+         Progress    := False;
          for I in Cache'Range loop
             Client.Release (C, Cache (I).R);
             Cache (I).P := False;
@@ -262,11 +273,12 @@ is
       return T.Write_Recv = T.Count;
    end Write_Finished;
 
-   procedure Read (C       : in out Block.Client_Session;
-                   T       : in out Test_State;
-                   Success :    out Boolean;
-                   L       : in out Cai.Log.Client_Session;
-                   Timer   :        Cai.Timer.Client_Session)
+   procedure Read (C        : in out Block.Client_Session;
+                   T        : in out Test_State;
+                   Success  :    out Boolean;
+                   L        : in out Cai.Log.Client_Session;
+                   Timer    :        Cai.Timer.Client_Session;
+                   Progress :    out Boolean)
    is
       use type Block.Request_Status;
       Current : Cai.Timer.Time;
@@ -275,6 +287,7 @@ is
       Result  : Block.Result;
    begin
       Success := True;
+      Progress := False;
       for I in Cache'Range loop
          if Client.Status (Cache (I).R) = Block.Pending then
             Client.Update_Request (C, Cache (I).R);
