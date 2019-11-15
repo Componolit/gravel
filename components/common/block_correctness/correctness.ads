@@ -63,11 +63,12 @@ is
               and then Max > 1,
       Post => Block.Initialized (C) and State_Initialized;
 
-   procedure Bounds_Check (C       : in out Block.Client_Session;
-                           T       : in out Test_State;
-                           Success :    out Boolean;
-                           L       : in out Cai.Log.Client_Session;
-                           Timer   :        Cai.Timer.Client_Session) with
+   procedure Bounds_Check (C        : in out Block.Client_Session;
+                           T        : in out Test_State;
+                           Success  :    out Boolean;
+                           L        : in out Cai.Log.Client_Session;
+                           Timer    :        Cai.Timer.Client_Session;
+                           Progress :    out Boolean) with
       Pre  => Block.Initialized (C)
               and Cai.Log.Initialized (L)
               and Cai.Timer.Initialized (Timer),
