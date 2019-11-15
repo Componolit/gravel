@@ -76,11 +76,12 @@ is
 
    function Bounds_Check_Finished (T : Test_State) return Boolean;
 
-   procedure Write (C       : in out Block.Client_Session;
-                    T       : in out Test_State;
-                    Success :    out Boolean;
-                    L       : in out Cai.Log.Client_Session;
-                    Timer   :        Cai.Timer.Client_Session) with
+   procedure Write (C        : in out Block.Client_Session;
+                    T        : in out Test_State;
+                    Success  :    out Boolean;
+                    L        : in out Cai.Log.Client_Session;
+                    Timer    :        Cai.Timer.Client_Session;
+                    Progress :    out Boolean) with
       Pre  => Block.Initialized (C)
               and then Block.Block_Size (C) > 0
               and then Block.Block_Size (C) <= Block_Buffer'Length
@@ -95,11 +96,12 @@ is
 
    function Write_Finished (T : Test_State) return Boolean;
 
-   procedure Read (C       : in out Block.Client_Session;
-                   T       : in out Test_State;
-                   Success :    out Boolean;
-                   L       : in out Cai.Log.Client_Session;
-                   Timer   :        Cai.Timer.Client_Session) with
+   procedure Read (C        : in out Block.Client_Session;
+                   T        : in out Test_State;
+                   Success  :    out Boolean;
+                   L        : in out Cai.Log.Client_Session;
+                   Timer    :        Cai.Timer.Client_Session;
+                   Progress :    out Boolean) with
       Pre  => Block.Initialized (C)
               and then Cai.Log.Initialized (L)
               and then Cai.Timer.Initialized (Timer)
