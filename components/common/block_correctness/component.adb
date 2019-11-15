@@ -231,6 +231,7 @@ is
    procedure Event
    is
       use type Block.Size;
+      Progress : Boolean := True;
    begin
       Transfer_State_2;
       if
@@ -242,7 +243,12 @@ is
             Success
             and not Disk_Test.Bounds_Check_Finished (Data)
          then
-            Disk_Test.Bounds_Check (Client, Data, Success, Log, Timer);
+            Progress := True;
+            while Progress loop
+               Disk_Test.Bounds_Check (Client, Data, Success, Log, Timer, Progress);
+            end loop;
+         end if;
+         if Disk_Test.Bounds_Check_Finished (Data) then
             if Output_Bounds then
                if Success then
                   Cai.Log.Client.Info (Log, "Bounds check succeeded.");

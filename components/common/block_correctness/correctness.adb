@@ -97,11 +97,12 @@ is
       Update_Read_Cache (T);
    end Initialize;
 
-   procedure Bounds_Check (C       : in out Block.Client_Session;
-                           T       : in out Test_State;
-                           Success :    out Boolean;
-                           L       : in out Cai.Log.Client_Session;
-                           Timer   :        Cai.Timer.Client_Session)
+   procedure Bounds_Check (C        : in out Block.Client_Session;
+                           T        : in out Test_State;
+                           Success  :    out Boolean;
+                           L        : in out Cai.Log.Client_Session;
+                           Timer    :        Cai.Timer.Client_Session;
+                           Progress :    out Boolean)
    is
       use type Block.Request_Kind;
       use type Block.Request_Status;
@@ -109,6 +110,7 @@ is
       Result : Block.Result;
    begin
       Success := True;
+      Progress := False;
       if Client.Status (Cache (Cache'First).R) = Block.Pending then
          Client.Update_Request (C, Cache(Cache'First).R);
       end if;
@@ -127,6 +129,7 @@ is
                                         when Block.Error        => "Error"));
          end if;
          Client.Release (C, Cache (Cache'First).R);
+         Progress := True;
       end if;
       if
          Client.Status (Cache (Cache'First).R) = Block.Raw
@@ -139,16 +142,12 @@ is
                                   1,
                                   Cache'First,
                                   Result);
-         if
-            Result = Block.Success
-            and then Client.Kind (Cache (Cache'First).R) = Block.Write
-         then
-            Client.Write (C, Cache (Cache'First).R);
-         end if;
+         Progress := Progress or else Result = Block.Success;
       end if;
       if Client.Status (Cache (Cache'First).R) = Block.Allocated then
          Client.Enqueue (C, Cache (Cache'First).R);
          if Client.Status (Cache (Cache'First).R) = Block.Pending then
+            Progress := True;
             Start := Timer_Client.Clock (Timer);
             Last  := Timer_Client.Clock (Timer);
          end if;
