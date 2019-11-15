@@ -281,6 +281,7 @@ is
                    Progress :    out Boolean)
    is
       use type Block.Request_Status;
+      use type Block.Request_Id;
       Current : Cai.Timer.Time;
       Done    : Long_Integer;
       Todo    : Long_Integer;
@@ -289,41 +290,51 @@ is
       Success := True;
       Progress := False;
       for I in Cache'Range loop
-         if Client.Status (Cache (I).R) = Block.Pending then
-            Client.Update_Request (C, Cache (I).R);
-         end if;
-         if Client.Status (Cache (I).R) = Block.Error then
-            Cai.Log.Client.Error (L, "Read request at block "
-                                     & Image (Client.Start (Cache (I).R))
-                                     & " returned with error.");
-            Client.Release (C, Cache (I).R);
-            Success := False;
-            return;
-         end if;
-      end loop;
-      loop
-         exit when Client.Status (Cache (T.Read).R) /= Block.Ok;
-         T.Read_Recv := T.Read_Recv + 1;
-         Client.Read (C, Cache (T.Read).R);
-         Client.Release (C, Cache (T.Read).R);
-         T.Read := Block.Request_Id'Succ (T.Read);
-      end loop;
-      for I in Cache'Range loop
-         if Client.Status (Cache (I).R) = Block.Raw and Cache (I).P then
-            Client.Allocate_Request (C,
-                                     Cache (I).R,
-                                     Block.Read,
-                                     Cache (I).S,
-                                     1,
-                                     I,
-                                     Result);
-         end if;
-         if Client.Status (Cache (I).R) = Block.Allocated then
-            Client.Enqueue (C, Cache (I).R);
-            if Client.Status (Cache (I).R) = Block.Pending then
-               Cache (I).P := False;
-            end if;
-         end if;
+         case Client.Status (Cache (I).R) is
+            when Block.Raw =>
+               if Cache (I).P then
+                  Client.Allocate_Request (C,
+                                           Cache (I).R,
+                                           Block.Read,
+                                           Cache (I).S,
+                                           1,
+                                           I,
+                                           Result);
+                  case Result is
+                     when Block.Success =>
+                        Progress := True;
+                     when Block.Unsupported =>
+                        Success := False;
+                        return;
+                     when others =>
+                        null;
+                  end case;
+               end if;
+            when Block.Allocated =>
+               Client.Enqueue (C, Cache (I).R);
+               if Client.Status (Cache (I).R) = Block.Pending then
+                  Cache (I).P := False;
+                  Progress := True;
+               end if;
+            when Block.Pending =>
+               Client.Update_Request (C, Cache (I).R);
+               Progress := Progress or else Client.Status (Cache (I).R) in Block.Ok | Block.Error;
+            when Block.Error =>
+               Cai.Log.Client.Error (L, "Read request at block "
+                                        & Image (Client.Start (Cache (I).R))
+                                        & " returned with error.");
+               Client.Release (C, Cache (I).R);
+               Success := False;
+               return;
+            when Block.Ok =>
+               if I = T.Read then
+                  T.Read_Recv := T.Read_Recv + 1;
+                  Client.Read (C, Cache (T.Read).R);
+                  Client.Release (C, Cache (T.Read).R);
+                  T.Read := Block.Request_Id'Succ (T.Read);
+                  Progress := True;
+               end if;
+         end case;
       end loop;
       if not Read_Finished (T) then
          Update_Read_Cache (T);
