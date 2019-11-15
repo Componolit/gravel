@@ -269,7 +269,10 @@ is
                and Disk_Test.Bounds_Check_Finished (Data)
                and not Disk_Test.Write_Finished (Data)
             then
-               Disk_Test.Write (Client, Data, Success, Log, Timer);
+               Progress := True;
+               while Progress and then Success loop
+                  Disk_Test.Write (Client, Data, Success, Log, Timer, Progress);
+               end loop;
             end if;
 
             if
@@ -278,7 +281,10 @@ is
                and Disk_Test.Write_Finished (Data)
                and not Disk_Test.Read_Finished (Data)
             then
-               Disk_Test.Read (Client, Data, Success, Log, Timer);
+               Progress := True;
+               while Progress and then Success loop
+                  Disk_Test.Read (Client, Data, Success, Log, Timer, Progress);
+               end loop;
             end if;
          else
             Cai.Log.Client.Error (Log, "Unsupported block size: "
