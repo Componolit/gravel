@@ -1,14 +1,14 @@
 
 with Ada.Unchecked_Conversion;
-with Componolit.Gneiss.Log;
-with Componolit.Gneiss.Log.Client;
+with Gneiss.Log;
+with Gneiss.Log.Client;
 with Config;
 with Jitter;
 
 package body Block.Server with
    SPARK_Mode
 is
-   package Cai renames Componolit.Gneiss;
+   package Cai renames Gneiss;
 
    use type Types.Request_Status;
 
@@ -36,17 +36,17 @@ is
       return Next;
    end Get_Next_Ready_Time;
 
-   function Round_Up (Time  : Componolit.Gneiss.Timer.Time;
-                      Slice : Duration) return Componolit.Gneiss.Timer.Time
+   function Round_Up (Time  : Gneiss.Timer.Time;
+                      Slice : Duration) return Gneiss.Timer.Time
    is
-      use type Componolit.Gneiss.Timer.Time;
+      use type Gneiss.Timer.Time;
       function Convert is new Ada.Unchecked_Conversion (Long_Integer, Duration);
       function Convert is new Ada.Unchecked_Conversion (Duration, Long_Integer);
    begin
       return Time + (Slice - Convert (Convert ( Duration (Time)) mod Convert (Slice)));
    end Round_Up;
 
-   procedure Set_Capability (Cap : Componolit.Gneiss.Types.Capability)
+   procedure Set_Capability (Cap : Gneiss.Types.Capability)
    is
    begin
       Capability := Cap;
@@ -58,13 +58,13 @@ is
       use type Types.Result;
       use type Types.Request_Kind;
       Next_Interrupt : Duration;
-      Current : Componolit.Gneiss.Timer.Time;
+      Current : Gneiss.Timer.Time;
       Result : Types.Result;
       Send_Delay : Duration;
    begin
       if
-         Componolit.Gneiss.Log.Initialized (Log)
-         and then Componolit.Gneiss.Timer.Initialized (Timer)
+         Gneiss.Log.Initialized (Log)
+         and then Gneiss.Timer.Initialized (Timer)
          and then Types.Initialized (Client)
       then
          loop
@@ -181,10 +181,10 @@ is
          Cai.Log.Client.Initialize (Log, Capability, L);
       end if;
       if Cai.Log.Initialized (Log) then
-         if not Componolit.Gneiss.Timer.Initialized (Timer) then
+         if not Gneiss.Timer.Initialized (Timer) then
             Time.Initialize (Timer, Capability);
          end if;
-         if Componolit.Gneiss.Timer.Initialized (Timer) then
+         if Gneiss.Timer.Initialized (Timer) then
             if not Types.Initialized (Client) then
                Instance_Client.Initialize (Client, Capability, Config.Get_Client_Id, True);
                Seed := Duration (Time.Clock (Timer));

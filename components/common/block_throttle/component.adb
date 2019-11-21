@@ -1,12 +1,12 @@
 
-with Componolit.Gneiss.Log;
-with Componolit.Gneiss.Log.Client;
-with Componolit.Gneiss.Rom;
-with Componolit.Gneiss.Rom.Client;
-with Componolit.Gneiss.Timer;
-with Componolit.Gneiss.Timer.Client;
-with Componolit.Gneiss.Strings_Generic;
-with Componolit.Gneiss.Containers.Fifo;
+with Gneiss.Log;
+with Gneiss.Log.Client;
+with Gneiss.Rom;
+with Gneiss.Rom.Client;
+with Gneiss.Timer;
+with Gneiss.Timer.Client;
+with Basalt.Strings_Generic;
+with Basalt.Queue;
 with Config;
 
 package body Component is
@@ -14,24 +14,24 @@ package body Component is
    use type Block.Request_Kind;
    use type Block.Request_Status;
 
-   package Rom is new Gns.Rom.Client (Character, Positive, String, Config.Parse);
-   package Queue is new Gns.Containers.Fifo (Request_Index);
+   package Rom is new Gneiss.Rom.Client (Character, Positive, String, Config.Parse);
+   package Queue is new Basalt.Queue (Request_Index);
    procedure Timer_Event;
-   package Timer_Client is new Gns.Timer.Client (Timer_Event);
+   package Timer_Client is new Gneiss.Timer.Client (Timer_Event);
 
    Dispatcher : Block.Dispatcher_Session;
    Client     : Block.Client_Session;
    Server     : Block.Server_Session;
-   Conf_Rom   : Gns.Rom.Client_Session;
-   Capability : Gns.Types.Capability;
-   Log        : Gns.Log.Client_Session;
-   Timer      : Gns.Timer.Client_Session;
+   Conf_Rom   : Gneiss.Rom.Client_Session;
+   Capability : Gneiss.Types.Capability;
+   Log        : Gneiss.Log.Client_Session;
+   Timer      : Gneiss.Timer.Client_Session;
    Rate       : Natural;
    Current    : Natural := 0;
    Interval   : Duration;
    Ack_Queue  : Queue.Queue (2 ** 8);
 
-   function Image is new Gns.Strings_Generic.Image_Ranged (Natural);
+   function Image is new Basalt.Strings_Generic.Image_Ranged (Natural);
 
    procedure Handle_Raw (Progress : in out Boolean;
                          I        :        Request_Index);
@@ -42,34 +42,34 @@ package body Component is
    procedure Handle_Acknowledge (Progress : in out Boolean;
                                  I        :        Request_Index);
 
-   procedure Construct (Cap : Gns.Types.Capability)
+   procedure Construct (Cap : Gneiss.Types.Capability)
    is
    begin
       Queue.Initialize (Ack_Queue, Request_Index'First);
       Capability := Cap;
-      if not Gns.Log.Initialized (Log) then
-         Gns.Log.Client.Initialize (Log, Cap, "log_block_throttle");
+      if not Gneiss.Log.Initialized (Log) then
+         Gneiss.Log.Client.Initialize (Log, Cap, "log_block_throttle");
       end if;
-      if Gns.Log.Initialized (Log) then
-         if not Gns.Timer.Initialized (Timer) then
+      if Gneiss.Log.Initialized (Log) then
+         if not Gneiss.Timer.Initialized (Timer) then
             Timer_Client.Initialize (Timer, Cap);
          end if;
-         if not Gns.Timer.Initialized (Timer) then
-            Gns.Log.Client.Error (Log, "Failed to initialize timer");
+         if not Gneiss.Timer.Initialized (Timer) then
+            Gneiss.Log.Client.Error (Log, "Failed to initialize timer");
             Main.Vacate (Capability, Main.Failure);
             return;
          end if;
-         if not Gns.Rom.Initialized (Conf_Rom) then
+         if not Gneiss.Rom.Initialized (Conf_Rom) then
             Rom.Initialize (Conf_Rom, Cap);
          end if;
-         if not Gns.Rom.Initialized (Conf_Rom) then
-            Gns.Log.Client.Error (Log, "Failed to initialize rom session");
+         if not Gneiss.Rom.Initialized (Conf_Rom) then
+            Gneiss.Log.Client.Error (Log, "Failed to initialize rom session");
             Main.Vacate (Capability, Main.Failure);
             return;
          end if;
          Rom.Load (Conf_Rom);
          if not Config.Initialized then
-            Gns.Log.Client.Error (Log, "Failed to parse config: "
+            Gneiss.Log.Client.Error (Log, "Failed to parse config: "
                                        & Config.Reason);
             Main.Vacate (Cap, Main.Failure);
             return;
@@ -81,12 +81,12 @@ package body Component is
             Rate     := Config.Rate / Config.Frequency;
             Interval := 1.0 / Duration (Config.Frequency);
             Block_Dispatcher.Register (Dispatcher);
-            Gns.Log.Client.Info (Log, "Throttle ready.");
-            Gns.Log.Client.Info (Log, "Device: " & Config.Device);
-            Gns.Log.Client.Info (Log, "Request rate: " & Image (Config.Rate) & "/s");
-            Gns.Log.Client.Info (Log, "Ack frequency: " & Image (Config.Frequency) & "/s");
+            Gneiss.Log.Client.Info (Log, "Throttle ready.");
+            Gneiss.Log.Client.Info (Log, "Device: " & Config.Device);
+            Gneiss.Log.Client.Info (Log, "Request rate: " & Image (Config.Rate) & "/s");
+            Gneiss.Log.Client.Info (Log, "Ack frequency: " & Image (Config.Frequency) & "/s");
          else
-            Gns.Log.Client.Error (Log, "Failed to initialize Dispatcher");
+            Gneiss.Log.Client.Error (Log, "Failed to initialize Dispatcher");
             Main.Vacate (Capability, Main.Failure);
          end if;
       else
@@ -97,8 +97,8 @@ package body Component is
    procedure Destruct
    is
    begin
-      if Gns.Log.Initialized (Log) then
-         Gns.Log.Client.Finalize (Log);
+      if Gneiss.Log.Initialized (Log) then
+         Gneiss.Log.Client.Finalize (Log);
       end if;
       if Block.Initialized (Dispatcher) then
          Block_Dispatcher.Finalize (Dispatcher);

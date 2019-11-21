@@ -1,7 +1,7 @@
 
-with Componolit.Gneiss.Block;
-with Componolit.Gneiss.Component;
-with Componolit.Gneiss.Types;
+with Gneiss.Block;
+with Gneiss.Component;
+with Gneiss.Types;
 
 package Component with
    SPARK_Mode
@@ -14,13 +14,11 @@ is
    type Index is new Positive;
    type Buffer is array (Index range <>) of Byte;
 
-   package Cai renames Componolit.Gneiss;
-
-   procedure Construct (C : Cai.Types.Capability);
+   procedure Construct (C : Gneiss.Types.Capability);
    procedure Destruct;
    procedure Event;
 
-   package Main is new Cai.Component (Construct, Destruct);
-   package Block is new Componolit.Gneiss.Block (Byte, Index, Buffer, Session_Id, Request_Id);
+   package Main is new Gneiss.Component (Construct, Destruct);
+   package Block is new Gneiss.Block (Byte, Index, Buffer, Session_Id, Request_Id);
 
 end Component;

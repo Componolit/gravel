@@ -1,8 +1,8 @@
 
-with Componolit.Gneiss.Block;
+with Gneiss.Block;
 
 generic
-   with package Block is new Componolit.Gneiss.Block (<>);
+   with package Block is new Gneiss.Block (<>);
 package Config with
    SPARK_Mode
 is

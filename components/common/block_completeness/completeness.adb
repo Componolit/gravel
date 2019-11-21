@@ -1,9 +1,9 @@
 
-with Componolit.Gneiss.Block.Client;
-with Componolit.Gneiss.Timer;
-with Componolit.Gneiss.Timer.Client;
-with Componolit.Gneiss.Log.Client;
-with Componolit.Gneiss.Strings;
+with Gneiss.Block.Client;
+with Gneiss.Timer;
+with Gneiss.Timer.Client;
+with Gneiss.Log.Client;
+with Basalt.Strings;
 with Component;
 
 package body Completeness with
@@ -18,16 +18,16 @@ is
                     I :        Component.Request_Id;
                     D :    out Component.Buffer);
 
-   function Next_Timeout return Cai.Timer.Time;
+   function Next_Timeout return Gneiss.Timer.Time;
 
    package Block_Client is new Component.Block.Client (Component.Event,
                                                        Read,
                                                        Write);
-   package Timer_Client is new Cai.Timer.Client (Component.Event);
+   package Timer_Client is new Gneiss.Timer.Client (Component.Event);
 
    type Request_Entry is record
       Request : Block_Client.Request;
-      Sent    : Cai.Timer.Time := 0.0;
+      Sent    : Gneiss.Timer.Time := 0.0;
    end record;
 
    type Request_Cache is array (Component.Request_Id) of Request_Entry;
@@ -35,13 +35,13 @@ is
    Cache : Request_Cache;
 
    Client      : Component.Block.Client_Session;
-   Timer       : Cai.Timer.Client_Session;
+   Timer       : Gneiss.Timer.Client_Session;
    Timeout_Val : Duration;
 
-   function Next_Timeout return Cai.Timer.Time
+   function Next_Timeout return Gneiss.Timer.Time
    is
-      use type Cai.Timer.Time;
-      Next : Cai.Timer.Time := Cai.Timer.Time'Last;
+      use type Gneiss.Timer.Time;
+      Next : Gneiss.Timer.Time := Gneiss.Timer.Time'Last;
    begin
       for C of Cache loop
          if C.Sent + Timeout_Val < Next then
@@ -51,12 +51,12 @@ is
       return Next;
    end Next_Timeout;
 
-   procedure Initialize (C : Cai.Types.Capability;
+   procedure Initialize (C : Gneiss.Types.Capability;
                          T : Duration;
                          L : String)
    is
    begin
-      if Component.Block.Initialized (Client) and Cai.Timer.Initialized (Timer) then
+      if Component.Block.Initialized (Client) and Gneiss.Timer.Initialized (Timer) then
          return;
       end if;
       if not Component.Block.Initialized (Client) then
@@ -65,10 +65,10 @@ is
       if not Component.Block.Initialized (Client) then
          return;
       end if;
-      if not Cai.Timer.Initialized (Timer) then
+      if not Gneiss.Timer.Initialized (Timer) then
          Timer_Client.Initialize (Timer, C);
       end if;
-      if not Cai.Timer.Initialized (Timer) then
+      if not Gneiss.Timer.Initialized (Timer) then
          if Component.Block.Initialized (Client) then
             Block_Client.Finalize (Client);
          end if;
@@ -77,14 +77,14 @@ is
       Timeout_Val := T;
    end Initialize;
 
-   procedure Event (Log : in out Cai.Log.Client_Session)
+   procedure Event (Log : in out Gneiss.Log.Client_Session)
    is
       use type Interfaces.Unsigned_64;
-      use type Cai.Timer.Time;
+      use type Gneiss.Timer.Time;
       use type Component.Block.Request_Status;
       use type Component.Block.Request_Kind;
       use type Component.Block.Result;
-      Current : Cai.Timer.Time;
+      Current : Gneiss.Timer.Time;
       Result  : Component.Block.Result;
    begin
       loop
@@ -149,17 +149,17 @@ is
                   Other := Other + 1;
             end case;
          end loop;
-         Cai.Log.Client.Info (Log, "Stats: "
-                                   & Cai.Strings.Image (Completeness.Received)
-                                   & "/" & Cai.Strings.Image (Completeness.Sent)
-                                   & " (" & Cai.Strings.Image (Completeness.Ok)
-                                   & "/" & Cai.Strings.Image (Completeness.Error)
-                                   & "/" & Cai.Strings.Image (Completeness.Timeout)
+         Gneiss.Log.Client.Info (Log, "Stats: "
+                                   & Basalt.Strings.Image (Completeness.Received)
+                                   & "/" & Basalt.Strings.Image (Completeness.Sent)
+                                   & " (" & Basalt.Strings.Image (Completeness.Ok)
+                                   & "/" & Basalt.Strings.Image (Completeness.Error)
+                                   & "/" & Basalt.Strings.Image (Completeness.Timeout)
                                    & ")");
-         Cai.Log.Client.Info (Log, "Cache: "
-                                   & Cai.Strings.Image (Completeness.Raw)
-                                   & "/" & Cai.Strings.Image (Completeness.Pending)
-                                   & "/" & Cai.Strings.Image (Completeness.Other));
+         Gneiss.Log.Client.Info (Log, "Cache: "
+                                   & Basalt.Strings.Image (Completeness.Raw)
+                                   & "/" & Basalt.Strings.Image (Completeness.Pending)
+                                   & "/" & Basalt.Strings.Image (Completeness.Other));
          Current := Timer_Client.Clock (Timer);
          if Current < Next_Timeout then
             Timer_Client.Set_Timeout (Timer, (Duration (Next_Timeout) - Duration (Current)) / 2.0);

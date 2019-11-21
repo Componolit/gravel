@@ -1,7 +1,7 @@
 
-with Componolit.Gneiss.Log.Client;
-with Componolit.Gneiss.Timer.Client;
-with Componolit.Gneiss.Strings;
+with Gneiss.Log.Client;
+with Gneiss.Timer.Client;
+with Basalt.Strings;
 
 package body Iteration is
 
@@ -16,9 +16,9 @@ package body Iteration is
       null;
    end Event;
 
-   package Timer_Client is new Cai.Timer.Client (Event);
+   package Timer_Client is new Gneiss.Timer.Client (Event);
 
-   Timer : Cai.Timer.Client_Session;
+   Timer : Gneiss.Timer.Client_Session;
 
    procedure Start (Item   :        Client.Request;
                     Offset :        Block.Count;
@@ -50,7 +50,7 @@ package body Iteration is
    procedure Initialize (T      : out Test;
                          Offset :     Block.Count;
                          S      :     Boolean;
-                         Cap    :     Cai.Types.Capability)
+                         Cap    :     Gneiss.Types.Capability)
    is
    begin
       T.Sent      := -1;
@@ -59,16 +59,16 @@ package body Iteration is
       T.Finished  := False;
       T.Sync      := S;
       for I in T.Data'Range loop
-         T.Data (I) := (Success => False, others => Cai.Timer.Time'First);
+         T.Data (I) := (Success => False, others => Gneiss.Timer.Time'First);
       end loop;
-      if not Cai.Timer.Initialized (Timer) then
+      if not Gneiss.Timer.Initialized (Timer) then
          Timer_Client.Initialize (Timer, Cap);
       end if;
    end Initialize;
 
    procedure Send (C   : in out Block.Client_Session;
                    T   : in out Test;
-                   Log : in out Cai.Log.Client_Session) is
+                   Log : in out Gneiss.Log.Client_Session) is
       Result : Block.Result;
    begin
       for I in Cache'Range loop
@@ -88,7 +88,7 @@ package body Iteration is
                      Client.Write (C, Cache (I));
                   end if;
                when Block.Unsupported =>
-                  Cai.Log.Client.Error (Log, "Failed to send request");
+                  Gneiss.Log.Client.Error (Log, "Failed to send request");
                when others =>
                   null;
             end case;
@@ -112,7 +112,7 @@ package body Iteration is
 
    procedure Receive (C   : in out Block.Client_Session;
                       T   : in out Test;
-                      Log : in out Cai.Log.Client_Session)
+                      Log : in out Gneiss.Log.Client_Session)
    is
    begin
       for I in Cache'Range loop
@@ -128,7 +128,7 @@ package body Iteration is
                   Client.Release (C, Cache (I));
                when Block.Error =>
                   Finish (Cache (I), T.Offset, T.Data);
-                  Cai.Log.Client.Warning (Log, "Request failed");
+                  Gneiss.Log.Client.Warning (Log, "Request failed");
                   Client.Release (C, Cache (I));
                when others =>
                   null;
@@ -140,23 +140,23 @@ package body Iteration is
       end if;
    end Receive;
 
-   procedure Xml (Xml_Log : in out Cai.Log.Client_Session;
+   procedure Xml (Xml_Log : in out Gneiss.Log.Client_Session;
                   R       :        Request;
                   B       :        Block.Id);
 
-   procedure Xml (Xml_Log : in out Cai.Log.Client_Session;
+   procedure Xml (Xml_Log : in out Gneiss.Log.Client_Session;
                   R       :        Request;
                   B       :        Block.Id)
    is
    begin
-      Cai.Log.Client.Info (Xml_Log, "<request id=""" & Cai.Strings.Image (Long_Integer (B))
-                                    & """ sent=""" & Cai.Strings.Image (Duration (R.Start))
-                                    & """ received=""" & Cai.Strings.Image (Duration (R.Finish))
+      Gneiss.Log.Client.Info (Xml_Log, "<request id=""" & Basalt.Strings.Image (Long_Integer (B))
+                                    & """ sent=""" & Basalt.Strings.Image (Duration (R.Start))
+                                    & """ received=""" & Basalt.Strings.Image (Duration (R.Finish))
                                     & """ status=""" & (if R.Success then "OK" else "ERROR")
                                     & """/>");
    end Xml;
 
-   procedure Xml (Xml_Log : in out Cai.Log.Client_Session;
+   procedure Xml (Xml_Log : in out Gneiss.Log.Client_Session;
                   B       :        Burst;
                   Offset  :        Block.Count)
    is

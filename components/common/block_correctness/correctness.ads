@@ -1,19 +1,18 @@
 
-with Componolit.Gneiss.Log;
-with Componolit.Gneiss.Block;
-with Componolit.Gneiss.Block.Client;
-with Componolit.Gneiss.Timer;
-with Componolit.Gneiss.Timer.Client;
+with Gneiss.Log;
+with Gneiss.Block;
+with Gneiss.Block.Client;
+with Gneiss.Timer;
+with Gneiss.Timer.Client;
 with LSC.Internal.SHA256;
 
 generic
-   with package Block is new Componolit.Gneiss.Block (<>);
+   with package Block is new Gneiss.Block (<>);
    with package Client is new Block.Client (<>);
-   with package Timer_Client is new Componolit.Gneiss.Timer.Client (<>);
+   with package Timer_Client is new Gneiss.Timer.Client (<>);
 package Correctness
 is
    pragma Unevaluated_Use_Of_Old (Allow);
-   package Cai renames Componolit.Gneiss;
 
    use type Block.Count;
    use type Block.Size;
@@ -66,31 +65,31 @@ is
    procedure Bounds_Check (C        : in out Block.Client_Session;
                            T        : in out Test_State;
                            Success  :    out Boolean;
-                           L        : in out Cai.Log.Client_Session;
-                           Timer    :        Cai.Timer.Client_Session;
+                           L        : in out Gneiss.Log.Client_Session;
+                           Timer    :        Gneiss.Timer.Client_Session;
                            Progress :    out Boolean) with
       Pre  => Block.Initialized (C)
-              and Cai.Log.Initialized (L)
-              and Cai.Timer.Initialized (Timer),
-      Post => Block.Initialized (C) and Cai.Log.Initialized (L);
+              and Gneiss.Log.Initialized (L)
+              and Gneiss.Timer.Initialized (Timer),
+      Post => Block.Initialized (C) and Gneiss.Log.Initialized (L);
 
    function Bounds_Check_Finished (T : Test_State) return Boolean;
 
    procedure Write (C        : in out Block.Client_Session;
                     T        : in out Test_State;
                     Success  :    out Boolean;
-                    L        : in out Cai.Log.Client_Session;
-                    Timer    :        Cai.Timer.Client_Session;
+                    L        : in out Gneiss.Log.Client_Session;
+                    Timer    :        Gneiss.Timer.Client_Session;
                     Progress :    out Boolean) with
       Pre  => Block.Initialized (C)
               and then Block.Block_Size (C) > 0
               and then Block.Block_Size (C) <= Block_Buffer'Length
               and then Block.Block_Size (C) mod (LSC.Internal.SHA256.Block_Size / 8) = 0
-              and then Cai.Log.Initialized (L)
-              and then Cai.Timer.Initialized (Timer)
+              and then Gneiss.Log.Initialized (L)
+              and then Gneiss.Timer.Initialized (Timer)
               and then State_Initialized,
       Post => Block.Initialized (C)
-              and then Cai.Log.Initialized (L)
+              and then Gneiss.Log.Initialized (L)
               and then State_Initialized
               and then Block.Block_Size (C)'Old = Block.Block_Size (C);
 
@@ -99,16 +98,16 @@ is
    procedure Read (C        : in out Block.Client_Session;
                    T        : in out Test_State;
                    Success  :    out Boolean;
-                   L        : in out Cai.Log.Client_Session;
-                   Timer    :        Cai.Timer.Client_Session;
+                   L        : in out Gneiss.Log.Client_Session;
+                   Timer    :        Gneiss.Timer.Client_Session;
                    Progress :    out Boolean) with
       Pre  => Block.Initialized (C)
-              and then Cai.Log.Initialized (L)
-              and then Cai.Timer.Initialized (Timer)
+              and then Gneiss.Log.Initialized (L)
+              and then Gneiss.Timer.Initialized (Timer)
               and then State_Initialized
               and then Block.Block_Size (C) <= Block_Buffer'Length
               and then Block.Block_Size (C) mod (LSC.Internal.SHA256.Block_Size / 8) = 0,
-      Post => Block.Initialized (C) and Cai.Log.Initialized (L) and State_Initialized;
+      Post => Block.Initialized (C) and Gneiss.Log.Initialized (L) and State_Initialized;
 
    function Read_Finished (T : Test_State) return Boolean;
 

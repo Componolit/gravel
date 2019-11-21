@@ -1,15 +1,14 @@
 
-with Componolit.Gneiss.Component;
-with Componolit.Gneiss.Types;
+with Gneiss.Component;
+with Gneiss.Types;
 
 package Component with
    SPARK_Mode
 is
-   package Cai renames Componolit.Gneiss;
 
-   procedure Construct (Cap : Cai.Types.Capability);
+   procedure Construct (Cap : Gneiss.Types.Capability);
    procedure Destruct;
 
-   package Main is new Cai.Component (Construct, Destruct);
+   package Main is new Gneiss.Component (Construct, Destruct);
 
 end Component;

@@ -1,12 +1,11 @@
 
-with Componolit.Gneiss.Types;
-with Componolit.Gneiss.Log;
+with Gneiss.Types;
+with Gneiss.Log;
 with Interfaces;
 
 package Completeness with
    SPARK_Mode
 is
-   package Cai renames Componolit.Gneiss;
 
    Sent     : Interfaces.Unsigned_64 := 0;
    Received : Interfaces.Unsigned_64 := 0;
@@ -18,9 +17,9 @@ is
    Pending  : Interfaces.Unsigned_64 := 0;
    Other    : Interfaces.Unsigned_64 := 0;
 
-   procedure Initialize (C : Cai.Types.Capability;
+   procedure Initialize (C : Gneiss.Types.Capability;
                          T : Duration;
                          L : String);
-   procedure Event (Log : in out Cai.Log.Client_Session);
+   procedure Event (Log : in out Gneiss.Log.Client_Session);
 
 end Completeness;
