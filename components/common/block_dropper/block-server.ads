@@ -1,18 +1,16 @@
 
-with Componolit.Gneiss.Types;
-with Componolit.Gneiss.Block.Client;
-with Componolit.Gneiss.Block.Server;
+with Gneiss.Types;
+with Gneiss.Block.Client;
+with Gneiss.Block.Server;
 with Interfaces;
 
 package Block.Server with
    SPARK_Mode
 is
 
-   package Cai renames Componolit.Gneiss;
-
    type Operation is (Drop, Modify, Reject);
 
-   procedure Eager_Initialize (Capability :     Cai.Types.Capability;
+   procedure Eager_Initialize (Capability :     Gneiss.Types.Capability;
                                Device     :     String;
                                Modulo     :     Interfaces.Unsigned_8;
                                Part       :     Interfaces.Unsigned_8;

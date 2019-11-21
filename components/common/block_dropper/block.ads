@@ -1,5 +1,5 @@
 
-with Componolit.Gneiss.Block;
+with Gneiss.Block;
 
 package Block with
    SPARK_Mode
@@ -12,6 +12,6 @@ is
    type Request_Id is mod 2 ** 6;
    subtype Session_Id is Boolean;
 
-   package Types is new Componolit.Gneiss.Block (Byte, Unsigned_Long, Buffer, Session_Id, Request_Id);
+   package Types is new Gneiss.Block (Byte, Unsigned_Long, Buffer, Session_Id, Request_Id);
 
 end Block;

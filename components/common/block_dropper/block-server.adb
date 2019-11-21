@@ -49,7 +49,7 @@ is
       return Msg;
    end To_Message;
 
-   procedure Eager_Initialize (Capability :     Cai.Types.Capability;
+   procedure Eager_Initialize (Capability :     Gneiss.Types.Capability;
                                Device     :     String;
                                Modulo     :     Interfaces.Unsigned_8;
                                Part       :     Interfaces.Unsigned_8;

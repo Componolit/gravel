@@ -1,6 +1,6 @@
 
-with Componolit.Gneiss.Log.Client;
-with Componolit.Gneiss.Strings;
+with Gneiss.Log.Client;
+with Basalt.Strings;
 
 package body Run is
 
@@ -9,7 +9,7 @@ package body Run is
 
    procedure Initialize (R : out Run_Type;
                          S :     Boolean;
-                         C :     Cai.Types.Capability)
+                         C :     Gneiss.Types.Capability)
    is
    begin
       for I in R'Range loop
@@ -34,13 +34,13 @@ package body Run is
 
    procedure Run (C   : in out Block.Client_Session;
                   R   : in out Run_Type;
-                  Log : in out Cai.Log.Client_Session)
+                  Log : in out Gneiss.Log.Client_Session)
    is
       F : constant Integer := First (R);
    begin
       if F in R'Range then
          if not Printed then
-            Cai.Log.Client.Info (Log, Cai.Strings.Image (F)  & " .. ", False);
+            Gneiss.Log.Client.Info (Log, Basalt.Strings.Image (F)  & " .. ", False);
             Printed := True;
          end if;
          Iter.Receive (C, R (F), Log);
@@ -63,27 +63,30 @@ package body Run is
       return Fin;
    end Finished;
 
-   procedure Xml (Xml_Log : in out Cai.Log.Client_Session;
+   procedure Xml (Xml_Log : in out Gneiss.Log.Client_Session;
                   R       :        Run_Type;
                   Cold    :        Boolean;
-                  Log     : in out Cai.Log.Client_Session)
+                  Log     : in out Gneiss.Log.Client_Session)
    is
    begin
-      Cai.Log.Client.Info (Xml_Log, "<run burst_size=""" & Cai.Strings.Image (Long_Integer (R (R'First).Data'Length))
-                                    & """ iterations=""" & Cai.Strings.Image (Long_Integer (R'Length))
-                                    & """ operation=""" & (case Operation is
-                                                           when Block.Read  => "READ",
-                                                           when Block.Write => "WRITE",
-                                                           when others      => "INVALID")
-                                    & (if Operation = Block.Read then """ cold=""" & Cai.Strings.Image (Cold) else "")
-                                    & """ transfer_size=""1"">");
+      Gneiss.Log.Client.Info (Xml_Log, "<run burst_size="""
+                                       & Basalt.Strings.Image (Long_Integer (R (R'First).Data'Length))
+                                       & """ iterations=""" & Basalt.Strings.Image (Long_Integer (R'Length))
+                                       & """ operation=""" & (case Operation is
+                                                               when Block.Read  => "READ",
+                                                               when Block.Write => "WRITE",
+                                                               when others      => "INVALID")
+                                       & (if Operation = Block.Read then
+                                             """ cold=""" & Basalt.Strings.Image (Cold)
+                                          else "")
+                                       & """ transfer_size=""1"">");
       for I in R'Range loop
-         Cai.Log.Client.Info (Log, Cai.Strings.Image (I) & " .. ", False);
-         Cai.Log.Client.Info (Xml_Log, "<iteration num=""" & Cai.Strings.Image (I) & """>");
+         Gneiss.Log.Client.Info (Log, Basalt.Strings.Image (I) & " .. ", False);
+         Gneiss.Log.Client.Info (Xml_Log, "<iteration num=""" & Basalt.Strings.Image (I) & """>");
          Iter.Xml (Xml_Log, R (I).Data, R (I).Offset);
-         Cai.Log.Client.Info (Xml_Log, "</iteration>");
+         Gneiss.Log.Client.Info (Xml_Log, "</iteration>");
       end loop;
-      Cai.Log.Client.Info (Xml_Log, "</run>");
+      Gneiss.Log.Client.Info (Xml_Log, "</run>");
    end Xml;
 
 end Run;
