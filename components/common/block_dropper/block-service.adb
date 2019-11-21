@@ -3,7 +3,7 @@ package body Block.Service with
    SPARK_Mode
 is
 
-   procedure Start (Cap     :     Componolit.Gneiss.Types.Capability;
+   procedure Start (Cap     :     Gneiss.Types.Capability;
                     Success : out Boolean;
                     Device  :     String;
                     Modulo  :     Interfaces.Unsigned_8;

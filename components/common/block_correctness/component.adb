@@ -1,13 +1,13 @@
 
-with Componolit.Gneiss.Log;
-with Componolit.Gneiss.Log.Client;
-with Componolit.Gneiss.Block;
-with Componolit.Gneiss.Block.Client;
-with Componolit.Gneiss.Rom;
-with Componolit.Gneiss.Rom.Client;
-with Componolit.Gneiss.Timer;
-with Componolit.Gneiss.Timer.Client;
-with Componolit.Gneiss.Strings;
+with Gneiss.Log;
+with Gneiss.Log.Client;
+with Gneiss.Block;
+with Gneiss.Block.Client;
+with Gneiss.Rom;
+with Gneiss.Rom.Client;
+with Gneiss.Timer;
+with Gneiss.Timer.Client;
+with Basalt.Strings;
 with SXML;
 with SXML.Parser;
 with SXML.Query;
@@ -29,9 +29,9 @@ is
 
    procedure Parse (S : String);
 
-   package Config is new Cai.Rom.Client (Character, Positive, String, Parse);
-   package Block is new Cai.Block (Byte, Unsigned_Long, Buffer, Session_Id, Request_Id);
-   package Timer_Client is new Cai.Timer.Client (Event);
+   package Config is new Gneiss.Rom.Client (Character, Positive, String, Parse);
+   package Block is new Gneiss.Block (Byte, Unsigned_Long, Buffer, Session_Id, Request_Id);
+   package Timer_Client is new Gneiss.Timer.Client (Event);
 
    procedure Read (C : in out Block.Client_Session;
                    I :        Request_Id;
@@ -58,14 +58,14 @@ is
       Contract_Cases => (Initialized => Disk_Test.State_Initialized,
                          not Initialized => not Disk_Test.State_Initialized);
 
-   Conf   : Cai.Rom.Client_Session;
+   Conf   : Gneiss.Rom.Client_Session;
    Client : Block.Client_Session;
-   Timer  : Cai.Timer.Client_Session;
-   Log    : Cai.Log.Client_Session;
+   Timer  : Gneiss.Timer.Client_Session;
+   Log    : Gneiss.Log.Client_Session;
    Data   : Disk_Test.Test_State;
 
    Success    : Boolean := True;
-   Capability : Cai.Types.Capability;
+   Capability : Gneiss.Types.Capability;
 
    procedure Write (C : in out Block.Client_Session;
                     I :        Request_Id;
@@ -120,7 +120,7 @@ is
          SXML.Parser.Parse (S, Document, Result, Position);
          pragma Warnings (On, "unused assignment to ""Position""");
       end if;
-      if Cai.Log.Initialized (Log) then
+      if Gneiss.Log.Initialized (Log) then
          if not Block.Initialized (Client) and Result = SXML.Parser.Match_OK then
             State := SXML.Query.Init (Document);
             pragma Assert (Document'Length > 0);
@@ -159,10 +159,10 @@ is
                         Count := Long_Integer (Block.Block_Count (Client));
                      end if;
                      if Count > 1 then
-                        Cai.Log.Client.Info (Log, "Testing disk: ");
-                        Cai.Log.Client.Info (Log, Cai.Strings.Image (Count)
+                        Gneiss.Log.Client.Info (Log, "Testing disk: ");
+                        Gneiss.Log.Client.Info (Log, Basalt.Strings.Image (Count)
                                                   & " x "
-                                                  & Cai.Strings.Image (Size)
+                                                  & Basalt.Strings.Image (Size)
                                                   & "b ("
                                                   & Output.Byte_Image ((if
                                                                            Long_Integer'Last / Count > Size
@@ -175,15 +175,15 @@ is
                         Transfer_State_1;
                         Event;
                      else
-                        Cai.Log.Client.Error (Log, "Invalid block count: "
-                                                & Cai.Strings.Image (Count));
+                        Gneiss.Log.Client.Error (Log, "Invalid block count: "
+                                                & Basalt.Strings.Image (Count));
                      end if;
                   else
                      if not Block.Initialized (Client) then
-                        Cai.Log.Client.Error (Log, "Failed to initialize block session.");
+                        Gneiss.Log.Client.Error (Log, "Failed to initialize block session.");
                      else
-                        Cai.Log.Client.Error (Log, "Invalid block size: "
-                                              & Cai.Strings.Image (Long_Integer (Block.Block_Size (Client))));
+                        Gneiss.Log.Client.Error (Log, "Invalid block size: "
+                                              & Basalt.Strings.Image (Long_Integer (Block.Block_Size (Client))));
                      end if;
                   end if;
                end if;
@@ -194,21 +194,21 @@ is
       end if;
    end Parse;
 
-   procedure Construct (Cap : Cai.Types.Capability)
+   procedure Construct (Cap : Gneiss.Types.Capability)
    is
    begin
       Capability := Cap;
-      if not Cai.Log.Initialized (Log) then
-         Cai.Log.Client.Initialize (Log, Cap, "Correctness");
+      if not Gneiss.Log.Initialized (Log) then
+         Gneiss.Log.Client.Initialize (Log, Cap, "Correctness");
       end if;
-      if not Cai.Rom.Initialized (Conf) then
+      if not Gneiss.Rom.Initialized (Conf) then
          Config.Initialize (Conf, Capability);
       end if;
-      if not Cai.Timer.Initialized (Timer) then
+      if not Gneiss.Timer.Initialized (Timer) then
          Timer_Client.Initialize (Timer, Cap);
       end if;
-      if Cai.Log.Initialized (Log) and Cai.Rom.Initialized (Conf) then
-         Cai.Log.Client.Info (Log, "Correctness");
+      if Gneiss.Log.Initialized (Log) and Gneiss.Rom.Initialized (Conf) then
+         Gneiss.Log.Client.Info (Log, "Correctness");
          Config.Load (Conf);
       else
          Main.Vacate (Cap, Main.Failure);
@@ -221,8 +221,8 @@ is
       if Block.Initialized (Client) then
          Block_Client.Finalize (Client);
       end if;
-      if Cai.Log.Initialized (Log) then
-         Cai.Log.Client.Finalize (Log);
+      if Gneiss.Log.Initialized (Log) then
+         Gneiss.Log.Client.Finalize (Log);
       end if;
    end Destruct;
 
@@ -235,9 +235,9 @@ is
    begin
       Transfer_State_2;
       if
-         Cai.Log.Initialized (Log)
+         Gneiss.Log.Initialized (Log)
          and Block.Initialized (Client)
-         and Cai.Timer.Initialized (Timer)
+         and Gneiss.Timer.Initialized (Timer)
       then
          if
             Success
@@ -251,9 +251,9 @@ is
          if Disk_Test.Bounds_Check_Finished (Data) then
             if Output_Bounds then
                if Success then
-                  Cai.Log.Client.Info (Log, "Bounds check succeeded.");
+                  Gneiss.Log.Client.Info (Log, "Bounds check succeeded.");
                else
-                  Cai.Log.Client.Error (Log, "Bounds check failed.");
+                  Gneiss.Log.Client.Error (Log, "Bounds check failed.");
                end if;
                Output_Bounds := False;
             end if;
@@ -287,8 +287,8 @@ is
                end loop;
             end if;
          else
-            Cai.Log.Client.Error (Log, "Unsupported block size: "
-                                  & Cai.Strings.Image (Long_Integer (Block.Block_Size (Client))));
+            Gneiss.Log.Client.Error (Log, "Unsupported block size: "
+                                  & Basalt.Strings.Image (Long_Integer (Block.Block_Size (Client))));
             Success := False;
          end if;
 
@@ -309,8 +309,8 @@ is
              and Disk_Test.Compare_Finished (Data))
             or not Success
          then
-            pragma Assert (Cai.Log.Initialized (Log));
-            Cai.Log.Client.Info (Log, "Correctness test "
+            pragma Assert (Gneiss.Log.Initialized (Log));
+            Gneiss.Log.Client.Info (Log, "Correctness test "
                                  & (if Success then "succeeded." else "failed."));
             Main.Vacate (Capability, (if Success then Main.Success else Main.Failure));
          end if;

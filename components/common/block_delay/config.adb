@@ -7,14 +7,14 @@ package body Config with
    SPARK_Mode
 is
 
-   procedure Initialize (Cap     :     Cai.Types.Capability;
+   procedure Initialize (Cap     :     Gneiss.Types.Capability;
                          Success : out Boolean)
    is
    begin
-      if not Cai.Rom.Initialized (Config_Client) then
+      if not Gneiss.Rom.Initialized (Config_Client) then
          Instance.Initialize (Config_Client, Cap);
       end if;
-      Success := Cai.Rom.Initialized (Config_Client);
+      Success := Gneiss.Rom.Initialized (Config_Client);
       if Success then
          Instance.Load (Config_Client);
       end if;

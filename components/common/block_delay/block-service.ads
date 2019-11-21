@@ -1,12 +1,12 @@
 
-with Componolit.Gneiss.Types;
-with Componolit.Gneiss.Block.Dispatcher;
+with Gneiss.Types;
+with Gneiss.Block.Dispatcher;
 with Block.Server;
 
 package Block.Service with
    SPARK_Mode
 is
-   procedure Start (Cap     :     Componolit.Gneiss.Types.Capability;
+   procedure Start (Cap     :     Gneiss.Types.Capability;
                     Success : out Boolean);
 
    procedure Request (D : in out Block.Types.Dispatcher_Session;

@@ -1,24 +1,23 @@
-with Componolit.Gneiss.Types;
-with Componolit.Gneiss.Block;
-with Componolit.Gneiss.Block.Client;
-with Componolit.Gneiss.Log;
-with Componolit.Gneiss.Timer;
+with Gneiss.Types;
+with Gneiss.Block;
+with Gneiss.Block.Client;
+with Gneiss.Log;
+with Gneiss.Timer;
 
 generic
-   with package Block is new Componolit.Gneiss.Block (<>);
+   with package Block is new Gneiss.Block (<>);
    with package Client is new Block.Client (<>);
    Request_Count : Block.Count;
    Operation     : Block.Request_Kind;
 package Iteration
 is
-   package Cai renames Componolit.Gneiss;
 
    use all type Block.Id;
    use all type Block.Count;
 
    type Request is record
-      Start   : Cai.Timer.Time;
-      Finish  : Cai.Timer.Time;
+      Start   : Gneiss.Timer.Time;
+      Finish  : Gneiss.Timer.Time;
       Success : Boolean;
    end record;
 
@@ -40,17 +39,17 @@ is
    procedure Initialize (T      : out Test;
                          Offset :     Block.Count;
                          S      :     Boolean;
-                         Cap    :     Cai.Types.Capability);
+                         Cap    :     Gneiss.Types.Capability);
 
    procedure Send (C   : in out Block.Client_Session;
                    T   : in out Test;
-                   Log : in out Cai.Log.Client_Session);
+                   Log : in out Gneiss.Log.Client_Session);
 
    procedure Receive (C   : in out Block.Client_Session;
                       T   : in out Test;
-                      Log : in out Cai.Log.Client_Session);
+                      Log : in out Gneiss.Log.Client_Session);
 
-   procedure Xml (Xml_Log : in out Cai.Log.Client_Session;
+   procedure Xml (Xml_Log : in out Gneiss.Log.Client_Session;
                   B       :        Burst;
                   Offset  :        Block.Count);
 

@@ -1,16 +1,16 @@
 
-with Componolit.Gneiss.Log;
-with Componolit.Gneiss.Log.Client;
-with Componolit.Gneiss.Block;
-with Componolit.Gneiss.Block.Client;
-with Componolit.Gneiss.Strings;
+with Gneiss.Log;
+with Gneiss.Log.Client;
+with Gneiss.Block;
+with Gneiss.Block.Client;
+with Basalt.Strings;
 with Rwr;
 
 package body Component with
    SPARK_Mode
 is
 
-   Capability : Cai.Types.Capability;
+   Capability : Gneiss.Types.Capability;
 
    procedure Event;
 
@@ -21,7 +21,7 @@ is
    type Request_Id is mod 2 ** 5;
    subtype Session_Id is Boolean;
 
-   package Block is new Cai.Block (Byte, Long_Natural, Buffer, Session_Id, Request_Id);
+   package Block is new Gneiss.Block (Byte, Long_Natural, Buffer, Session_Id, Request_Id);
 
    procedure Write (C : in out Block.Client_Session;
                     I :        Request_Id;
@@ -58,11 +58,11 @@ is
 
    package Block_Client is new Block.Client (Event, Read, Write);
    Client : Block.Client_Session;
-   Log    : Cai.Log.Client_Session;
-   Xml    : Cai.Log.Client_Session;
+   Log    : Gneiss.Log.Client_Session;
+   Xml    : Gneiss.Log.Client_Session;
 
    generic
-      with package B is new Cai.Block (<>);
+      with package B is new Gneiss.Block (<>);
       with package BC is new B.Client (<>);
       Last_Burst         : B.Count;
       Last_Iterations    : Positive;
@@ -139,12 +139,12 @@ is
 --   procedure Large_1000000_Run is new Checked_Run (Block, Block_Client, 250000, 5, 1000000, 2,
    --                                                Large_250000, Large_1000000, "Large_1000000");
 
-   procedure Construct (Cap : Cai.Types.Capability) is
+   procedure Construct (Cap : Gneiss.Types.Capability) is
    begin
       Capability := Cap;
-      Cai.Log.Client.Initialize (Log, Cap, "Latency");
-      Cai.Log.Client.Info (Log, "Initializing test data");
-      Cai.Log.Client.Initialize (Xml, Cap, "XML");
+      Gneiss.Log.Client.Initialize (Log, Cap, "Latency");
+      Gneiss.Log.Client.Info (Log, "Initializing test data");
+      Gneiss.Log.Client.Initialize (Xml, Cap, "XML");
       Block_Client.Initialize (Client, Cap, "", True);
       Simple.Initialize (Simple_Data, Cap);
 --      Small_1.Initialize (Small_1_Data, Cap);
@@ -166,7 +166,7 @@ is
    is
    begin
       if not Printed then
-         Cai.Log.Client.Info (Log, "Test: " & Test);
+         Gneiss.Log.Client.Info (Log, "Test: " & Test);
          Printed := True;
       end if;
    end Pre_Print;
@@ -175,7 +175,7 @@ is
    is
    begin
       if Finished then
-         Cai.Log.Client.Flush (Log);
+         Gneiss.Log.Client.Flush (Log);
          Printed := False;
       end if;
    end Post_Print;
@@ -214,36 +214,36 @@ is
 --         and Large_250000.Finished (Large_250000_Data)
 --         and Large_1000000.Finished (Large_1000000_Data)
       then
-         Cai.Log.Client.Info (Log, "Tests finished, writing data...");
-         Cai.Log.Client.Info (Xml, "<test name=""Latency"" platform=""Genode"" hardware=""Qemu"" block_size="""
-                                   & Cai.Strings.Image (Long_Integer (Block.Block_Size (Client)))
+         Gneiss.Log.Client.Info (Log, "Tests finished, writing data...");
+         Gneiss.Log.Client.Info (Xml, "<test name=""Latency"" platform=""Genode"" hardware=""Qemu"" block_size="""
+                                   & Basalt.Strings.Image (Long_Integer (Block.Block_Size (Client)))
                                    & """>");
-         Cai.Log.Client.Info (Log, "Simple...");
+         Gneiss.Log.Client.Info (Log, "Simple...");
          Simple.Xml (Xml, Simple_Data, Log);
---         Cai.Log.Client.Info (Log, "Small_1...");
+--         Gneiss.Log.Client.Info (Log, "Small_1...");
 --         Small_1.Xml (Xml, Small_1_Data, Log);
---         Cai.Log.Client.Info (Log, "Small_2...");
+--         Gneiss.Log.Client.Info (Log, "Small_2...");
 --         Small_2.Xml (Xml, Small_2_Data, Log);
---         Cai.Log.Client.Info (Log, "Small_4...");
+--         Gneiss.Log.Client.Info (Log, "Small_4...");
 --         Small_4.Xml (Xml, Small_4_Data, Log);
---         Cai.Log.Client.Info (Log, "Medium_500...");
+--         Gneiss.Log.Client.Info (Log, "Medium_500...");
 --         Medium_500.Xml (Xml, Medium_500_Data, Log);
---         Cai.Log.Client.Info (Log, "Medium_1000...");
+--         Gneiss.Log.Client.Info (Log, "Medium_1000...");
 --         Medium_1000.Xml (Xml, Medium_1000_Data, Log);
---         Cai.Log.Client.Info (Log, "Medium_5000...");
+--         Gneiss.Log.Client.Info (Log, "Medium_5000...");
 --         Medium_5000.Xml (Xml, Medium_5000_Data, Log);
---         Cai.Log.Client.Info (Log, "Large_50000...");
+--         Gneiss.Log.Client.Info (Log, "Large_50000...");
 --         Large_50000.Xml (Xml, Large_50000_Data, Log);
---         Cai.Log.Client.Info (Log, "Large_100000...");
+--         Gneiss.Log.Client.Info (Log, "Large_100000...");
 --         Large_100000.Xml (Xml, Large_100000_Data, Log);
---         Cai.Log.Client.Info (Log, "Large_250000...");
+--         Gneiss.Log.Client.Info (Log, "Large_250000...");
 --         Large_250000.Xml (Xml, Large_250000_Data, Log);
---         Cai.Log.Client.Info (Log, "Large_1000000...");
+--         Gneiss.Log.Client.Info (Log, "Large_1000000...");
 --         Large_1000000.Xml (Xml, Large_1000000_Data, Log);
-         Cai.Log.Client.Info (Xml, "</test>");
-         Cai.Log.Client.Flush (Xml);
-         Cai.Log.Client.Info (Log, "Data written.");
-         Cai.Log.Client.Flush (Log);
+         Gneiss.Log.Client.Info (Xml, "</test>");
+         Gneiss.Log.Client.Flush (Xml);
+         Gneiss.Log.Client.Info (Log, "Data written.");
+         Gneiss.Log.Client.Flush (Log);
          Main.Vacate (Capability, Main.Success);
       end if;
    end Event;
@@ -254,11 +254,11 @@ is
       if Block.Initialized (Client) then
          Block_Client.Finalize (Client);
       end if;
-      if Cai.Log.Initialized (Log) then
-         Cai.Log.Client.Finalize (Log);
+      if Gneiss.Log.Initialized (Log) then
+         Gneiss.Log.Client.Finalize (Log);
       end if;
-      if Cai.Log.Initialized (Xml) then
-         Cai.Log.Client.Finalize (Xml);
+      if Gneiss.Log.Initialized (Xml) then
+         Gneiss.Log.Client.Finalize (Xml);
       end if;
    end Destruct;
 

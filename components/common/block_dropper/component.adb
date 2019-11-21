@@ -1,8 +1,8 @@
 
-with Componolit.Gneiss.Log;
-with Componolit.Gneiss.Log.Client;
-with Componolit.Gneiss.Rom;
-with Componolit.Gneiss.Rom.Client;
+with Gneiss.Log;
+with Gneiss.Log.Client;
+with Gneiss.Rom;
+with Gneiss.Rom.Client;
 with SXML;
 with SXML.Parser;
 with SXML.Query;
@@ -18,35 +18,35 @@ is
    procedure Parse (Data : String);
    procedure Fail (Message : String);
 
-   package Config is new Cai.Rom.Client (Character, Positive, String, Parse);
+   package Config is new Gneiss.Rom.Client (Character, Positive, String, Parse);
 
-   Cap  : Cai.Types.Capability;
-   Log  : Cai.Log.Client_Session;
-   Conf : Cai.Rom.Client_Session;
+   Cap  : Gneiss.Types.Capability;
+   Log  : Gneiss.Log.Client_Session;
+   Conf : Gneiss.Rom.Client_Session;
    Doc  : SXML.Document_Type (1 .. 100) := (others => SXML.Null_Node);
 
    procedure Fail (Message : String)
    is
    begin
-      Cai.Log.Client.Error (Log, Message);
+      Gneiss.Log.Client.Error (Log, Message);
       Main.Vacate (Cap, Main.Failure);
    end Fail;
 
-   procedure Construct (C : Cai.Types.Capability)
+   procedure Construct (C : Gneiss.Types.Capability)
    is
    begin
       Cap := C;
-      if not Cai.Log.Initialized (Log) then
-         Cai.Log.Client.Initialize (Log, C, "Drop");
+      if not Gneiss.Log.Initialized (Log) then
+         Gneiss.Log.Client.Initialize (Log, C, "Drop");
       end if;
-      if not Cai.Log.Initialized (Log) then
+      if not Gneiss.Log.Initialized (Log) then
          Main.Vacate (C, Main.Failure);
          return;
       end if;
-      if not Cai.Rom.Initialized (Conf) then
+      if not Gneiss.Rom.Initialized (Conf) then
          Config.Initialize (Conf, C);
       end if;
-      if Cai.Rom.Initialized (Conf) then
+      if Gneiss.Rom.Initialized (Conf) then
          Config.Load (Conf);
       else
          Fail ("Failed to initialize config rom");
@@ -159,8 +159,8 @@ is
    procedure Destruct
    is
    begin
-      if Cai.Log.Initialized (Log) then
-         Cai.Log.Client.Finalize (Log);
+      if Gneiss.Log.Initialized (Log) then
+         Gneiss.Log.Client.Finalize (Log);
       end if;
    end Destruct;
 

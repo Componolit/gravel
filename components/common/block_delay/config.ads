@@ -1,15 +1,13 @@
 
-with Componolit.Gneiss.Rom;
-with Componolit.Gneiss.Rom.Client;
-with Componolit.Gneiss.Types;
+with Gneiss.Rom;
+with Gneiss.Rom.Client;
+with Gneiss.Types;
 
 package Config with
    SPARK_Mode
 is
 
-   package Cai renames Componolit.Gneiss;
-
-   procedure Initialize (Cap     :     Cai.Types.Capability;
+   procedure Initialize (Cap     :     Gneiss.Types.Capability;
                          Success : out Boolean);
 
    type Mode is (Continuous, Sliced);
@@ -27,11 +25,11 @@ private
 
    procedure Parse (Data : String);
 
-   package Instance is new Cai.Rom.Client (Character, Positive, String, Parse);
+   package Instance is new Gneiss.Rom.Client (Character, Positive, String, Parse);
 
    function Duration_Value (D : String) return Duration;
 
-   Config_Client  : Cai.Rom.Client_Session;
+   Config_Client  : Gneiss.Rom.Client_Session;
    Request_Delay  : Duration := 0.0;
    Client_Id      : String (1 .. 160) := (others => Character'First);
    Is_Initialized : Boolean;

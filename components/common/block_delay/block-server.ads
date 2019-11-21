@@ -1,15 +1,15 @@
 
-with Componolit.Gneiss.Types;
-with Componolit.Gneiss.Timer;
-with Componolit.Gneiss.Timer.Client;
-with Componolit.Gneiss.Block.Client;
-with Componolit.Gneiss.Block.Server;
+with Gneiss.Types;
+with Gneiss.Timer;
+with Gneiss.Timer.Client;
+with Gneiss.Block.Client;
+with Gneiss.Block.Server;
 
 package Block.Server with
    SPARK_Mode
 is
 
-   procedure Set_Capability (Cap : Componolit.Gneiss.Types.Capability);
+   procedure Set_Capability (Cap : Gneiss.Types.Capability);
 
    procedure Event;
    function Block_Count (S : Types.Server_Session) return Types.Count;
@@ -41,8 +41,8 @@ is
 
 private
 
-   function Round_Up (Time  : Componolit.Gneiss.Timer.Time;
-                      Slice : Duration) return Componolit.Gneiss.Timer.Time with
+   function Round_Up (Time  : Gneiss.Timer.Time;
+                      Slice : Duration) return Gneiss.Timer.Time with
       Pre => Slice /= 0.0;
 
    procedure Write (C : in out Types.Client_Session;
@@ -55,10 +55,10 @@ private
 
    package Instance_Client is new Types.Client (Event, Read, Write);
 
-   package Time is new Componolit.Gneiss.Timer.Client (Event);
+   package Time is new Gneiss.Timer.Client (Event);
 
    Client : Types.Client_Session;
-   Timer  : Componolit.Gneiss.Timer.Client_Session;
+   Timer  : Gneiss.Timer.Client_Session;
 
    --  Free := Status (S_Request) = Raw and Status (C_Request) = Raw
    --  Ready := Status (C_Request) = Ok | Error
@@ -66,7 +66,7 @@ private
    type Cache_Entry is record
       S_Request : Instance.Request;
       C_Request : Instance_Client.Request;
-      Send_Time : Componolit.Gneiss.Timer.Time := 0.0;
+      Send_Time : Gneiss.Timer.Time := 0.0;
    end record;
 
    type Cache is array (Request_Id'Range) of Cache_Entry;

@@ -4,8 +4,8 @@ with LSC.Internal.Types;
 with LSC.Internal.SHA256;
 with LSC.AES_Generic;
 with LSC.AES_Generic.CBC;
-with Componolit.Gneiss.Log.Client;
-with Componolit.Gneiss.Strings_Generic;
+with Gneiss.Log.Client;
+with Basalt.Strings_Generic;
 with Permutation;
 with Output;
 
@@ -15,7 +15,7 @@ use all type LSC.Internal.SHA256.Message_Index;
 package body Correctness
 is
 
-   function Image is new Cai.Strings_Generic.Image_Modular (Block.Id);
+   function Image is new Basalt.Strings_Generic.Image_Modular (Block.Id);
 
    package Write_Permutation is new Permutation (Block.Id);
    package Read_Permutation is new Permutation (Block.Id);
@@ -39,8 +39,8 @@ is
 
    procedure Update_Read_Cache (T : in out Test_State);
 
-   Start        : Cai.Timer.Time;
-   Last         : Cai.Timer.Time;
+   Start        : Gneiss.Timer.Time;
+   Last         : Gneiss.Timer.Time;
 
    function State_Initialized return Boolean is
       (Write_Permutation.Initialized and Read_Permutation.Initialized);
@@ -100,8 +100,8 @@ is
    procedure Bounds_Check (C        : in out Block.Client_Session;
                            T        : in out Test_State;
                            Success  :    out Boolean;
-                           L        : in out Cai.Log.Client_Session;
-                           Timer    :        Cai.Timer.Client_Session;
+                           L        : in out Gneiss.Log.Client_Session;
+                           Timer    :        Gneiss.Timer.Client_Session;
                            Progress :    out Boolean)
    is
       use type Block.Request_Kind;
@@ -118,7 +118,7 @@ is
          T.Bounds_Checked := True;
          Success := Client.Status (Cache (Cache'First).R) = Block.Error;
          if not Success then
-            Cai.Log.Client.Error (L, "Bounds check failed, block "
+            Gneiss.Log.Client.Error (L, "Bounds check failed, block "
                                      & Image (Client.Start (Cache (Cache'First).R))
                                      & " should not be: "
                                      & (case Client.Status (Cache (Cache'First).R) is
@@ -178,14 +178,14 @@ is
    procedure Write (C        : in out Block.Client_Session;
                     T        : in out Test_State;
                     Success  :    out Boolean;
-                    L        : in out Cai.Log.Client_Session;
-                    Timer    :        Cai.Timer.Client_Session;
+                    L        : in out Gneiss.Log.Client_Session;
+                    Timer    :        Gneiss.Timer.Client_Session;
                     Progress :    out Boolean)
    is
       use type Block.Request_Status;
       use type Block.Request_Kind;
       use type Block.Result;
-      Current : Cai.Timer.Time;
+      Current : Gneiss.Timer.Time;
       Result  : Block.Result;
    begin
       Success := True;
@@ -228,7 +228,7 @@ is
                T.Write_Recv := T.Write_Recv + 1;
                Progress := True;
             when Block.Error =>
-               Cai.Log.Client.Error (L, "Write request at block "
+               Gneiss.Log.Client.Error (L, "Write request at block "
                                         & Image (Client.Start (Cache (I).R))
                                         & " returned with error.");
                Client.Release (C, Cache (I).R);
@@ -276,13 +276,13 @@ is
    procedure Read (C        : in out Block.Client_Session;
                    T        : in out Test_State;
                    Success  :    out Boolean;
-                   L        : in out Cai.Log.Client_Session;
-                   Timer    :        Cai.Timer.Client_Session;
+                   L        : in out Gneiss.Log.Client_Session;
+                   Timer    :        Gneiss.Timer.Client_Session;
                    Progress :    out Boolean)
    is
       use type Block.Request_Status;
       use type Block.Request_Id;
-      Current : Cai.Timer.Time;
+      Current : Gneiss.Timer.Time;
       Done    : Long_Integer;
       Todo    : Long_Integer;
       Result  : Block.Result;
@@ -320,7 +320,7 @@ is
                Client.Update_Request (C, Cache (I).R);
                Progress := Progress or else Client.Status (Cache (I).R) in Block.Ok | Block.Error;
             when Block.Error =>
-               Cai.Log.Client.Error (L, "Read request at block "
+               Gneiss.Log.Client.Error (L, "Read request at block "
                                         & Image (Client.Start (Cache (I).R))
                                         & " returned with error.");
                Client.Release (C, Cache (I).R);
@@ -339,10 +339,10 @@ is
       if not Read_Finished (T) then
          Update_Read_Cache (T);
       end if;
-      if Cai.Timer.Initialized (Timer) then
+      if Gneiss.Timer.Initialized (Timer) then
          Current := Timer_Client.Clock (Timer);
       else
-         Current := Cai.Timer.Time'First;
+         Current := Gneiss.Timer.Time'First;
       end if;
       if Block.Count'Last - T.Read_Recv > T.Write_Recv then
          Done := Long_Integer (T.Write_Recv + T.Read_Recv);
