@@ -50,7 +50,7 @@ private
 
    type Database (Size : Natural) is tagged
    record
-      DB : Name_DB.Database (Size);
+      Inner : Name_DB.Database (Size);
    end record;
 
 end Parpen.NameDB;

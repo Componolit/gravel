@@ -18,7 +18,7 @@ package body Parpen.NameDB is
    procedure Init (DB : out Database)
    is
    begin
-      DB.DB.Initialize;
+      DB.Inner.Initialize;
    end Init;
 
    ---------
@@ -31,14 +31,14 @@ package body Parpen.NameDB is
       H : Hash_Type := Hash (Query);
       C : Name_DB.Cursor_Option;
    begin
-      C := DB.DB.Find (H);
+      C := DB.Inner.Find (H);
       case C.Result is
          when Name_DB.Status_OK =>
             Result := Status_In_Use;
          when Name_DB.Status_Overflow =>
             Result := Status_Out_Of_Memory;
          when Name_DB.Status_Not_Found =>
-            DB.DB.Insert (C => C.C, K => H, E => Elem);
+            DB.Inner.Insert (C => C.Cursor, K => H, E => Elem);
             Result := Status_OK;
       end case;
    end Add;
@@ -53,7 +53,7 @@ package body Parpen.NameDB is
       C : Name_DB.Cursor_Option;
       use type Name_DB.Status;
    begin
-      C := DB.DB.Find (H);
+      C := DB.Inner.Find (H);
       if C.Result = Name_DB.Status_OK then
          return True;
       end if;
@@ -70,9 +70,9 @@ package body Parpen.NameDB is
       C : Name_DB.Cursor_Option;
       use type Name_DB.Status;
    begin
-      C := DB.DB.Find (H);
+      C := DB.Inner.Find (H);
       if C.Result = Name_DB.Status_OK then
-         Res := (Valid => True, Elem => DB.DB.Get (C.C));
+         Res := (Valid => True, Elem => DB.Inner.Get (C.Cursor));
          return;
       end if;
       Res := (Valid => False, Stat => Status_Not_Found);

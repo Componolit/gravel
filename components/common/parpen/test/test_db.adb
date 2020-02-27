@@ -9,7 +9,7 @@ package body Test_DB is
                                 Null_Key     => 0);
 
    use type DB.Status;
-   use type DB.Cursor;
+   use type DB.Curs;
    use type DB.Cursor_Option;
 
    function Name (T : Test) return AUnit.Message_String is
@@ -29,8 +29,8 @@ package body Test_DB is
       Cursor := Database.Find (K => 14);
       Assert (Cursor.Result = DB.Status_Not_Found, "Element found in empty database");
 
-      Database.Insert (C => Cursor.C, K => 14, E => 100);
-      Assert (Database.Get (C => Cursor.C) = 100, "Invalid element");
+      Database.Insert (C => Cursor.Cursor, K => 14, E => 100);
+      Assert (Database.Get (C => Cursor.Cursor) = 100, "Invalid element");
 
       Cursor := Database.Find (K => 14);
       Assert (Cursor.Result = DB.Status_OK, "Element not found in database");
@@ -52,12 +52,12 @@ package body Test_DB is
       Cursor := Database.Find (K => 14);
       Assert (Cursor.Result = DB.Status_Not_Found, "Element found in empty database");
 
-      Database.Insert (C => Cursor.C, K => 14, E => 100);
-      Assert (Database.Get (C => Cursor.C) = 100, "Invalid element");
+      Database.Insert (C => Cursor.Cursor, K => 14, E => 100);
+      Assert (Database.Get (C => Cursor.Cursor) = 100, "Invalid element");
 
-      Database.Delete (C => Cursor.C);
-      Database.Insert (C => Cursor.C, K => 15, E => 200);
-      Assert (Database.Get (C => Cursor.C) = 200, "Invalid element after deletion");
+      Database.Delete (C => Cursor.Cursor);
+      Database.Insert (C => Cursor.Cursor, K => 15, E => 200);
+      Assert (Database.Get (C => Cursor.Cursor) = 200, "Invalid element after deletion");
 
       Cursor := Database.Find (K => 14);
       Assert (Cursor.Result = DB.Status_Not_Found, "Element found after deletion database");
@@ -72,8 +72,8 @@ package body Test_DB is
       for I in Natural range 1 .. 73 loop
          Cursor := Database.Find (K => I);
          Assert (Cursor.Result = DB.Status_Not_Found, "Element" & I'Img & " found in empty database");
-         Database.Insert (C => Cursor.C, K => I, E => I);
-         Assert (Database.Get (C => Cursor.C) = I, "Invalid element for iteration" & I'Img);
+         Database.Insert (C => Cursor.Cursor, K => I, E => I);
+         Assert (Database.Get (C => Cursor.Cursor) = I, "Invalid element for iteration" & I'Img);
       end loop;
 
       Cursor := Database.Find (K => 74);

@@ -6,14 +6,14 @@ generic
 package Parpen.DB with SPARK_Mode
 is
 
-   type Cursor is private;
+   type Curs is private;
    type Status is (Status_OK, Status_Not_Found, Status_Overflow);
 
    type Cursor_Option (Result : Status := Status_Overflow) is
    record
       case Result is
          when Status_OK | Status_Not_Found =>
-            C : Cursor;
+            Cursor : Curs;
          when Status_Overflow =>
             null;
       end case;
@@ -29,30 +29,30 @@ is
    function Find (DB : Database; K : Key) return Cursor_Option with
       Pre => Initialized (DB);
 
-   function Get (DB : Database; C : Cursor) return Element with
+   function Get (DB : Database; C : Curs) return Element with
       Pre => Initialized (DB);
 
-   procedure Insert (DB : in out Database; C : Cursor; K : Key; E : Element) with
+   procedure Insert (DB : in out Database; C : Curs; K : Key; E : Element) with
       Pre => Initialized (DB);
 
-   procedure Delete (DB : in out Database; C : Cursor) with
+   procedure Delete (DB : in out Database; C : Curs) with
       Pre => Initialized (DB);
 
 private
-   type Cursor is record
-      C : Natural;
+   type Curs is record
+      Inner : Natural;
    end record;
    type Internal_Element is
    record
-      V : Boolean;
-      K : Key;
-      E : Element;
+      Valid : Boolean;
+      Kee   : Key;
+      Elem  : Element;
    end record;
    Null_Internal_Element : constant Internal_Element := (False, Null_Key, Null_Element);
    
-   type Elements is array (Natural range <>) of Internal_Element;
+   type Element_Array is array (Natural range <>) of Internal_Element;
    type Database (Size : Natural) is tagged
    record
-      E : Elements (1 .. Size);
+      Elements : Element_Array (1 .. Size);
    end record;
 end Parpen.DB;

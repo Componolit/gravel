@@ -17,7 +17,7 @@ package body Parpen.DB is
 
    procedure Initialize (DB : out Database) is
    begin
-      DB.E := (others => Null_Internal_Element);
+      DB.Elements := (others => Null_Internal_Element);
    end Initialize;
 
    ----------
@@ -26,21 +26,21 @@ package body Parpen.DB is
 
    function Find (DB : Database; K : Key) return Cursor_Option
    is
-      Free       : Cursor;
+      Free       : Curs;
       Free_Found : Boolean := False;
    begin
-      for I in DB.E'Range
+      for I in DB.Elements'Range
       loop
-         if DB.E (I).V and then DB.E (I).K = K then
-            return Cursor_Option'(Result => Status_OK, C => (C => I));
+         if DB.Elements (I).Valid and then DB.Elements (I).Kee = K then
+            return Cursor_Option'(Result => Status_OK, Cursor => (Inner => I));
          end if;
-         if not DB.E (I).V then
-            Free := (C => I);
+         if not DB.Elements (I).Valid then
+            Free := (Inner => I);
             Free_Found := True;
          end if;
       end loop;
       if Free_Found then
-         return Cursor_Option'(Result => Status_Not_Found, C => Free);
+         return Cursor_Option'(Result => Status_Not_Found, Cursor => Free);
       end if;
       return Cursor_Option'(Result => Status_Overflow);
    end Find;
@@ -49,27 +49,27 @@ package body Parpen.DB is
    -- Get --
    ---------
 
-   function Get (DB : Database; C : Cursor) return Element is
+   function Get (DB : Database; C : Curs) return Element is
    begin
-      return DB.E (C.C).E;
+      return DB.Elements (C.Inner).Elem;
    end Get;
 
    ------------
    -- Insert --
    ------------
 
-   procedure Insert (DB : in out Database; C : Cursor; K : Key; E : Element) is
+   procedure Insert (DB : in out Database; C : Curs; K : Key; E : Element) is
    begin
-      DB.E (C.C) := Internal_Element'(V => True, K => K, E => E);
+      DB.Elements (C.Inner) := Internal_Element'(Valid => True, Kee => K, Elem => E);
    end Insert;
 
    ------------
    -- Delete --
    ------------
 
-   procedure Delete (DB : in out Database; C : Cursor) is
+   procedure Delete (DB : in out Database; C : Curs) is
    begin
-      DB.E (C.C) := Null_Internal_Element;
+      DB.Elements (C.Inner) := Null_Internal_Element;
    end Delete;
 
 end Parpen.DB;
