@@ -1,12 +1,12 @@
 with LSC.SHA1_Generic;
 
-package body Parpen.Name_Service is
+package body Parpen.NameDB is
 
    --  We use SHA-1 for indexing only.
    function Hash is new LSC.SHA1_Generic.Hash
-      (Message_Index_Type => Positive,
-       Message_Elem_type  => Character,
-       Message_Type       => String,
+      (Message_Index_Type => Query_Index,
+       Message_Elem_type  => Query_Element,
+       Message_Type       => Query_String,
        Hash_Index_Type    => Hash_Index,
        Hash_Elem_type     => Byte,
        Hash_type          => Hash_Type);
@@ -18,10 +18,7 @@ package body Parpen.Name_Service is
    procedure Init (DB : out Database)
    is
    begin
-      for E of DB.E
-      loop
-         E := Null_Internal_Element;
-      end loop;
+      DB := (Size => DB.Size, E => (others => Null_Internal_Element));
    end Init;
 
    ---------
@@ -29,9 +26,9 @@ package body Parpen.Name_Service is
    ---------
 
    procedure Add
-     (DB : in out Database; Elem : Element; Name : String; Result : out Status)
+     (DB : in out Database; Elem : Element; Query : Query_String; Result : out Status)
    is
-      H          : Hash_Type := Hash (Name);
+      H          : Hash_Type := Hash (Query);
       Slot       : Natural;
       Slot_Found : Boolean := False;
    begin
@@ -63,9 +60,9 @@ package body Parpen.Name_Service is
    -- Exists --
    ------------
 
-   function Exists (DB : Database; Name : String) return Boolean
+   function Exists (DB : Database; Query : Query_String) return Boolean
    is
-      H : Hash_Type := Hash (Name);
+      H : Hash_Type := Hash (Query);
    begin
       for E of DB.E
       loop
@@ -80,9 +77,9 @@ package body Parpen.Name_Service is
    -- Get --
    ---------
 
-   procedure Get (DB : Database; Name : String; Res : out Result)
+   procedure Get (DB : Database; Query : Query_String; Res : out Result)
    is
-      H : Hash_Type := Hash (Name);
+      H : Hash_Type := Hash (Query);
    begin
       for E of DB.E
       loop
@@ -94,4 +91,4 @@ package body Parpen.Name_Service is
       Res := (Valid => False, Stat => Status_Not_Found);
    end Get;
 
-end Parpen.Name_Service;
+end Parpen.NameDB;

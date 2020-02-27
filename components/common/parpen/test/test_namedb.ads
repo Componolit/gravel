@@ -1,7 +1,7 @@
 with AUnit;                                                                                                                                                                   
 with AUnit.Test_Cases;                                                                                                  
                                                                                                                         
-package Test_Name_Service is
+package Test_NameDB is
    pragma Elaborate_Body;                                                                                               
 
    type Test is new AUnit.Test_Cases.Test_Case with null record;
@@ -10,4 +10,4 @@ package Test_Name_Service is
 
    procedure Register_Tests (T : in out Test);
 
-end Test_Name_Service;
+end Test_NameDB;

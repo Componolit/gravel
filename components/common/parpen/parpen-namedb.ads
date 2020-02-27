@@ -1,12 +1,16 @@
 with System;
 
-package Parpen.Name_Service is
+generic
+   type Element is private;
+   Null_Element : Element;
+   type Query_Index is (<>);
+   type Query_Element is (<>);
+   type Query_String is array (Query_Index range <>) of Query_Element;
+package Parpen.NameDB is
 
-   type Database (Size : Natural) is tagged limited private;
+   type Database (Size : Natural) is tagged private;
 
    type Status is (Status_OK, Status_Not_Found, Status_In_Use, Status_Out_Of_Memory);
-
-   subtype Element is Natural;
 
    type Result (Valid : Boolean := False) is
    record
@@ -21,15 +25,15 @@ package Parpen.Name_Service is
    procedure Init (DB : out Database);
 
    procedure Add (DB     : in out Database;
-                  Elem   :        Element;  -- FIXME: Use genric type
-                  Name   :        String;  --  FIXME: Use generic type 
+                  Elem   :        Element;
+                  Query  :        Query_String;
                   Result :    out Status);
 
    function Exists (DB    :     Database;
-                    Name  :     String) return Boolean;
+                    Query :     Query_String) return Boolean;
    
    procedure Get (DB    :     Database;
-                  Name  :     String;
+                  Query :     Query_String;
                   Res   : out Result);
    
 private
@@ -44,13 +48,13 @@ private
       Hash  : Hash_Type;
       Elem  : Element;
    end record;
-   Null_Internal_Element : constant Internal_Element := (False, (others => 0), 0);
+   Null_Internal_Element : constant Internal_Element := (False, (others => 0), Null_Element);
 
    type Elements is array (Natural range <>) of Internal_Element;
 
-   type Database (Size : Natural) is tagged limited
+   type Database (Size : Natural) is tagged
    record
       E : Elements (1 .. Size);
    end record;
 
-end Parpen.Name_Service;
+end Parpen.NameDB;
