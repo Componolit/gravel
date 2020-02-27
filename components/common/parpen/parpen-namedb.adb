@@ -18,7 +18,7 @@ package body Parpen.NameDB is
    procedure Init (DB : out Database)
    is
    begin
-      DB := (Size => DB.Size, E => (others => Null_Internal_Element));
+      DB.DB.Initialize;
    end Init;
 
    ---------
@@ -28,32 +28,19 @@ package body Parpen.NameDB is
    procedure Add
      (DB : in out Database; Elem : Element; Query : Query_String; Result : out Status)
    is
-      H          : Hash_Type := Hash (Query);
-      Slot       : Natural;
-      Slot_Found : Boolean := False;
+      H : Hash_Type := Hash (Query);
+      C : Name_DB.Cursor_Option;
    begin
-      for I in DB.E'Range
-      loop
-         if DB.E (I).Valid and then DB.E (I).Hash = H then
+      C := DB.DB.Find (H);
+      case C.Result is
+         when Name_DB.Status_OK =>
             Result := Status_In_Use;
-            return;
-         end if;
-
-         if not DB.E (I).Valid and not Slot_Found then
-            Slot       := I;
-            Slot_Found := True;
-         end if;
-      end loop;
-
-      if not Slot_Found then
-         Result := Status_Out_Of_Memory;
-         return;
-      end if;
-
-      DB.E (Slot) := (Valid => True,
-                      Hash  => H,
-                      Elem  => Elem);
-      Result := Status_OK;
+         when Name_DB.Status_Overflow =>
+            Result := Status_Out_Of_Memory;
+         when Name_DB.Status_Not_Found =>
+            DB.DB.Insert (C => C.C, K => H, E => Elem);
+            Result := Status_OK;
+      end case;
    end Add;
 
    ------------
@@ -63,13 +50,13 @@ package body Parpen.NameDB is
    function Exists (DB : Database; Query : Query_String) return Boolean
    is
       H : Hash_Type := Hash (Query);
+      C : Name_DB.Cursor_Option;
+      use type Name_DB.Status;
    begin
-      for E of DB.E
-      loop
-         if E.Valid and then E.Hash = H then
-            return True;
-         end if;
-      end loop;
+      C := DB.DB.Find (H);
+      if C.Result = Name_DB.Status_OK then
+         return True;
+      end if;
       return False;
    end Exists;
 
@@ -80,14 +67,14 @@ package body Parpen.NameDB is
    procedure Get (DB : Database; Query : Query_String; Res : out Result)
    is
       H : Hash_Type := Hash (Query);
+      C : Name_DB.Cursor_Option;
+      use type Name_DB.Status;
    begin
-      for E of DB.E
-      loop
-         if E.Valid and then E.Hash = H then
-            Res := (Valid => True, Elem => E.Elem);
-            return;
-         end if;
-      end loop;
+      C := DB.DB.Find (H);
+      if C.Result = Name_DB.Status_OK then
+         Res := (Valid => True, Elem => DB.DB.Get (C.C));
+         return;
+      end if;
       Res := (Valid => False, Stat => Status_Not_Found);
    end Get;
 

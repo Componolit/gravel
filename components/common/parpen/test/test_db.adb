@@ -3,10 +3,10 @@ with Parpen.DB;
 
 package body Test_DB is
 
-   package DB is new Parpen.DB(Element      => Natural,
-                               Null_Element => 0,
-                               Key          => Natural,
-                               Null_Key     => 0);
+   package DB is new Parpen.DB (Element      => Natural,
+                                Null_Element => 0,
+                                Key          => Natural,
+                                Null_Key     => 0);
 
    use type DB.Status;
    use type DB.Cursor;

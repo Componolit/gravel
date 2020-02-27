@@ -1,4 +1,5 @@
 with System;
+with Parpen.DB;
 
 generic
    type Element is private;
@@ -42,19 +43,14 @@ private
    subtype Hash_Index is Natural range 1 .. 20;
    type Hash_Type is array (Hash_Index) of Byte;
 
-   type Internal_Element is
-   record
-      Valid : Boolean;
-      Hash  : Hash_Type;
-      Elem  : Element;
-   end record;
-   Null_Internal_Element : constant Internal_Element := (False, (others => 0), Null_Element);
-
-   type Elements is array (Natural range <>) of Internal_Element;
+   package Name_DB is new Parpen.DB (Element      => Element,
+                                     Null_Element => Null_Element,
+                                     Key          => Hash_Type,
+                                     Null_Key     => Hash_Type'(others => 0));
 
    type Database (Size : Natural) is tagged
    record
-      E : Elements (1 .. Size);
+      DB : Name_DB.Database (Size);
    end record;
 
 end Parpen.NameDB;
