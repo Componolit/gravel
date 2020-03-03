@@ -16,9 +16,10 @@ is
 
    package Log_Client is new Gneiss.Log.Client (Initialize);
 
+   type Server_State is (Uninitialized, SHM_Wait, Initialized, Error);
    type Server_Slot is record
       Ident : String (1 .. 512) := (others => ASCII.NUL);
-      Valid : Boolean := False;
+      State : Server_State := Uninitialized;
    end record;
 
    type Server_Reg is array (Gneiss.Session_Index range <>) of Message.Server_Session;
@@ -51,7 +52,14 @@ is
       Idx : constant Gneiss.Session_Index := Message.Index (Session).Value;
    begin
       if Idx in Servers'Range then
-         Servers_Data (Idx).Valid := True;
+         case Servers_Data (Idx).State is
+            when Uninitialized =>
+               Servers_Data (Idx).State := SHM_Wait;
+            when SHM_Wait =>
+               Servers_Data (Idx).State := Error;
+            when Initialized | Error =>
+               null;
+         end case;
       end if;
    end Initialize;
 
@@ -64,7 +72,7 @@ is
       Idx : constant Gneiss.Session_Index := Message.Index (Session).Value;
    begin
       if Idx in Servers'Range then
-         Servers_Data (Idx).Valid := False;
+         Servers_Data (Idx).State := Uninitialized;
       end if;
    end Finalize;
 
@@ -75,10 +83,23 @@ is
    procedure Recv (Session : in out Message.Server_Session;
                    Data    :        Message_Buffer)
    is
+      Idx : constant Gneiss.Session_Index := Message.Index (Session).Value;
       use type Gneiss.Session_Status;
    begin
       if Gneiss.Log.Status (Log) = Gneiss.Initialized then
-         Log_Client.Info (Log, "Message received: " & Data);
+         if Idx in Servers'Range then
+            case Servers_Data (Idx).State is
+               when Uninitialized | Error =>
+                  Log_Client.Error (Log, "Internal error: " & Data);
+               when SHM_Wait =>
+                  -- FIXME: SHM should be initialized, send error message
+                  Log_Client.Error (Log, "SHM not initialized: " & Data);
+                  null;
+               when Initialized =>
+                  -- FIXME: Parse message
+                  Log_Client.Info (Log, "Message received: " & Data);
+            end case;
+         end if;
       end if;
    end Recv;
 
@@ -90,7 +111,7 @@ is
       (if
           Message.Index (Session).Valid
           and then Message.Index (Session).Value in Servers_Data'Range
-       then Servers_Data (Message.Index (Session).Value).Valid
+       then Servers_Data (Message.Index (Session).Value).State /= Uninitialized
        else False);
 
    --
@@ -117,13 +138,11 @@ is
       Log_Client.Info (Log, "Dispatching " & Name & " with label " & Label);
       for I in Servers'Range loop
          if not Ready (Servers (I)) then
-            Log_Client.Info (Log, "Not ready");
             Message_Dispatcher.Session_Initialize (Session, Disp_Cap, Servers (I), I);
             if
                Ready (Servers (I))
                and then Message.Initialized (Servers (I))
             then
-               Log_Client.Info (Log, "Accepting");
                Servers_Data (I).Ident (1 .. Name'Length + Label'Length + 1) := Name & ":" & Label;
                Message_Dispatcher.Session_Accept (Session, Disp_Cap, Servers (I));
                exit;
