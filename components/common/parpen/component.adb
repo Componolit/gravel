@@ -12,17 +12,27 @@ is
 
    package Message is new Gneiss.Message (Message_Buffer, Null_Buffer);
 
-   procedure Initialize_Log (Session : in out Gneiss.Log.Client_Session);
+   procedure Initialize (Session : in out Gneiss.Log.Client_Session);
 
-   package Log_Client is new Gneiss.Log.Client (Initialize_Log);
+   package Log_Client is new Gneiss.Log.Client (Initialize);
+
+   type Server_Slot is record
+      Ident : String (1 .. 512) := (others => ASCII.NUL);
+      Valid : Boolean := False;
+   end record;
+
+   type Server_Reg is array (Gneiss.Session_Index range <>) of Message.Server_Session;
+   type Server_Meta is array (Gneiss.Session_Index range <>) of Server_Slot;
 
    Cap        : Gneiss.Capability;
    Log        : Gneiss.Log.Client_Session;
    Dispatcher : Message.Dispatcher_Session;
 
-   --
+   Num_Clients  : constant := 10;
+   Servers      : Server_Reg (1 .. Num_Clients);
+   Servers_Data : Server_Meta (1 .. Num_Clients);
+
    -- Message server
-   --
 
    procedure Initialize (Session : in out Message.Server_Session);
    procedure Finalize (Session : in out Message.Server_Session);
@@ -38,8 +48,11 @@ is
 
    procedure Initialize (Session : in out Message.Server_Session)
    is
+      Idx : constant Gneiss.Session_Index := Message.Index (Session).Value;
    begin
-      null;
+      if Idx in Servers'Range then
+         Servers_Data (Idx).Valid := True;
+      end if;
    end Initialize;
 
    --------------
@@ -48,8 +61,11 @@ is
 
    procedure Finalize (Session : in out Message.Server_Session)
    is
+      Idx : constant Gneiss.Session_Index := Message.Index (Session).Value;
    begin
-      null;
+      if Idx in Servers'Range then
+         Servers_Data (Idx).Valid := False;
+      end if;
    end Finalize;
 
    ----------
@@ -59,19 +75,23 @@ is
    procedure Recv (Session : in out Message.Server_Session;
                    Data    :        Message_Buffer)
    is
+      use type Gneiss.Session_Status;
    begin
-      null;
+      if Gneiss.Log.Status (Log) = Gneiss.Initialized then
+         Log_Client.Info (Log, "Message received: " & Data);
+      end if;
    end Recv;
 
    -----------
    -- Ready --
    -----------
 
-   function Ready (Session : Message.Server_Session) return Boolean
-   is
-   begin
-      return False;
-   end Ready;
+   function Ready (Session : Message.Server_Session) return Boolean is
+      (if
+          Message.Index (Session).Valid
+          and then Message.Index (Session).Value in Servers_Data'Range
+       then Servers_Data (Message.Index (Session).Value).Valid
+       else False);
 
    --
    -- Message dispatcher
@@ -95,6 +115,24 @@ is
    is
    begin
       Log_Client.Info (Log, "Dispatching " & Name & " with label " & Label);
+      for I in Servers'Range loop
+         if not Ready (Servers (I)) then
+            Log_Client.Info (Log, "Not ready");
+            Message_Dispatcher.Session_Initialize (Session, Disp_Cap, Servers (I), I);
+            if
+               Ready (Servers (I))
+               and then Message.Initialized (Servers (I))
+            then
+               Log_Client.Info (Log, "Accepting");
+               Servers_Data (I).Ident (1 .. Name'Length + Label'Length + 1) := Name & ":" & Label;
+               Message_Dispatcher.Session_Accept (Session, Disp_Cap, Servers (I));
+               exit;
+            end if;
+         end if;
+      end loop;
+      for S of Servers loop
+         Message_Dispatcher.Session_Cleanup (Session, Disp_Cap, S);
+      end loop;
    end Dispatch;
 
    ---------------
@@ -118,11 +156,11 @@ is
       end if;
    end Construct;
 
-   --------------------
-   -- Initialize_Log --
-   --------------------
+   ----------------
+   -- Initialize --
+   ----------------
 
-   procedure Initialize_Log (Session : in out Gneiss.Log.Client_Session)
+   procedure Initialize (Session : in out Gneiss.Log.Client_Session)
    is
    begin
       case Gneiss.Log.Status (Session) is
@@ -131,7 +169,7 @@ is
          when others =>
             Main.Vacate (Cap, Main.Failure);
       end case;
-   end Initialize_Log;
+   end Initialize;
 
    --------------
    -- Destruct --
