@@ -36,19 +36,21 @@ is
    procedure Construct (Capability : Gneiss.Capability)
    is
       Msg_Buffer : Message_Buffer := (others => ASCII.NUL);
+      -- FIXME: Generate label
+      Label : String := ASCII.ESC & "prpn" & ASCII.NUL;
       use type Gneiss.Session_Status;
    begin
       Cap := Capability;
       Log_Client.Initialize (Log, Cap, "parpen_client");
 
-      Message_Client.Initialize (Msg, Cap, "shared");
+      Message_Client.Initialize (Msg, Cap, Label);
       if Message.Status (Msg) /= Gneiss.Initialized then
          Main.Vacate (Cap, Main.Failure);
          return;
       end if;
 
       Log_Client.Info (Log, "Initializing shared memory");
-      Memory_Client.Initialize (Mem, Cap, "shared", 4096);
+      Memory_Client.Initialize (Mem, Cap, Label, 4096);
       if Memory.Status (Mem) /= Gneiss.Initialized then
          Main.Vacate (Cap, Main.Failure);
          return;

@@ -5,6 +5,11 @@ with Gneiss.Message.Server;
 with Gneiss.Memory.Server;
 with Gneiss.Memory.Dispatcher;
 
+with Parpen.Generic_Types;
+with Parpen.Protocol.Generic_Label;
+
+with RFLX_Container;
+
 package body Component with
    SPARK_Mode
 is
@@ -20,10 +25,24 @@ is
 
    package Memory is new Gneiss.Memory (Character, Positive, String);
 
+   type String_Ptr is access all String;
+   type Bit_Length is range 0 .. Natural'Last * 8;
+
+   package Label_Types is new Parpen.Generic_Types (Index      => Positive,
+                                                    Byte       => Character,
+                                                    Bytes      => String,
+                                                    Bytes_Ptr  => String_Ptr,
+                                                    Length     => Natural,
+                                                    Bit_Length => Bit_Length);
+
+   package Label_Package is new Parpen.Protocol.Generic_Label (Label_Types);
+
    type Server_State is (Uninitialized, SHM_Wait, Initialized, Error);
    type Server_Slot is record
-      Ident : String (1 .. 512) := (others => ASCII.NUL);
+      Len   : Natural := 0;
+      Name  : String (1 .. 50) := (others => ASCII.NUL);
       State : Server_State := Uninitialized;
+      ID    : Parpen.Protocol.Connection_ID := Parpen.Protocol.Connection_ID'First;
    end record;
 
    type Server_Session is
@@ -195,25 +214,38 @@ is
                        Name     :        String;
                        Label    :        String)
    is
+      Context : Label_Package.Context := Label_Package.Create;
+      package L is new RFLX_Container (Positive, Character, String, String_ptr, Label'Length);
    begin
-      Log_Client.Info (Log, "MESSAGE: Dispatching " & Name & ":" & Label);
-      for I in Servers'Range loop
-         if not Ready (Servers (I).Msg) then
-            Message_Dispatcher.Session_Initialize (Session, Disp_Cap, Servers (I).Msg, I);
-            if
-               Ready (Servers (I).Msg)
-               and then Message.Initialized (Servers (I).Msg)
-            then
-               Servers_Data (I).Ident (1 .. Name'Length + Label'Length + 1) := Name & ":" & Label;
-               Servers_Data (I).State := SHM_Wait;
-               Message_Dispatcher.Session_Accept (Session, Disp_Cap, Servers (I).Msg);
-               exit;
+      L.Ptr.all := Label;
+      Label_Package.Initialize (Context, L.Ptr);
+      Label_Package.Verify_Message (Context);
+
+      if Label_Package.Valid (Context, Label_Package.F_Connection_ID) then
+         for I in Servers'Range loop
+            if not Ready (Servers (I).Msg) then
+               Message_Dispatcher.Session_Initialize (Session, Disp_Cap, Servers (I).Msg, I);
+               if
+                  Ready (Servers (I).Msg)
+                  and then Message.Initialized (Servers (I).Msg)
+               then
+                  Servers_Data (I).Len := Name'Length;
+                  Servers_Data (I).Name (1 .. Name'Length) := Name;
+                  Servers_Data (I).State := SHM_Wait;
+                  Servers_Data (I).ID := Label_Package.Get_Connection_ID (Context);
+                  Message_Dispatcher.Session_Accept (Session, Disp_Cap, Servers (I).Msg);
+                  exit;
+               end if;
             end if;
-         end if;
-      end loop;
+         end loop;
+      else
+         Log_Client.Info (Log, "MEMORY: " & Name & " sent invalid label");
+      end if;
+
       for S of Servers loop
          Message_Dispatcher.Session_Cleanup (Session, Disp_Cap, S.Msg);
       end loop;
+
    end Dispatch;
 
    procedure Dispatch (Session  : in out Memory.Dispatcher_Session;
@@ -222,22 +254,33 @@ is
                        Label    :        String)
    is
       Done : Boolean := False;
-   begin
-      Log_Client.Info (Log, "MEMORY: Dispatching " & Name & " with label " & Label);
-      if Memory_Dispatcher.Valid_Session_Request (Session, Disp_Cap) then
-         for I in Servers'Range loop
-            if not Ready (Servers (I).Mem) then
-               Memory_Dispatcher.Session_Initialize (Session, Disp_Cap, Servers (I).Mem, I);
-               if
-                  Ready (Servers (I).Mem)
-                  and then Servers_Data (I).Ident (1 .. Name'Length + Label'Length + 1) = Name & ":" & Label
-               then
-                  Done := True;
-                  Memory_Dispatcher.Session_Accept (Session, Disp_Cap, Servers (I).Mem);
-                  exit;
+      Context : Label_Package.Context := Label_Package.Create;
+      package L is new RFLX_Container (Positive, Character, String, String_ptr, Label'Length);
+      use type Parpen.Protocol.Connection_ID_Base;
+  begin
+      L.Ptr.all := Label;
+      Label_Package.Initialize (Context, L.Ptr);
+      Label_Package.Verify_Message (Context);
+
+      if Label_Package.Valid (Context, Label_Package.F_Connection_ID) then
+         if Memory_Dispatcher.Valid_Session_Request (Session, Disp_Cap) then
+            for I in Servers'Range loop
+               if not Ready (Servers (I).Mem) then
+                  Memory_Dispatcher.Session_Initialize (Session, Disp_Cap, Servers (I).Mem, I);
+                  if
+                     Ready (Servers (I).Mem)
+                     and then Servers_Data (I).Name (1 .. Servers_Data (I).Len) = Name
+                     and then Servers_Data (I).ID = Label_Package.Get_Connection_ID (Context)
+                  then
+                     Done := True;
+                     Memory_Dispatcher.Session_Accept (Session, Disp_Cap, Servers (I).Mem);
+                     exit;
+                  end if;
                end if;
-            end if;
-         end loop;
+            end loop;
+         end if;
+      else
+         Log_Client.Info (Log, "MEMORY: " & Name & " sent invalid label");
       end if;
 
       if not Done then

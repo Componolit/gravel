@@ -1,0 +1,12 @@
+package Protocol is
+
+	type Esc_Char is range 27 .. 27 with Size => 8;
+	type Connection_ID is range 1 .. 2**32-1 with Size => 32;
+
+	type Label is
+		message
+			Delimiter     : Esc_Char;
+			Connection_ID : Connection_ID;
+		end message;
+
+end Protocol;
