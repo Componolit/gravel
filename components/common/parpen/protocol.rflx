@@ -9,4 +9,11 @@ package Protocol is
 			Connection_ID : Connection_ID;
 		end message;
 
+	type Reply_Tag is (REPLY_ERROR) with Size => 8;
+
+	type Reply is
+		message
+			Tag : Reply_Tag;
+		end message;
+
 end Protocol;

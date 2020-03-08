@@ -6,12 +6,12 @@
 --  This file is distributed under the terms of the GNU Affero General Public License version 3.
 --
 
-package body Parpen.Protocol.Generic_Label with
+package body Parpen.Protocol.Generic_Reply with
   SPARK_Mode
 is
 
    function Create return Context is
-     ((Types.Index'First, Types.Index'First, Types.Bit_Index'First, Types.Bit_Index'First, null, (F_Delimiter => (State => S_Invalid, Predecessor => F_Initial), others => (State => S_Invalid, Predecessor => F_Final))));
+     ((Types.Index'First, Types.Index'First, Types.Bit_Index'First, Types.Bit_Index'First, null, (F_Tag => (State => S_Invalid, Predecessor => F_Initial), others => (State => S_Invalid, Predecessor => F_Final))));
 
    procedure Initialize (Ctx : out Context; Buffer : in out Types.Bytes_Ptr) is
    begin
@@ -22,15 +22,14 @@ is
       Buffer_First : constant Types.Index := Buffer'First;
       Buffer_Last : constant Types.Index := Buffer'Last;
    begin
-      Ctx := (Buffer_First, Buffer_Last, First, Last, Buffer, (F_Delimiter => (State => S_Invalid, Predecessor => F_Initial), others => (State => S_Invalid, Predecessor => F_Final)));
+      Ctx := (Buffer_First, Buffer_Last, First, Last, Buffer, (F_Tag => (State => S_Invalid, Predecessor => F_Initial), others => (State => S_Invalid, Predecessor => F_Final)));
       Buffer := null;
    end Initialize;
 
    function Initialized (Ctx : Context) return Boolean is
-     (Valid_Next (Ctx, F_Delimiter)
-      and then Available_Space (Ctx, F_Delimiter) = (Types.Last_Bit_Index (Ctx.Buffer_Last) - Ctx.First + 1)
-      and then Invalid (Ctx, F_Delimiter)
-      and then Invalid (Ctx, F_Connection_ID));
+     (Valid_Next (Ctx, F_Tag)
+      and then Available_Space (Ctx, F_Tag) = (Types.Last_Bit_Index (Ctx.Buffer_Last) - Ctx.First + 1)
+      and then Invalid (Ctx, F_Tag));
 
    procedure Take_Buffer (Ctx : in out Context; Buffer : out Types.Bytes_Ptr) is
    begin
@@ -42,8 +41,8 @@ is
      (Ctx.Buffer /= null);
 
    function Message_Last (Ctx : Context) return Types.Bit_Index is
-     ((if Structural_Valid (Ctx.Cursors (F_Connection_ID)) then
-       Ctx.Cursors (F_Connection_ID).Last
+     ((if Structural_Valid (Ctx.Cursors (F_Tag)) then
+       Ctx.Cursors (F_Tag).Last
     else
        Types.Unreachable_Bit_Length));
 
@@ -51,22 +50,16 @@ is
      ((case Ctx.Cursors (Fld).Predecessor is
          when F_Initial =>
             (case Fld is
-                  when F_Delimiter =>
+                  when F_Tag =>
                      True,
                   when others =>
                      False),
-         when F_Delimiter =>
-            (case Fld is
-                  when F_Connection_ID =>
-                     True,
-                  when others =>
-                     False),
-         when F_Connection_ID | F_Final =>
+         when F_Tag | F_Final =>
             False));
 
    function Field_Condition (Ctx : Context; Val : Field_Dependent_Value) return Boolean is
      ((case Val.Fld is
-         when F_Initial | F_Delimiter | F_Connection_ID =>
+         when F_Initial | F_Tag =>
             True,
          when F_Final =>
             False));
@@ -75,28 +68,17 @@ is
      ((case Ctx.Cursors (Fld).Predecessor is
          when F_Initial =>
             (case Fld is
-                  when F_Delimiter =>
-                     Protocol.Esc_Char_Base'Size,
+                  when F_Tag =>
+                     Protocol.Reply_Tag_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
-         when F_Delimiter =>
-            (case Fld is
-                  when F_Connection_ID =>
-                     Protocol.Connection_ID_Base'Size,
-                  when others =>
-                     Types.Unreachable_Bit_Length),
-         when F_Connection_ID | F_Final =>
+         when F_Tag | F_Final =>
             0));
 
    function Field_First (Ctx : Context; Fld : Field) return Types.Bit_Index is
      ((case Fld is
-         when F_Delimiter =>
-            Ctx.First,
-         when F_Connection_ID =>
-            (if Ctx.Cursors (Fld).Predecessor = F_Delimiter then
-                (Ctx.Cursors (Ctx.Cursors (Fld).Predecessor).Last + 1)
-             else
-                Types.Unreachable_Bit_Length)));
+         when F_Tag =>
+            Ctx.First));
 
    function Field_Last (Ctx : Context; Fld : Field) return Types.Bit_Index is
      ((Field_First (Ctx, Fld) + Field_Length (Ctx, Fld) - 1));
@@ -110,9 +92,7 @@ is
 
    function Successor (Ctx : Context; Fld : Field) return Virtual_Field is
      ((case Fld is
-         when F_Delimiter =>
-            F_Connection_ID,
-         when F_Connection_ID =>
+         when F_Tag =>
             F_Final))
     with
      Pre =>
@@ -123,21 +103,11 @@ is
      ((case Fld is
          when F_Initial =>
             True,
-         when F_Delimiter =>
+         when F_Tag =>
             Ctx.Cursors (Fld).Predecessor = F_Initial,
-         when F_Connection_ID =>
-            (Valid (Ctx.Cursors (F_Delimiter))
-                 and Ctx.Cursors (Fld).Predecessor = F_Delimiter),
          when F_Final =>
-            (Valid (Ctx.Cursors (F_Connection_ID))
-                 and Ctx.Cursors (Fld).Predecessor = F_Connection_ID)));
-
-   function Invalid_Successor (Ctx : Context; Fld : Field) return Boolean is
-     ((case Fld is
-         when F_Delimiter =>
-            Invalid (Ctx.Cursors (F_Connection_ID)),
-         when F_Connection_ID =>
-            True));
+            (Valid (Ctx.Cursors (F_Tag))
+                 and Ctx.Cursors (Fld).Predecessor = F_Tag)));
 
    function Valid_Next (Ctx : Context; Fld : Field) return Boolean is
      (Valid_Predecessor (Ctx, Fld)
@@ -152,7 +122,6 @@ is
      Post =>
        Valid_Next (Ctx, Fld)
           and Invalid (Ctx.Cursors (Fld))
-          and Invalid_Successor (Ctx, Fld)
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
@@ -162,12 +131,8 @@ is
           and Field_First (Ctx, Fld) = Field_First (Ctx, Fld)'Old
           and Field_Length (Ctx, Fld) = Field_Length (Ctx, Fld)'Old
           and (case Fld is
-               when F_Delimiter =>
-                  Invalid (Ctx, F_Delimiter)
-                     and Invalid (Ctx, F_Connection_ID),
-               when F_Connection_ID =>
-                  Ctx.Cursors (F_Delimiter) = Ctx.Cursors (F_Delimiter)'Old
-                     and Invalid (Ctx, F_Connection_ID))
+               when F_Tag =>
+                  Invalid (Ctx, F_Tag))
    is
       First : constant Types.Bit_Length := Field_First (Ctx, Fld) with
         Ghost;
@@ -177,13 +142,8 @@ is
       pragma Assert (Field_First (Ctx, Fld) = First
          and Field_Length (Ctx, Fld) = Length);
       case Fld is
-         when F_Delimiter =>
-            Ctx.Cursors (F_Connection_ID) := (S_Invalid, F_Final);
-            Ctx.Cursors (F_Delimiter) := (S_Invalid, Ctx.Cursors (F_Delimiter).Predecessor);
-            pragma Assert (Field_First (Ctx, Fld) = First
-               and Field_Length (Ctx, Fld) = Length);
-         when F_Connection_ID =>
-            Ctx.Cursors (F_Connection_ID) := (S_Invalid, Ctx.Cursors (F_Connection_ID).Predecessor);
+         when F_Tag =>
+            Ctx.Cursors (F_Tag) := (S_Invalid, Ctx.Cursors (F_Tag).Predecessor);
             pragma Assert (Field_First (Ctx, Fld) = First
                and Field_Length (Ctx, Fld) = Length);
       end case;
@@ -205,7 +165,7 @@ is
 
    function Composite_Field (Fld : Field) return Boolean is
      ((case Fld is
-         when F_Delimiter | F_Connection_ID =>
+         when F_Tag =>
             False));
 
    function Get_Field_Value (Ctx : Context; Fld : Field) return Field_Dependent_Value with
@@ -224,14 +184,11 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      function Extract is new Types.Extract (Protocol.Esc_Char_Base);
-      function Extract is new Types.Extract (Protocol.Connection_ID_Base);
+      function Extract is new Types.Extract (Protocol.Reply_Tag_Base);
    begin
       return ((case Fld is
-            when F_Delimiter =>
-               (Fld => F_Delimiter, Delimiter_Value => Extract (Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset)),
-            when F_Connection_ID =>
-               (Fld => F_Connection_ID, Connection_ID_Value => Extract (Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset))));
+            when F_Tag =>
+               (Fld => F_Tag, Tag_Value => Extract (Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset))));
    end Get_Field_Value;
 
    procedure Verify (Ctx : in out Context; Fld : Field) is
@@ -250,17 +207,11 @@ is
                else
                   Ctx.Cursors (Fld) := (State => S_Valid, First => Field_First (Ctx, Fld), Last => Field_Last (Ctx, Fld), Value => Value, Predecessor => Ctx.Cursors (Fld).Predecessor);
                end if;
-               pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Delimiter)) then
-                   (Ctx.Cursors (F_Delimiter).Last - Ctx.Cursors (F_Delimiter).First + 1) = Protocol.Esc_Char_Base'Size
-                     and then Ctx.Cursors (F_Delimiter).Predecessor = F_Initial
-                     and then Ctx.Cursors (F_Delimiter).First = Ctx.First
-                     and then (if Structural_Valid (Ctx.Cursors (F_Connection_ID)) then
-                        (Ctx.Cursors (F_Connection_ID).Last - Ctx.Cursors (F_Connection_ID).First + 1) = Protocol.Connection_ID_Base'Size
-                          and then Ctx.Cursors (F_Connection_ID).Predecessor = F_Delimiter
-                          and then Ctx.Cursors (F_Connection_ID).First = (Ctx.Cursors (F_Delimiter).Last + 1))));
-               if Fld = F_Delimiter then
-                  Ctx.Cursors (Successor (Ctx, Fld)) := (State => S_Invalid, Predecessor => Fld);
-               elsif Fld = F_Connection_ID then
+               pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Tag)) then
+                   (Ctx.Cursors (F_Tag).Last - Ctx.Cursors (F_Tag).First + 1) = Protocol.Reply_Tag_Base'Size
+                     and then Ctx.Cursors (F_Tag).Predecessor = F_Initial
+                     and then Ctx.Cursors (F_Tag).First = Ctx.First));
+               if Fld = F_Tag then
                   Ctx.Cursors (Successor (Ctx, Fld)) := (State => S_Invalid, Predecessor => Fld);
                end if;
             else
@@ -274,8 +225,7 @@ is
 
    procedure Verify_Message (Ctx : in out Context) is
    begin
-      Verify (Ctx, F_Delimiter);
-      Verify (Ctx, F_Connection_ID);
+      Verify (Ctx, F_Tag);
    end Verify_Message;
 
    function Present (Ctx : Context; Fld : Field) return Boolean is
@@ -298,22 +248,16 @@ is
       or Ctx.Cursors (Fld).State = S_Incomplete);
 
    function Structural_Valid_Message (Ctx : Context) return Boolean is
-     (Valid (Ctx, F_Delimiter)
-      and then Valid (Ctx, F_Connection_ID));
+     (Valid (Ctx, F_Tag));
 
    function Valid_Message (Ctx : Context) return Boolean is
-     (Valid (Ctx, F_Delimiter)
-      and then Valid (Ctx, F_Connection_ID));
+     (Valid (Ctx, F_Tag));
 
    function Incomplete_Message (Ctx : Context) return Boolean is
-     (Incomplete (Ctx, F_Delimiter)
-      or Incomplete (Ctx, F_Connection_ID));
+     (Incomplete (Ctx, F_Tag));
 
-   function Get_Delimiter (Ctx : Context) return Protocol.Esc_Char is
-     (Ctx.Cursors (F_Delimiter).Value.Delimiter_Value);
-
-   function Get_Connection_ID (Ctx : Context) return Protocol.Connection_ID is
-     (Ctx.Cursors (F_Connection_ID).Value.Connection_ID_Value);
+   function Get_Tag (Ctx : Context) return Protocol.Reply_Tag is
+     (Convert (Ctx.Cursors (F_Tag).Value.Tag_Value));
 
    procedure Set_Field_Value (Ctx : in out Context; Val : Field_Dependent_Value; Fst, Lst : out Types.Bit_Index) with
      Pre =>
@@ -348,43 +292,29 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      procedure Insert is new Types.Insert (Protocol.Esc_Char_Base);
-      procedure Insert is new Types.Insert (Protocol.Connection_ID_Base);
+      procedure Insert is new Types.Insert (Protocol.Reply_Tag_Base);
    begin
       Fst := First;
       Lst := Last;
       case Val.Fld is
          when F_Initial =>
             null;
-         when F_Delimiter =>
-            Insert (Val.Delimiter_Value, Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset);
-         when F_Connection_ID =>
-            Insert (Val.Connection_ID_Value, Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset);
+         when F_Tag =>
+            Insert (Val.Tag_Value, Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset);
          when F_Final =>
             null;
       end case;
    end Set_Field_Value;
 
-   procedure Set_Delimiter (Ctx : in out Context; Val : Protocol.Esc_Char) is
-      Field_Value : constant Field_Dependent_Value := (F_Delimiter, Val);
+   procedure Set_Tag (Ctx : in out Context; Val : Protocol.Reply_Tag) is
+      Field_Value : constant Field_Dependent_Value := (F_Tag, Convert (Val));
       First, Last : Types.Bit_Index;
    begin
-      Reset_Dependent_Fields (Ctx, F_Delimiter);
+      Reset_Dependent_Fields (Ctx, F_Tag);
       Set_Field_Value (Ctx, Field_Value, First, Last);
       Ctx := (Ctx.Buffer_First, Ctx.Buffer_Last, Ctx.First, Last, Ctx.Buffer, Ctx.Cursors);
-      Ctx.Cursors (F_Delimiter) := (State => S_Valid, First => First, Last => Last, Value => Field_Value, Predecessor => Ctx.Cursors (F_Delimiter).Predecessor);
-      Ctx.Cursors (Successor (Ctx, F_Delimiter)) := (State => S_Invalid, Predecessor => F_Delimiter);
-   end Set_Delimiter;
+      Ctx.Cursors (F_Tag) := (State => S_Valid, First => First, Last => Last, Value => Field_Value, Predecessor => Ctx.Cursors (F_Tag).Predecessor);
+      Ctx.Cursors (Successor (Ctx, F_Tag)) := (State => S_Invalid, Predecessor => F_Tag);
+   end Set_Tag;
 
-   procedure Set_Connection_ID (Ctx : in out Context; Val : Protocol.Connection_ID) is
-      Field_Value : constant Field_Dependent_Value := (F_Connection_ID, Val);
-      First, Last : Types.Bit_Index;
-   begin
-      Reset_Dependent_Fields (Ctx, F_Connection_ID);
-      Set_Field_Value (Ctx, Field_Value, First, Last);
-      Ctx := (Ctx.Buffer_First, Ctx.Buffer_Last, Ctx.First, Last, Ctx.Buffer, Ctx.Cursors);
-      Ctx.Cursors (F_Connection_ID) := (State => S_Valid, First => First, Last => Last, Value => Field_Value, Predecessor => Ctx.Cursors (F_Connection_ID).Predecessor);
-      Ctx.Cursors (Successor (Ctx, F_Connection_ID)) := (State => S_Invalid, Predecessor => F_Connection_ID);
-   end Set_Connection_ID;
-
-end Parpen.Protocol.Generic_Label;
+end Parpen.Protocol.Generic_Reply;

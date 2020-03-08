@@ -7,6 +7,7 @@ with Gneiss.Memory.Dispatcher;
 
 with Parpen.Generic_Types;
 with Parpen.Protocol.Generic_Label;
+with Parpen.Protocol.Generic_Reply;
 
 with RFLX_Container;
 
@@ -14,6 +15,7 @@ package body Component with
    SPARK_Mode
 is
    Num_Clients  : constant := 10;
+   Label_Length : constant := 128;
 
    subtype Message_Buffer is String (1 .. 128);
    Null_Buffer : constant Message_Buffer := (others => ASCII.NUL);
@@ -28,14 +30,15 @@ is
    type String_Ptr is access all String;
    type Bit_Length is range 0 .. Natural'Last * 8;
 
-   package Label_Types is new Parpen.Generic_Types (Index      => Positive,
-                                                    Byte       => Character,
-                                                    Bytes      => String,
-                                                    Bytes_Ptr  => String_Ptr,
-                                                    Length     => Natural,
-                                                    Bit_Length => Bit_Length);
+   package Types is new Parpen.Generic_Types (Index      => Positive,
+                                              Byte       => Character,
+                                              Bytes      => String,
+                                              Bytes_Ptr  => String_Ptr,
+                                              Length     => Natural,
+                                              Bit_Length => Bit_Length);
 
-   package Label_Package is new Parpen.Protocol.Generic_Label (Label_Types);
+   package Label_Package is new Parpen.Protocol.Generic_Label (Types);
+   package Reply_Package is new Parpen.Protocol.Generic_Reply (Types);
 
    type Server_State is (Uninitialized, SHM_Wait, Initialized, Error);
    type Server_Slot is record
@@ -156,17 +159,26 @@ is
    procedure Recv (Session : in out Message.Server_Session;
                    Data    :        Message_Buffer)
    is
-      Idx : constant Gneiss.Session_Index := Message.Index (Session).Value;
+      Idx   : constant Gneiss.Session_Index := Message.Index (Session).Value;
+      package Reply is new RFLX_Container (Positive, Character, String, String_ptr, Message_Buffer'Length);
+      Context : Reply_Package.Context := Reply_Package.Create;
       use type Gneiss.Session_Status;
    begin
+      Reply_Package.Initialize (Context, Reply.Ptr);
       if Gneiss.Log.Status (Log) = Gneiss.Initialized then
          if Idx in Servers'Range then
             case Servers_Data (Idx).State is
                when Uninitialized | Error =>
                   Log_Client.Error (Log, "Internal error: " & Data);
                when SHM_Wait =>
-                  -- FIXME: SHM should be initialized, send error message
-                  Log_Client.Error (Log, "SHM not initialized: " & Data);
+                  Log_Client.Error (Log, "SHM not initialized");
+                  Reply_Package.Set_Tag (Context, Parpen.Protocol.REPLY_ERROR);
+                  if not Reply_Package.Valid_Message (Context) then
+                     Log_Client.Error (Log, "Invalid reply");
+                     return;
+                  end if;
+                  Reply_Package.Take_Buffer (Context, Reply.Ptr);
+                  Message_Server.Send (Session, Reply.Ptr.all);
                when Initialized =>
                   -- FIXME: Parse message
                   Log_Client.Info (Log, "Message received: " & Data);
@@ -215,9 +227,12 @@ is
                        Label    :        String)
    is
       Context : Label_Package.Context := Label_Package.Create;
-      package L is new RFLX_Container (Positive, Character, String, String_ptr, Label'Length);
+      package L is new RFLX_Container (Positive, Character, String, String_ptr, Label_Length);
    begin
-      L.Ptr.all := Label;
+      if L.Ptr.all'Length < Label'Length then
+         return;
+      end if;
+      L.Ptr.all (1 .. Label'Length) := Label;
       Label_Package.Initialize (Context, L.Ptr);
       Label_Package.Verify_Message (Context);
 
@@ -255,10 +270,13 @@ is
    is
       Done : Boolean := False;
       Context : Label_Package.Context := Label_Package.Create;
-      package L is new RFLX_Container (Positive, Character, String, String_ptr, Label'Length);
+      package L is new RFLX_Container (Positive, Character, String, String_ptr, Label_Length);
       use type Parpen.Protocol.Connection_ID_Base;
   begin
-      L.Ptr.all := Label;
+      if L.Ptr.all'Length < Label'Length then
+         return;
+      end if;
+      L.Ptr.all (1 .. Label'Length) := Label;
       Label_Package.Initialize (Context, L.Ptr);
       Label_Package.Verify_Message (Context);
 

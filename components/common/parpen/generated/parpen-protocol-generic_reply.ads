@@ -10,17 +10,17 @@ with Parpen.Generic_Types;
 
 generic
    with package Types is new Parpen.Generic_Types (<>);
-package Parpen.Protocol.Generic_Label with
+package Parpen.Protocol.Generic_Reply with
   SPARK_Mode
 is
 
-   pragma Annotate (GNATprove, Terminating, Generic_Label);
+   pragma Annotate (GNATprove, Terminating, Generic_Reply);
 
    use type Types.Bytes, Types.Bytes_Ptr, Types.Index, Types.Length, Types.Bit_Index, Types.Bit_Length;
 
-   type Virtual_Field is (F_Initial, F_Delimiter, F_Connection_ID, F_Final);
+   type Virtual_Field is (F_Initial, F_Tag, F_Final);
 
-   subtype Field is Virtual_Field range F_Delimiter .. F_Connection_ID;
+   subtype Field is Virtual_Field range F_Tag .. F_Tag;
 
    type Field_Cursor is private with
      Default_Initial_Condition =>
@@ -37,10 +37,8 @@ is
          case Fld is
             when F_Initial | F_Final =>
                null;
-            when F_Delimiter =>
-               Delimiter_Value : Protocol.Esc_Char_Base;
-            when F_Connection_ID =>
-               Connection_ID_Value : Protocol.Connection_ID_Base;
+            when F_Tag =>
+               Tag_Value : Protocol.Reply_Tag_Base;
          end case;
       end record;
 
@@ -208,62 +206,31 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   function Get_Delimiter (Ctx : Context) return Protocol.Esc_Char with
+   function Get_Tag (Ctx : Context) return Protocol.Reply_Tag with
      Pre =>
        Valid_Context (Ctx)
-          and Valid (Ctx, F_Delimiter);
+          and Valid (Ctx, F_Tag);
 
-   function Get_Connection_ID (Ctx : Context) return Protocol.Connection_ID with
-     Pre =>
-       Valid_Context (Ctx)
-          and Valid (Ctx, F_Connection_ID);
-
-   procedure Set_Delimiter (Ctx : in out Context; Val : Protocol.Esc_Char) with
+   procedure Set_Tag (Ctx : in out Context; Val : Protocol.Reply_Tag) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
           and then Has_Buffer (Ctx)
-          and then Valid_Next (Ctx, F_Delimiter)
-          and then Field_Last (Ctx, F_Delimiter) <= Types.Bit_Index'Last / 2
-          and then Field_Condition (Ctx, (F_Delimiter, Val))
-          and then Valid (Val)
-          and then Available_Space (Ctx, F_Delimiter) >= Field_Length (Ctx, F_Delimiter),
+          and then Valid_Next (Ctx, F_Tag)
+          and then Field_Last (Ctx, F_Tag) <= Types.Bit_Index'Last / 2
+          and then Field_Condition (Ctx, (F_Tag, Convert (Val)))
+          and then True
+          and then Available_Space (Ctx, F_Tag) >= Field_Length (Ctx, F_Tag),
      Post =>
        Valid_Context (Ctx)
           and Has_Buffer (Ctx)
-          and Valid (Ctx, F_Delimiter)
-          and Get_Delimiter (Ctx) = Val
-          and Invalid (Ctx, F_Connection_ID)
-          and (Predecessor (Ctx, F_Connection_ID) = F_Delimiter
-            and Valid_Next (Ctx, F_Connection_ID))
+          and Valid (Ctx, F_Tag)
+          and Get_Tag (Ctx) = Val
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
-          and Predecessor (Ctx, F_Delimiter) = Predecessor (Ctx, F_Delimiter)'Old
-          and Valid_Next (Ctx, F_Delimiter) = Valid_Next (Ctx, F_Delimiter)'Old;
-
-   procedure Set_Connection_ID (Ctx : in out Context; Val : Protocol.Connection_ID) with
-     Pre =>
-       Valid_Context (Ctx)
-          and then not Ctx'Constrained
-          and then Has_Buffer (Ctx)
-          and then Valid_Next (Ctx, F_Connection_ID)
-          and then Field_Last (Ctx, F_Connection_ID) <= Types.Bit_Index'Last / 2
-          and then Field_Condition (Ctx, (F_Connection_ID, Val))
-          and then Valid (Val)
-          and then Available_Space (Ctx, F_Connection_ID) >= Field_Length (Ctx, F_Connection_ID),
-     Post =>
-       Valid_Context (Ctx)
-          and Has_Buffer (Ctx)
-          and Valid (Ctx, F_Connection_ID)
-          and Get_Connection_ID (Ctx) = Val
-          and Ctx.Buffer_First = Ctx.Buffer_First'Old
-          and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
-          and Ctx.First = Ctx.First'Old
-          and Predecessor (Ctx, F_Connection_ID) = Predecessor (Ctx, F_Connection_ID)'Old
-          and Valid_Next (Ctx, F_Connection_ID) = Valid_Next (Ctx, F_Connection_ID)'Old
-          and Get_Delimiter (Ctx) = Get_Delimiter (Ctx)'Old
-          and Cursor (Ctx, F_Delimiter) = Cursor (Ctx, F_Delimiter)'Old;
+          and Predecessor (Ctx, F_Tag) = Predecessor (Ctx, F_Tag)'Old
+          and Valid_Next (Ctx, F_Tag) = Valid_Next (Ctx, F_Tag)'Old;
 
    function Valid_Context (Ctx : Context) return Boolean with
      Annotate =>
@@ -286,10 +253,8 @@ private
 
    function Valid_Value (Val : Field_Dependent_Value) return Boolean is
      ((case Val.Fld is
-         when F_Delimiter =>
-            Valid (Val.Delimiter_Value),
-         when F_Connection_ID =>
-            Valid (Val.Connection_ID_Value),
+         when F_Tag =>
+            Valid (Val.Tag_Value),
          when F_Initial | F_Final =>
             False));
 
@@ -337,19 +302,12 @@ private
            and Cursors (F).Last <= Last
            and Cursors (F).First <= (Cursors (F).Last + 1)
            and Cursors (F).Value.Fld = F))
-      and then ((if Structural_Valid (Cursors (F_Connection_ID)) then
-           (Valid (Cursors (F_Delimiter))
-               and then Cursors (F_Connection_ID).Predecessor = F_Delimiter)))
-      and then ((if Invalid (Cursors (F_Delimiter)) then
-           Invalid (Cursors (F_Connection_ID))))
-      and then (if Structural_Valid (Cursors (F_Delimiter)) then
-         (Cursors (F_Delimiter).Last - Cursors (F_Delimiter).First + 1) = Protocol.Esc_Char_Base'Size
-           and then Cursors (F_Delimiter).Predecessor = F_Initial
-           and then Cursors (F_Delimiter).First = First
-           and then (if Structural_Valid (Cursors (F_Connection_ID)) then
-              (Cursors (F_Connection_ID).Last - Cursors (F_Connection_ID).First + 1) = Protocol.Connection_ID_Base'Size
-                and then Cursors (F_Connection_ID).Predecessor = F_Delimiter
-                and then Cursors (F_Connection_ID).First = (Cursors (F_Delimiter).Last + 1))));
+      and then (True)
+      and then (True)
+      and then (if Structural_Valid (Cursors (F_Tag)) then
+         (Cursors (F_Tag).Last - Cursors (F_Tag).First + 1) = Protocol.Reply_Tag_Base'Size
+           and then Cursors (F_Tag).Predecessor = F_Initial
+           and then Cursors (F_Tag).First = First));
 
    type Context (Buffer_First, Buffer_Last : Types.Index := Types.Index'First; First, Last : Types.Bit_Index := Types.Bit_Index'First) is
       record
@@ -368,4 +326,4 @@ private
    function Cursors (Ctx : Context) return Field_Cursors is
      (Ctx.Cursors);
 
-end Parpen.Protocol.Generic_Label;
+end Parpen.Protocol.Generic_Reply;
