@@ -9,6 +9,13 @@ package Protocol is
 			Connection_ID : Connection_ID;
 		end message;
 
+	type Request_Tag is (REQUEST_TRANSACTION) with Size => 8;
+
+	type Request is
+		message
+			Tag : Request_Tag;
+		end message;
+
 	type Reply_Tag is (REPLY_ERROR) with Size => 8;
 
 	type Reply is

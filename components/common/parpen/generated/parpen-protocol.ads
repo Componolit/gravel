@@ -53,6 +53,45 @@ is
      Pre =>
        Valid (Val);
 
+   type Request_Tag_Base is mod 2**8;
+
+   type Request_Tag is (REQUEST_TRANSACTION) with
+     Size =>
+       8;
+   for Request_Tag use (REQUEST_TRANSACTION => 0);
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Request_Tag return Protocol.Request_Tag is
+     (Protocol.Request_Tag'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   function Valid (Val : Protocol.Request_Tag_Base) return Boolean is
+     ((case Val is
+         when 0 =>
+            True,
+         when others =>
+            False));
+
+   function Convert (Enum : Protocol.Request_Tag) return Protocol.Request_Tag_Base is
+     ((case Enum is
+         when REQUEST_TRANSACTION =>
+            0));
+
+   function Convert (Val : Protocol.Request_Tag_Base) return Protocol.Request_Tag is
+     ((case Val is
+         when 0 =>
+            REQUEST_TRANSACTION,
+         when others =>
+            Unreachable_Protocol_Request_Tag))
+    with
+     Pre =>
+       Valid (Val);
+
    type Reply_Tag_Base is mod 2**8;
 
    type Reply_Tag is (REPLY_ERROR) with

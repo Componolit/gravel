@@ -8,6 +8,7 @@ with Gneiss.Memory.Dispatcher;
 with Parpen.Generic_Types;
 with Parpen.Protocol.Generic_Label;
 with Parpen.Protocol.Generic_Reply;
+with Parpen.Protocol.Generic_Request;
 
 with RFLX_Container;
 
@@ -39,6 +40,7 @@ is
 
    package Label_Package is new Parpen.Protocol.Generic_Label (Types);
    package Reply_Package is new Parpen.Protocol.Generic_Reply (Types);
+   package Request_Package is new Parpen.Protocol.Generic_Request (Types);
 
    type Server_State is (Uninitialized, SHM_Wait, Initialized, Error);
    type Server_Slot is record
@@ -152,6 +154,32 @@ is
       end if;
    end Finalize;
 
+   --------------------
+   -- Handle_Message --
+   --------------------
+
+   procedure Handle_Message (Session : in out Message.Server_Session;
+                             Data    :        Message_Buffer)
+   is
+      package Request is new RFLX_Container (Positive, Character, String, String_ptr, Message_Buffer'Length);
+      package Reply is new RFLX_Container (Positive, Character, String, String_ptr, Message_Buffer'Length);
+      Request_Context : Request_Package.Context := Request_Package.Create;
+      Reply_Context   : Reply_Package.Context := Reply_Package.Create;
+   begin
+      Log_Client.Info (Log, "Message received");
+      Request.Ptr.all (1 .. Data'Length) := Data;
+      Request_Package.Initialize (Request_Context, Request.Ptr);
+      Request_Package.Verify_Message (Request_Context);
+      if not Request_Package.Valid_Message (Request_Context) then
+         Log_Client.Error (Log, "Invalid request");
+         Reply_Package.Initialize (Reply_Context, Reply.Ptr);
+         Reply_Package.Set_Tag (Reply_Context, Parpen.Protocol.REPLY_ERROR);
+         Reply_Package.Take_Buffer (Reply_Context, Reply.Ptr);
+         Message_Server.Send (Session, Reply.Ptr.all);
+         return;
+      end if;
+   end Handle_Message;
+
    ----------
    -- Recv --
    ----------
@@ -180,8 +208,7 @@ is
                   Reply_Package.Take_Buffer (Context, Reply.Ptr);
                   Message_Server.Send (Session, Reply.Ptr.all);
                when Initialized =>
-                  -- FIXME: Parse message
-                  Log_Client.Info (Log, "Message received: " & Data);
+                  Handle_Message (Session, Data);
             end case;
          end if;
       end if;
