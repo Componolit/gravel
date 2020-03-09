@@ -53,6 +53,106 @@ is
      Pre =>
        Valid (Val);
 
+   type Descriptor_Base is range 0 .. 2**32 - 1 with
+     Size =>
+       32;
+
+   subtype Descriptor is Descriptor_Base range 0 .. 2**32 - 1;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Descriptor return Protocol.Descriptor is
+     (Protocol.Descriptor'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   function Valid (Val : Protocol.Descriptor_Base) return Boolean is
+     (True);
+
+   function Convert (Val : Protocol.Descriptor_Base) return Protocol.Descriptor is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
+   type Method_Base is range 0 .. 2**32 - 1 with
+     Size =>
+       32;
+
+   subtype Method is Method_Base range 0 .. 2**32 - 1;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Method return Protocol.Method is
+     (Protocol.Method'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   function Valid (Val : Protocol.Method_Base) return Boolean is
+     (True);
+
+   function Convert (Val : Protocol.Method_Base) return Protocol.Method is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
+   type Offset_Base is range 0 .. 2**32 - 1 with
+     Size =>
+       32;
+
+   subtype Offset is Offset_Base range 0 .. 2**32 - 1;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Offset return Protocol.Offset is
+     (Protocol.Offset'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   function Valid (Val : Protocol.Offset_Base) return Boolean is
+     (True);
+
+   function Convert (Val : Protocol.Offset_Base) return Protocol.Offset is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
+   type Length_Base is range 0 .. 2**32 - 1 with
+     Size =>
+       32;
+
+   subtype Length is Length_Base range 0 .. 2**32 - 1;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Length return Protocol.Length is
+     (Protocol.Length'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   function Valid (Val : Protocol.Length_Base) return Boolean is
+     (True);
+
+   function Convert (Val : Protocol.Length_Base) return Protocol.Length is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
    type Request_Tag_Base is mod 2**8;
 
    type Request_Tag is (REQUEST_TRANSACTION) with

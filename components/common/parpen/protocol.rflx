@@ -2,6 +2,10 @@ package Protocol is
 
 	type Esc_Char is range 27 .. 27 with Size => 8;
 	type Connection_ID is range 1 .. 2**32-1 with Size => 32;
+	type Descriptor is range 0 .. 2**32-1 with Size => 32;
+	type Method is range 0 .. 2**32-1 with Size => 32;
+	type Offset is range 0 .. 2**32-1 with Size => 32;
+	type Length is range 0 .. 2**32-1 with Size => 32;
 
 	type Label is
 		message
@@ -9,12 +13,33 @@ package Protocol is
 			Connection_ID : Connection_ID;
 		end message;
 
+	type Transaction is
+		message
+			Handle         : Descriptor;
+			Method         : Method;
+			Oneway         : Boolean;
+			Accept_FDs     : Boolean;
+			Send_Offset    : Offset;
+			Send_Length    : Length;
+			Meta_Offset    : Offset;
+			Meta_Length    : Length
+				then Receive_Offset
+					if Oneway /= False;
+			Receive_Offset : Offset;
+			Receive_Length : Length;
+		end message;
+
 	type Request_Tag is (REQUEST_TRANSACTION) with Size => 8;
 
 	type Request is
 		message
-			Tag : Request_Tag;
+			Tag  : Request_Tag
+				then Data
+					with Length => Message'Last - Tag'Last;
+			Data : Opaque;
 		end message;
+
+	for Request use (Data => Transaction) if Tag = REQUEST_TRANSACTION;
 
 	type Reply_Tag is (REPLY_ERROR) with Size => 8;
 
