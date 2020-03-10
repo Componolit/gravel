@@ -128,7 +128,7 @@ is
          when F_Initial =>
             (case Fld is
                   when F_Handle =>
-                     Protocol.Descriptor_Base'Size,
+                     Protocol.Handle_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Handle =>
@@ -604,7 +604,7 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      function Extract is new Types.Extract (Protocol.Descriptor_Base);
+      function Extract is new Types.Extract (Protocol.Handle_Base);
       function Extract is new Types.Extract (Protocol.Method_Base);
       function Extract is new Types.Extract (Builtin_Types.Boolean_Base);
       function Extract is new Types.Extract (Protocol.Offset_Base);
@@ -650,7 +650,7 @@ is
                   Ctx.Cursors (Fld) := (State => S_Valid, First => Field_First (Ctx, Fld), Last => Field_Last (Ctx, Fld), Value => Value, Predecessor => Ctx.Cursors (Fld).Predecessor);
                end if;
                pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Handle)) then
-                   (Ctx.Cursors (F_Handle).Last - Ctx.Cursors (F_Handle).First + 1) = Protocol.Descriptor_Base'Size
+                   (Ctx.Cursors (F_Handle).Last - Ctx.Cursors (F_Handle).First + 1) = Protocol.Handle_Base'Size
                      and then Ctx.Cursors (F_Handle).Predecessor = F_Initial
                      and then Ctx.Cursors (F_Handle).First = Ctx.First
                      and then (if Structural_Valid (Ctx.Cursors (F_Method)) then
@@ -791,7 +791,7 @@ is
       or Incomplete (Ctx, F_Receive_Offset)
       or Incomplete (Ctx, F_Receive_Length));
 
-   function Get_Handle (Ctx : Context) return Protocol.Descriptor is
+   function Get_Handle (Ctx : Context) return Protocol.Handle is
      (Ctx.Cursors (F_Handle).Value.Handle_Value);
 
    function Get_Method (Ctx : Context) return Protocol.Method is
@@ -854,7 +854,7 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      procedure Insert is new Types.Insert (Protocol.Descriptor_Base);
+      procedure Insert is new Types.Insert (Protocol.Handle_Base);
       procedure Insert is new Types.Insert (Protocol.Method_Base);
       procedure Insert is new Types.Insert (Builtin_Types.Boolean_Base);
       procedure Insert is new Types.Insert (Protocol.Offset_Base);
@@ -890,7 +890,7 @@ is
       end case;
    end Set_Field_Value;
 
-   procedure Set_Handle (Ctx : in out Context; Val : Protocol.Descriptor) is
+   procedure Set_Handle (Ctx : in out Context; Val : Protocol.Handle) is
       Field_Value : constant Field_Dependent_Value := (F_Handle, Val);
       First, Last : Types.Bit_Index;
    begin

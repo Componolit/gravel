@@ -33,7 +33,7 @@ is
             when F_Initial | F_Final =>
                null;
             when F_Handle =>
-               Handle_Value : Protocol.Descriptor_Base;
+               Handle_Value : Protocol.Handle_Base;
             when F_Method =>
                Method_Value : Protocol.Method_Base;
             when F_Oneway =>
@@ -219,7 +219,7 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   function Get_Handle (Ctx : Context) return Protocol.Descriptor with
+   function Get_Handle (Ctx : Context) return Protocol.Handle with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Handle);
@@ -269,7 +269,7 @@ is
        Valid_Context (Ctx)
           and Valid (Ctx, F_Receive_Length);
 
-   procedure Set_Handle (Ctx : in out Context; Val : Protocol.Descriptor) with
+   procedure Set_Handle (Ctx : in out Context; Val : Protocol.Handle) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -768,7 +768,7 @@ private
         and then (if Invalid (Cursors (F_Receive_Offset)) then
            Invalid (Cursors (F_Receive_Length))))
       and then (if Structural_Valid (Cursors (F_Handle)) then
-         (Cursors (F_Handle).Last - Cursors (F_Handle).First + 1) = Protocol.Descriptor_Base'Size
+         (Cursors (F_Handle).Last - Cursors (F_Handle).First + 1) = Protocol.Handle_Base'Size
            and then Cursors (F_Handle).Predecessor = F_Initial
            and then Cursors (F_Handle).First = First
            and then (if Structural_Valid (Cursors (F_Method)) then
