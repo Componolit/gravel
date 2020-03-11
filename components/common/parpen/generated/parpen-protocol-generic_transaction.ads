@@ -531,7 +531,7 @@ is
           and Get_Meta_Length (Ctx) = Val
           and Invalid (Ctx, F_Receive_Offset)
           and Invalid (Ctx, F_Receive_Length)
-          and (if Types.Bit_Length (Convert (Get_Oneway (Ctx))) /= Types.Bit_Length (Convert (False)) then
+          and (if Types.Bit_Length (Convert (Get_Oneway (Ctx))) = Types.Bit_Length (Convert (False)) then
              Predecessor (Ctx, F_Receive_Offset) = F_Meta_Length
                and Valid_Next (Ctx, F_Receive_Offset))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
@@ -745,7 +745,7 @@ private
         and then (if Structural_Valid (Cursors (F_Receive_Offset)) then
            (Valid (Cursors (F_Meta_Length))
                and then Cursors (F_Receive_Offset).Predecessor = F_Meta_Length
-               and then Types.Bit_Length (Cursors (F_Oneway).Value.Oneway_Value) /= Types.Bit_Length (Convert (False))))
+               and then Types.Bit_Length (Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (False))))
         and then (if Structural_Valid (Cursors (F_Receive_Length)) then
            (Valid (Cursors (F_Receive_Offset))
                and then Cursors (F_Receive_Length).Predecessor = F_Receive_Offset)))
@@ -800,7 +800,7 @@ private
                                               and then Cursors (F_Meta_Length).Predecessor = F_Meta_Offset
                                               and then Cursors (F_Meta_Length).First = (Cursors (F_Meta_Offset).Last + 1)
                                               and then (if Structural_Valid (Cursors (F_Receive_Offset))
-                                                   and then Types.Bit_Length (Cursors (F_Oneway).Value.Oneway_Value) /= Types.Bit_Length (Convert (False)) then
+                                                   and then Types.Bit_Length (Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (False)) then
                                                  (Cursors (F_Receive_Offset).Last - Cursors (F_Receive_Offset).First + 1) = Protocol.Offset_Base'Size
                                                    and then Cursors (F_Receive_Offset).Predecessor = F_Meta_Length
                                                    and then Cursors (F_Receive_Offset).First = (Cursors (F_Meta_Length).Last + 1)

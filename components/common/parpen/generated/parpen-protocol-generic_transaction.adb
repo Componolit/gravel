@@ -42,7 +42,10 @@ is
      (Ctx.Buffer /= null);
 
    function Message_Last (Ctx : Context) return Types.Bit_Index is
-     ((if Structural_Valid (Ctx.Cursors (F_Receive_Length)) then
+     ((if Structural_Valid (Ctx.Cursors (F_Meta_Length))
+         and Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (True)) then
+       Ctx.Cursors (F_Meta_Length).Last
+    elsif Structural_Valid (Ctx.Cursors (F_Receive_Length)) then
        Ctx.Cursors (F_Receive_Length).Last
     else
        Types.Unreachable_Bit_Length));
@@ -100,7 +103,7 @@ is
          when F_Meta_Length =>
             (case Fld is
                   when F_Receive_Offset =>
-                     Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) /= Types.Bit_Length (Convert (False)),
+                     Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (False)),
                   when others =>
                      False),
          when F_Receive_Offset =>
@@ -117,7 +120,8 @@ is
          when F_Initial | F_Handle | F_Method | F_Oneway | F_Accept_FDs | F_Send_Offset | F_Send_Length | F_Meta_Offset =>
             True,
          when F_Meta_Length =>
-            Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) /= Types.Bit_Length (Convert (False)),
+            Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (False))
+               or Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (True)),
          when F_Receive_Offset | F_Receive_Length =>
             True,
          when F_Final =>
@@ -229,7 +233,7 @@ is
                 Types.Unreachable_Bit_Length),
          when F_Receive_Offset =>
             (if Ctx.Cursors (Fld).Predecessor = F_Meta_Length
-                  and Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) /= Types.Bit_Length (Convert (False)) then
+                  and Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (False)) then
                 (Ctx.Cursors (Ctx.Cursors (Fld).Predecessor).Last + 1)
              else
                 Types.Unreachable_Bit_Length),
@@ -266,8 +270,10 @@ is
          when F_Meta_Offset =>
             F_Meta_Length,
          when F_Meta_Length =>
-            (if Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) /= Types.Bit_Length (Convert (False)) then
+            (if Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (False)) then
                 F_Receive_Offset
+             elsif Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (True)) then
+                F_Final
              else
                 F_Initial),
          when F_Receive_Offset =>
@@ -313,7 +319,9 @@ is
             (Valid (Ctx.Cursors (F_Receive_Offset))
                  and Ctx.Cursors (Fld).Predecessor = F_Receive_Offset),
          when F_Final =>
-            (Valid (Ctx.Cursors (F_Receive_Length))
+            (Valid (Ctx.Cursors (F_Meta_Length))
+                 and Ctx.Cursors (Fld).Predecessor = F_Meta_Length)
+               or (Valid (Ctx.Cursors (F_Receive_Length))
                  and Ctx.Cursors (Fld).Predecessor = F_Receive_Length)));
 
    function Invalid_Successor (Ctx : Context; Fld : Field) return Boolean is
@@ -682,7 +690,7 @@ is
                                                         and then Ctx.Cursors (F_Meta_Length).Predecessor = F_Meta_Offset
                                                         and then Ctx.Cursors (F_Meta_Length).First = (Ctx.Cursors (F_Meta_Offset).Last + 1)
                                                         and then (if Structural_Valid (Ctx.Cursors (F_Receive_Offset))
-                                                             and then Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) /= Types.Bit_Length (Convert (False)) then
+                                                             and then Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (False)) then
                                                            (Ctx.Cursors (F_Receive_Offset).Last - Ctx.Cursors (F_Receive_Offset).First + 1) = Protocol.Offset_Base'Size
                                                              and then Ctx.Cursors (F_Receive_Offset).Predecessor = F_Meta_Length
                                                              and then Ctx.Cursors (F_Receive_Offset).First = (Ctx.Cursors (F_Meta_Length).Last + 1)
@@ -762,9 +770,10 @@ is
       and then Valid (Ctx, F_Send_Length)
       and then Valid (Ctx, F_Meta_Offset)
       and then Valid (Ctx, F_Meta_Length)
-      and then Valid (Ctx, F_Receive_Offset)
-      and then Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) /= Types.Bit_Length (Convert (False))
-      and then Valid (Ctx, F_Receive_Length));
+      and then ((Valid (Ctx, F_Receive_Offset)
+          and then Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (False))
+          and then Valid (Ctx, F_Receive_Length))
+        or Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (True))));
 
    function Valid_Message (Ctx : Context) return Boolean is
      (Valid (Ctx, F_Handle)
@@ -775,9 +784,10 @@ is
       and then Valid (Ctx, F_Send_Length)
       and then Valid (Ctx, F_Meta_Offset)
       and then Valid (Ctx, F_Meta_Length)
-      and then Valid (Ctx, F_Receive_Offset)
-      and then Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) /= Types.Bit_Length (Convert (False))
-      and then Valid (Ctx, F_Receive_Length));
+      and then ((Valid (Ctx, F_Receive_Offset)
+          and then Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (False))
+          and then Valid (Ctx, F_Receive_Length))
+        or Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (True))));
 
    function Incomplete_Message (Ctx : Context) return Boolean is
      (Incomplete (Ctx, F_Handle)

@@ -4,8 +4,12 @@ package Protocol is
 	type Connection_ID is range 1 .. 2**32-1 with Size => 32;
 	type Binder is mod 2**64;
 	type Cookie is mod 2**64;
-	type UInt64 is mod 2**64;
-	type Dummy_32 is range 0 .. 2**32-1 with Size => 32;
+	type Index  is mod 2**64;
+	type Count  is mod 2**64;
+
+	type Pad31 is mod 2**31;
+	type Pad32 is mod 2**32;
+
 	type Handle is range 0 .. 2**32-1 with Size => 32;
 	type Method is range 0 .. 2**32-1 with Size => 32;
 	type Offset is range 0 .. 2**32-1 with Size => 32;
@@ -73,11 +77,6 @@ package Protocol is
 		INHERIT_RT 	   => 16#800#
 	) with Size => 32;
 
-	type Binder_Buffer_Flags is (
-		BBF_NONE       => 0,
-		BBF_HAS_PARENT => 1
-	) with Size => 32;
-
 	type IBinder is
 		message
 			Kind                : Binder_Kind;
@@ -85,35 +84,36 @@ package Protocol is
 				then Tag if Arity = BA_SINGLE or (Kind = BK_FD and Arity = BA_ARRAY);
 
 			Tag                 : Binder_Tag
-				then Unused_Flags        if Kind = BK_FD,
-				then Binder_Buffer_Flags if Kind = BK_POINTER,
-				then Flags               if Kind /= BK_POINTER and Kind /= BK_FD;
+				then Legacy_Flags if Kind = BK_FD,
+				then Has_Parent   if Kind = BK_POINTER,
+				then Flags        if Kind /= BK_POINTER and Kind /= BK_FD;
 
 			Flags               : Flat_Binder_Flags
 				then Binder       if Kind = BK_STRONG_BINDER or Kind = BK_WEAK_BINDER,
 				then Handle       if Kind = BK_STRONG_HANDLE or Kind = BK_WEAK_HANDLE;
 
-			Unused_Flags        : Dummy_32
+			Legacy_Flags        : Pad32
 				then FD      if Arity = BA_SINGLE,
 				then Num_FDs if Arity = BA_ARRAY;
 
-			Binder_Buffer_Flags : Binder_Buffer_Flags;
-			Buffer				: UInt64;
-			Length				: UInt64
-				then Index if Binder_Buffer_Flags = BBF_HAS_PARENT,
-				then null  if Binder_Buffer_Flags /= BBF_HAS_PARENT;
-			Index 				: UInt64 then null;
+			Has_Parent          : Boolean;
+			Padding             : Pad31;
+			Buffer				: Index;
+			Length				: Length
+				then Index if Has_Parent = True,
+				then null  if Has_Parent = False;
+			Index 				: Index then null;
 
 			FD                  : Handle then Cookie;
 
-			Num_FDs		        : UInt64;
-			Parent		        : UInt64;
-			Parent_Offset       : UInt64 then null;
+			Num_FDs		        : Count;
+			Parent		        : Index;
+			Parent_Offset       : Offset then null;
 
 			Binder              : Binder then Cookie;
 
 			Handle              : Handle;
-			Unused_Padding      : Dummy_32 then Cookie;
+			Unused_Padding      : Pad32 then Cookie;
 
 			Cookie              : Cookie;
 		end message;

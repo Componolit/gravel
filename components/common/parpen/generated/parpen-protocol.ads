@@ -359,6 +359,31 @@ is
      Pre =>
        Valid (Val);
 
+   type Pad32 is mod 2**32;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Pad32 return Protocol.Pad32 is
+     (Protocol.Pad32'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   pragma Warnings (Off, "unused variable ""Val""");
+
+   function Valid (Val : Protocol.Pad32) return Boolean is
+     (True);
+
+   pragma Warnings (On, "unused variable ""Val""");
+
+   function Convert (Val : Protocol.Pad32) return Protocol.Pad32 is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
    type Flat_Binder_Flags_Base is mod 2**32;
 
    type Flat_Binder_Flags is (FBF_ACCEPT_FDS, INHERIT_RT) with
@@ -402,6 +427,56 @@ is
      Pre =>
        Valid (Val);
 
+   type Count is mod 2**64;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Count return Protocol.Count is
+     (Protocol.Count'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   pragma Warnings (Off, "unused variable ""Val""");
+
+   function Valid (Val : Protocol.Count) return Boolean is
+     (True);
+
+   pragma Warnings (On, "unused variable ""Val""");
+
+   function Convert (Val : Protocol.Count) return Protocol.Count is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
+   type Pad31 is mod 2**31;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Pad31 return Protocol.Pad31 is
+     (Protocol.Pad31'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   pragma Warnings (Off, "unused variable ""Val""");
+
+   function Valid (Val : Protocol.Pad31) return Boolean is
+     (True);
+
+   pragma Warnings (On, "unused variable ""Val""");
+
+   function Convert (Val : Protocol.Pad31) return Protocol.Pad31 is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
    type Binder is mod 2**64;
 
    pragma Warnings (Off, "precondition is statically false");
@@ -422,6 +497,31 @@ is
    pragma Warnings (On, "unused variable ""Val""");
 
    function Convert (Val : Protocol.Binder) return Protocol.Binder is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
+   type Index is mod 2**64;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Index return Protocol.Index is
+     (Protocol.Index'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   pragma Warnings (Off, "unused variable ""Val""");
+
+   function Valid (Val : Protocol.Index) return Boolean is
+     (True);
+
+   pragma Warnings (On, "unused variable ""Val""");
+
+   function Convert (Val : Protocol.Index) return Protocol.Index is
      (Val)
     with
      Pre =>
