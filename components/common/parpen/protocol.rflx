@@ -7,8 +7,8 @@ package Protocol is
 	type Index  is mod 2**64;
 	type Count  is mod 2**64;
 
-	type Pad31 is mod 2**31;
-	type Pad32 is mod 2**32;
+	type MBZ31 is range 0 .. 0 with Size => 31;
+	type MBZ32 is range 0 .. 0 with Size => 32;
 
 	type Handle is range 0 .. 2**32-1 with Size => 32;
 	type Method is range 0 .. 2**32-1 with Size => 32;
@@ -72,7 +72,9 @@ package Protocol is
 
 	type Binder_Tag is range 16#85# .. 16#85# with Size => 8;
 
+	--  FIXME: Treat as real flags
 	type Flat_Binder_Flags is (
+		FBF_NONE       => 16#000#,
 		FBF_ACCEPT_FDS => 16#100#,
 		FBF_INHERIT_RT => 16#800#
 	) with Size => 32;
@@ -92,12 +94,12 @@ package Protocol is
 				then Binder       if Kind = BK_STRONG_BINDER or Kind = BK_WEAK_BINDER,
 				then Handle       if Kind = BK_STRONG_HANDLE or Kind = BK_WEAK_HANDLE;
 
-			Legacy_Flags        : Pad32
+			Legacy_Flags        : MBZ32
 				then FD      if Arity = BA_SINGLE,
 				then Num_FDs if Arity = BA_ARRAY;
 
 			Has_Parent          : Boolean;
-			Padding             : Pad31;
+			Padding             : MBZ31;
 			Buffer				: Index;
 			Length				: Length
 				then Index if Has_Parent = True,
@@ -113,7 +115,7 @@ package Protocol is
 			Binder              : Binder then Cookie;
 
 			Handle              : Handle;
-			Unused_Padding      : Pad32 then Cookie;
+			Unused_Padding      : MBZ32 then Cookie;
 
 			Cookie              : Cookie;
 		end message;

@@ -234,7 +234,7 @@ is
          when F_Tag =>
             (case Fld is
                   when F_Legacy_Flags =>
-                     Protocol.Pad32'Size,
+                     Protocol.MBZ32_Base'Size,
                   when F_Has_Parent =>
                      Builtin_Types.Boolean_Base'Size,
                   when F_Flags =>
@@ -252,7 +252,7 @@ is
          when F_Has_Parent =>
             (case Fld is
                   when F_Padding =>
-                     Protocol.Pad31'Size,
+                     Protocol.MBZ31_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Flags =>
@@ -290,7 +290,7 @@ is
          when F_Handle =>
             (case Fld is
                   when F_Unused_Padding =>
-                     Protocol.Pad32'Size,
+                     Protocol.MBZ32_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Parent =>
@@ -1251,12 +1251,12 @@ is
       function Extract is new Types.Extract (Protocol.Binder_Kind_Base);
       function Extract is new Types.Extract (Protocol.Binder_Arity_Base);
       function Extract is new Types.Extract (Protocol.Binder_Tag_Base);
-      function Extract is new Types.Extract (Protocol.Pad32);
+      function Extract is new Types.Extract (Protocol.MBZ32_Base);
       function Extract is new Types.Extract (Builtin_Types.Boolean_Base);
       function Extract is new Types.Extract (Protocol.Flat_Binder_Flags_Base);
       function Extract is new Types.Extract (Protocol.Handle_Base);
       function Extract is new Types.Extract (Protocol.Count);
-      function Extract is new Types.Extract (Protocol.Pad31);
+      function Extract is new Types.Extract (Protocol.MBZ31_Base);
       function Extract is new Types.Extract (Protocol.Binder);
       function Extract is new Types.Extract (Protocol.Index);
       function Extract is new Types.Extract (Protocol.Offset_Base);
@@ -1335,7 +1335,7 @@ is
                                and then Ctx.Cursors (F_Tag).First = (Ctx.Cursors (F_Arity).Last + 1)
                                and then (if Structural_Valid (Ctx.Cursors (F_Legacy_Flags))
                                     and then Types.Bit_Length (Ctx.Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_FD)) then
-                                  (Ctx.Cursors (F_Legacy_Flags).Last - Ctx.Cursors (F_Legacy_Flags).First + 1) = Protocol.Pad32'Size
+                                  (Ctx.Cursors (F_Legacy_Flags).Last - Ctx.Cursors (F_Legacy_Flags).First + 1) = Protocol.MBZ32_Base'Size
                                     and then Ctx.Cursors (F_Legacy_Flags).Predecessor = F_Tag
                                     and then Ctx.Cursors (F_Legacy_Flags).First = (Ctx.Cursors (F_Tag).Last + 1)
                                     and then (if Structural_Valid (Ctx.Cursors (F_FD))
@@ -1366,7 +1366,7 @@ is
                                     and then Ctx.Cursors (F_Has_Parent).Predecessor = F_Tag
                                     and then Ctx.Cursors (F_Has_Parent).First = (Ctx.Cursors (F_Tag).Last + 1)
                                     and then (if Structural_Valid (Ctx.Cursors (F_Padding)) then
-                                       (Ctx.Cursors (F_Padding).Last - Ctx.Cursors (F_Padding).First + 1) = Protocol.Pad31'Size
+                                       (Ctx.Cursors (F_Padding).Last - Ctx.Cursors (F_Padding).First + 1) = Protocol.MBZ31_Base'Size
                                          and then Ctx.Cursors (F_Padding).Predecessor = F_Has_Parent
                                          and then Ctx.Cursors (F_Padding).First = (Ctx.Cursors (F_Has_Parent).Last + 1)
                                          and then (if Structural_Valid (Ctx.Cursors (F_Buffer)) then
@@ -1405,7 +1405,7 @@ is
                                          and then Ctx.Cursors (F_Handle).Predecessor = F_Flags
                                          and then Ctx.Cursors (F_Handle).First = (Ctx.Cursors (F_Flags).Last + 1)
                                          and then (if Structural_Valid (Ctx.Cursors (F_Unused_Padding)) then
-                                            (Ctx.Cursors (F_Unused_Padding).Last - Ctx.Cursors (F_Unused_Padding).First + 1) = Protocol.Pad32'Size
+                                            (Ctx.Cursors (F_Unused_Padding).Last - Ctx.Cursors (F_Unused_Padding).First + 1) = Protocol.MBZ32_Base'Size
                                               and then Ctx.Cursors (F_Unused_Padding).Predecessor = F_Handle
                                               and then Ctx.Cursors (F_Unused_Padding).First = (Ctx.Cursors (F_Handle).Last + 1)
                                               and then (if Structural_Valid (Ctx.Cursors (F_Cookie)) then
@@ -1602,7 +1602,7 @@ is
    function Get_Tag (Ctx : Context) return Protocol.Binder_Tag is
      (Ctx.Cursors (F_Tag).Value.Tag_Value);
 
-   function Get_Legacy_Flags (Ctx : Context) return Protocol.Pad32 is
+   function Get_Legacy_Flags (Ctx : Context) return Protocol.MBZ32 is
      (Ctx.Cursors (F_Legacy_Flags).Value.Legacy_Flags_Value);
 
    function Get_Has_Parent (Ctx : Context) return Boolean is
@@ -1617,7 +1617,7 @@ is
    function Get_Num_FDs (Ctx : Context) return Protocol.Count is
      (Ctx.Cursors (F_Num_FDs).Value.Num_FDs_Value);
 
-   function Get_Padding (Ctx : Context) return Protocol.Pad31 is
+   function Get_Padding (Ctx : Context) return Protocol.MBZ31 is
      (Ctx.Cursors (F_Padding).Value.Padding_Value);
 
    function Get_Binder (Ctx : Context) return Protocol.Binder is
@@ -1632,7 +1632,7 @@ is
    function Get_Buffer (Ctx : Context) return Protocol.Index is
      (Ctx.Cursors (F_Buffer).Value.Buffer_Value);
 
-   function Get_Unused_Padding (Ctx : Context) return Protocol.Pad32 is
+   function Get_Unused_Padding (Ctx : Context) return Protocol.MBZ32 is
      (Ctx.Cursors (F_Unused_Padding).Value.Unused_Padding_Value);
 
    function Get_Parent_Offset (Ctx : Context) return Protocol.Offset is
@@ -1683,12 +1683,12 @@ is
       procedure Insert is new Types.Insert (Protocol.Binder_Kind_Base);
       procedure Insert is new Types.Insert (Protocol.Binder_Arity_Base);
       procedure Insert is new Types.Insert (Protocol.Binder_Tag_Base);
-      procedure Insert is new Types.Insert (Protocol.Pad32);
+      procedure Insert is new Types.Insert (Protocol.MBZ32_Base);
       procedure Insert is new Types.Insert (Builtin_Types.Boolean_Base);
       procedure Insert is new Types.Insert (Protocol.Flat_Binder_Flags_Base);
       procedure Insert is new Types.Insert (Protocol.Handle_Base);
       procedure Insert is new Types.Insert (Protocol.Count);
-      procedure Insert is new Types.Insert (Protocol.Pad31);
+      procedure Insert is new Types.Insert (Protocol.MBZ31_Base);
       procedure Insert is new Types.Insert (Protocol.Binder);
       procedure Insert is new Types.Insert (Protocol.Index);
       procedure Insert is new Types.Insert (Protocol.Offset_Base);
@@ -1774,7 +1774,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Tag)) := (State => S_Invalid, Predecessor => F_Tag);
    end Set_Tag;
 
-   procedure Set_Legacy_Flags (Ctx : in out Context; Val : Protocol.Pad32) is
+   procedure Set_Legacy_Flags (Ctx : in out Context; Val : Protocol.MBZ32) is
       Field_Value : constant Field_Dependent_Value := (F_Legacy_Flags, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1829,7 +1829,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Num_FDs)) := (State => S_Invalid, Predecessor => F_Num_FDs);
    end Set_Num_FDs;
 
-   procedure Set_Padding (Ctx : in out Context; Val : Protocol.Pad31) is
+   procedure Set_Padding (Ctx : in out Context; Val : Protocol.MBZ31) is
       Field_Value : constant Field_Dependent_Value := (F_Padding, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1884,7 +1884,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Buffer)) := (State => S_Invalid, Predecessor => F_Buffer);
    end Set_Buffer;
 
-   procedure Set_Unused_Padding (Ctx : in out Context; Val : Protocol.Pad32) is
+   procedure Set_Unused_Padding (Ctx : in out Context; Val : Protocol.MBZ32) is
       Field_Value : constant Field_Dependent_Value := (F_Unused_Padding, Val);
       First, Last : Types.Bit_Index;
    begin

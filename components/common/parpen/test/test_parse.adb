@@ -18,14 +18,14 @@ package body Test_Parse is
    function "&" (Left : String; Right : Natural) return String is
       (Left & (1 => Character'Val (Right)));
 
-   procedure Test_Parse_Binder (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Parse_Strong_Binder (T : in out Aunit.Test_Cases.Test_Case'Class)
    is
       Input : String_Ptr :=
       new String'(
          "sb*" & 16#85#                      -- Strong binder
          & 16#00# & 16#00# & 16#01# & 16#00# -- flat_binder_flags with accept_fds set
-         & 16#01# & 16#00# & 16#00# & 16#00# -- binder (value: 100000000000000)
-         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#01# & 16#00# & 16#00# & 16#00# -- binder (value: 100000000000001)
+         & 16#00# & 16#00# & 16#00# & 16#01# -- 
          & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
@@ -50,12 +50,51 @@ package body Test_Parse is
 
       Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Binder), "Binder invalid");
       B := IBinder_Package.Get_Binder (Context);
-      Assert (B = 16#100000000000000#, "Invalid binder value (" & B'Img & ")");
+      Assert (B = 16#100000000000001#, "Invalid binder value (" & B'Img & ")");
 
       Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Cookie), "Cookie invalid");
       C := IBinder_Package.Get_Cookie (Context);
       Assert (C = 16#123456789abcdef0#, "Invalid cookie value (" & C'Img & ")");
-   end Test_Parse_Binder;
+   end Test_Parse_Strong_Binder;
+
+   procedure Test_Parse_Weak_Handle (T : in out Aunit.Test_Cases.Test_Case'Class)
+   is
+      Input : String_Ptr :=
+      new String'(
+         "wh*" & 16#85#                      -- Weak handle
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#12# & 16#34# & 16#00# & 16#00# -- handle (value: 12340000)
+         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+      );
+
+      H       : Parpen.Protocol.Handle;
+      C       : Parpen.Protocol.Cookie;
+      Context : IBinder_Package.Context := IBinder_Package.Create;
+      use type Parpen.Protocol.Binder_Kind;
+      use type Parpen.Protocol.Handle;
+      use type Parpen.Protocol.Cookie;
+      use type Parpen.Protocol.Flat_Binder_Flags;
+   begin
+      IBinder_Package.Initialize (Context, Input);
+      IBinder_Package.Verify_Message (Context);
+      Assert (IBinder_Package.Valid_Message (Context), "Message invalid");
+
+      Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Kind), "Kind invalid");
+      Assert (IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_HANDLE, "Weak handle expected");
+
+      Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Flags), "Flags invalid");
+      Assert (IBinder_Package.Get_Flags (Context) = Parpen.Protocol.FBF_NONE, "FBF_NONE expected");
+
+      Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Handle), "Handle invalid");
+      H := IBinder_Package.Get_Handle (Context);
+      Assert (H = 16#12340000#, "Invalid binder value (" & H'Img & ")");
+
+      Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Cookie), "Cookie invalid");
+      C := IBinder_Package.Get_Cookie (Context);
+      Assert (C = 16#123456789abcdef0#, "Invalid cookie value (" & C'Img & ")");
+   end Test_Parse_Weak_Handle;
 
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
@@ -66,7 +105,8 @@ package body Test_Parse is
    procedure Register_Tests (T : in out Test) is
       use AUnit.Test_Cases.Registration;
    begin
-      Register_Routine (T, Test_Parse_Binder'Access, "Parse binder");
+      Register_Routine (T, Test_Parse_Strong_Binder'Access, "Parse strong binder");
+      Register_Routine (T, Test_Parse_Weak_Handle'Access, "Parse weak handle");
    end Register_Tests;
 
 end Test_Parse;

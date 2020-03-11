@@ -39,7 +39,7 @@ is
             when F_Tag =>
                Tag_Value : Protocol.Binder_Tag_Base;
             when F_Legacy_Flags =>
-               Legacy_Flags_Value : Protocol.Pad32;
+               Legacy_Flags_Value : Protocol.MBZ32_Base;
             when F_Has_Parent =>
                Has_Parent_Value : Builtin_Types.Boolean_Base;
             when F_Flags =>
@@ -49,7 +49,7 @@ is
             when F_Num_FDs =>
                Num_FDs_Value : Protocol.Count;
             when F_Padding =>
-               Padding_Value : Protocol.Pad31;
+               Padding_Value : Protocol.MBZ31_Base;
             when F_Binder =>
                Binder_Value : Protocol.Binder;
             when F_Handle =>
@@ -59,7 +59,7 @@ is
             when F_Buffer =>
                Buffer_Value : Protocol.Index;
             when F_Unused_Padding =>
-               Unused_Padding_Value : Protocol.Pad32;
+               Unused_Padding_Value : Protocol.MBZ32_Base;
             when F_Parent_Offset =>
                Parent_Offset_Value : Protocol.Offset_Base;
             when F_Length =>
@@ -250,7 +250,7 @@ is
        Valid_Context (Ctx)
           and Valid (Ctx, F_Tag);
 
-   function Get_Legacy_Flags (Ctx : Context) return Protocol.Pad32 with
+   function Get_Legacy_Flags (Ctx : Context) return Protocol.MBZ32 with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Legacy_Flags);
@@ -275,7 +275,7 @@ is
        Valid_Context (Ctx)
           and Valid (Ctx, F_Num_FDs);
 
-   function Get_Padding (Ctx : Context) return Protocol.Pad31 with
+   function Get_Padding (Ctx : Context) return Protocol.MBZ31 with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Padding);
@@ -300,7 +300,7 @@ is
        Valid_Context (Ctx)
           and Valid (Ctx, F_Buffer);
 
-   function Get_Unused_Padding (Ctx : Context) return Protocol.Pad32 with
+   function Get_Unused_Padding (Ctx : Context) return Protocol.MBZ32 with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Unused_Padding);
@@ -459,7 +459,7 @@ is
           and Cursor (Ctx, F_Kind) = Cursor (Ctx, F_Kind)'Old
           and Cursor (Ctx, F_Arity) = Cursor (Ctx, F_Arity)'Old;
 
-   procedure Set_Legacy_Flags (Ctx : in out Context; Val : Protocol.Pad32) with
+   procedure Set_Legacy_Flags (Ctx : in out Context; Val : Protocol.MBZ32) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -686,7 +686,7 @@ is
           and Cursor (Ctx, F_Flags) = Cursor (Ctx, F_Flags)'Old
           and Cursor (Ctx, F_FD) = Cursor (Ctx, F_FD)'Old;
 
-   procedure Set_Padding (Ctx : in out Context; Val : Protocol.Pad31) with
+   procedure Set_Padding (Ctx : in out Context; Val : Protocol.MBZ31) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -908,7 +908,7 @@ is
           and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old
           and Cursor (Ctx, F_Parent) = Cursor (Ctx, F_Parent)'Old;
 
-   procedure Set_Unused_Padding (Ctx : in out Context; Val : Protocol.Pad32) with
+   procedure Set_Unused_Padding (Ctx : in out Context; Val : Protocol.MBZ32) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -1356,7 +1356,7 @@ private
                      and then Cursors (F_Tag).First = (Cursors (F_Arity).Last + 1)
                      and then (if Structural_Valid (Cursors (F_Legacy_Flags))
                           and then Types.Bit_Length (Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_FD)) then
-                        (Cursors (F_Legacy_Flags).Last - Cursors (F_Legacy_Flags).First + 1) = Protocol.Pad32'Size
+                        (Cursors (F_Legacy_Flags).Last - Cursors (F_Legacy_Flags).First + 1) = Protocol.MBZ32_Base'Size
                           and then Cursors (F_Legacy_Flags).Predecessor = F_Tag
                           and then Cursors (F_Legacy_Flags).First = (Cursors (F_Tag).Last + 1)
                           and then (if Structural_Valid (Cursors (F_FD))
@@ -1387,7 +1387,7 @@ private
                           and then Cursors (F_Has_Parent).Predecessor = F_Tag
                           and then Cursors (F_Has_Parent).First = (Cursors (F_Tag).Last + 1)
                           and then (if Structural_Valid (Cursors (F_Padding)) then
-                             (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Protocol.Pad31'Size
+                             (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Protocol.MBZ31_Base'Size
                                and then Cursors (F_Padding).Predecessor = F_Has_Parent
                                and then Cursors (F_Padding).First = (Cursors (F_Has_Parent).Last + 1)
                                and then (if Structural_Valid (Cursors (F_Buffer)) then
@@ -1426,7 +1426,7 @@ private
                                and then Cursors (F_Handle).Predecessor = F_Flags
                                and then Cursors (F_Handle).First = (Cursors (F_Flags).Last + 1)
                                and then (if Structural_Valid (Cursors (F_Unused_Padding)) then
-                                  (Cursors (F_Unused_Padding).Last - Cursors (F_Unused_Padding).First + 1) = Protocol.Pad32'Size
+                                  (Cursors (F_Unused_Padding).Last - Cursors (F_Unused_Padding).First + 1) = Protocol.MBZ32_Base'Size
                                     and then Cursors (F_Unused_Padding).Predecessor = F_Handle
                                     and then Cursors (F_Unused_Padding).First = (Cursors (F_Handle).Last + 1)
                                     and then (if Structural_Valid (Cursors (F_Cookie)) then

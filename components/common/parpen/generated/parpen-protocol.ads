@@ -359,26 +359,26 @@ is
      Pre =>
        Valid (Val);
 
-   type Pad32 is mod 2**32;
+   type MBZ32_Base is range 0 .. 2**32 - 1 with
+     Size =>
+       32;
+
+   subtype MBZ32 is MBZ32_Base range 0 .. 0;
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Protocol_Pad32 return Protocol.Pad32 is
-     (Protocol.Pad32'First)
+   function Unreachable_Protocol_MBZ32 return Protocol.MBZ32 is
+     (Protocol.MBZ32'First)
     with
      Pre =>
        False;
 
    pragma Warnings (On, "precondition is statically false");
 
-   pragma Warnings (Off, "unused variable ""Val""");
+   function Valid (Val : Protocol.MBZ32_Base) return Boolean is
+     (Val <= 0);
 
-   function Valid (Val : Protocol.Pad32) return Boolean is
-     (True);
-
-   pragma Warnings (On, "unused variable ""Val""");
-
-   function Convert (Val : Protocol.Pad32) return Protocol.Pad32 is
+   function Convert (Val : Protocol.MBZ32_Base) return Protocol.MBZ32 is
      (Val)
     with
      Pre =>
@@ -386,10 +386,10 @@ is
 
    type Flat_Binder_Flags_Base is mod 2**32;
 
-   type Flat_Binder_Flags is (FBF_ACCEPT_FDS, INHERIT_RT) with
+   type Flat_Binder_Flags is (FBF_NONE, FBF_ACCEPT_FDS, FBF_INHERIT_RT) with
      Size =>
        32;
-   for Flat_Binder_Flags use (FBF_ACCEPT_FDS => 16#100#, INHERIT_RT => 16#800#);
+   for Flat_Binder_Flags use (FBF_NONE => 16#0#, FBF_ACCEPT_FDS => 16#100#, FBF_INHERIT_RT => 16#800#);
 
    pragma Warnings (Off, "precondition is statically false");
 
@@ -403,24 +403,28 @@ is
 
    function Valid (Val : Protocol.Flat_Binder_Flags_Base) return Boolean is
      ((case Val is
-         when 16#100# | 16#800# =>
+         when 16#0# | 16#100# | 16#800# =>
             True,
          when others =>
             False));
 
    function Convert (Enum : Protocol.Flat_Binder_Flags) return Protocol.Flat_Binder_Flags_Base is
      ((case Enum is
+         when FBF_NONE =>
+            16#0#,
          when FBF_ACCEPT_FDS =>
             16#100#,
-         when INHERIT_RT =>
+         when FBF_INHERIT_RT =>
             16#800#));
 
    function Convert (Val : Protocol.Flat_Binder_Flags_Base) return Protocol.Flat_Binder_Flags is
      ((case Val is
+         when 16#0# =>
+            FBF_NONE,
          when 16#100# =>
             FBF_ACCEPT_FDS,
          when 16#800# =>
-            INHERIT_RT,
+            FBF_INHERIT_RT,
          when others =>
             Unreachable_Protocol_Flat_Binder_Flags))
     with
@@ -452,26 +456,26 @@ is
      Pre =>
        Valid (Val);
 
-   type Pad31 is mod 2**31;
+   type MBZ31_Base is range 0 .. 2**31 - 1 with
+     Size =>
+       31;
+
+   subtype MBZ31 is MBZ31_Base range 0 .. 0;
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Protocol_Pad31 return Protocol.Pad31 is
-     (Protocol.Pad31'First)
+   function Unreachable_Protocol_MBZ31 return Protocol.MBZ31 is
+     (Protocol.MBZ31'First)
     with
      Pre =>
        False;
 
    pragma Warnings (On, "precondition is statically false");
 
-   pragma Warnings (Off, "unused variable ""Val""");
+   function Valid (Val : Protocol.MBZ31_Base) return Boolean is
+     (Val <= 0);
 
-   function Valid (Val : Protocol.Pad31) return Boolean is
-     (True);
-
-   pragma Warnings (On, "unused variable ""Val""");
-
-   function Convert (Val : Protocol.Pad31) return Protocol.Pad31 is
+   function Convert (Val : Protocol.MBZ31_Base) return Protocol.MBZ31 is
      (Val)
     with
      Pre =>
