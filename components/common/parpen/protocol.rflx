@@ -74,7 +74,7 @@ package Protocol is
 
 	type Flat_Binder_Flags is (
 		FBF_ACCEPT_FDS => 16#100#,
-		INHERIT_RT 	   => 16#800#
+		FBF_INHERIT_RT => 16#800#
 	) with Size => 32;
 
 	type IBinder is

@@ -1,5 +1,6 @@
 with Test_DB;
 with Test_NameDB;
+with Test_Parse;
 
 package body Test_Suite is
 
@@ -8,6 +9,7 @@ package body Test_Suite is
    begin
       Result.Add_Test (new Test_NameDB.Test);
       Result.Add_Test (new Test_DB.Test);
+      Result.Add_Test (new Test_Parse.Test);
       return Result;
    end Suite;
 

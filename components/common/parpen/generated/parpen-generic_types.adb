@@ -82,7 +82,9 @@ package body Parpen.Generic_Types is
       Result := Result
         + 2**(Byte'Size * Natural (Most_Significant_Index - Least_Significant_Index))
         * Result_Type (Byte'Pos (D (Most_Significant_Index)) / Pow2_LSE_Offset);
-      return Value'Val (Result mod 2**Value'Size);
+      return (if Value'Size < 64
+              then Value'Val (Result mod (2**Value'Size))
+              else Value'Val (Result));
    end Extract;
 
    procedure Insert (Val  :        Value;

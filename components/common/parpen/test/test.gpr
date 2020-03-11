@@ -4,7 +4,7 @@ with "../../../../libs/libsparkcrypto/build/build_libsparkcrypto";
 project Test is
 
    for Create_Missing_Dirs use "True";
-   for Source_Dirs use (".", "..");
+   for Source_Dirs use (".", "..", "../generated");
    for Object_Dir use "obj";
    for Main use ("main.adb");
 end Test;
