@@ -80,12 +80,29 @@ package body Test_DB is
       Assert (Cursor.Result = DB.Status_Overflow, "Overflow not detected");
    end Test_Overflow;
 
+   procedure Test_Search_Value (T : in out Aunit.Test_Cases.Test_Case'Class)
+   is
+      Database : DB.Database (20);
+      Cursor   : DB.Cursor_Option;
+   begin
+      Database.Initialize;
+
+      Cursor := Database.Search_Value (E => 43);
+      Assert (Cursor.Result = DB.Status_Not_Found, "Value found in empty database");
+
+      Database.Insert (C => Cursor.Cursor, K => 15, E => 43);
+      Cursor := Database.Search_Value (E => 43);
+      Assert (Cursor.Result = DB.Status_OK, "Value not found database");
+      Assert (Database.Get (C => Cursor.Cursor) = 43, "Invalid element for result of Search_Value");
+   end Test_Search_Value;
+
    procedure Register_Tests (T : in out Test) is
       use AUnit.Test_Cases.Registration;
    begin
       Register_Routine (T, Test_Basic_Insert'Access, "Basic insert");
       Register_Routine (T, Test_Basic_Delete'Access, "Basic delete");
       Register_Routine (T, Test_Overflow'Access, "Overflow");
+      Register_Routine (T, Test_Search_Value'Access, "Search value");
    end Register_Tests;
 
 end Test_DB;

@@ -45,6 +45,31 @@ package body Parpen.DB is
       return Cursor_Option'(Result => Status_Overflow);
    end Find;
 
+   ------------------
+   -- Search_Value --
+   ------------------
+
+   function Search_Value (DB : Database; E : Element) return Cursor_Option
+   is
+      Free       : Curs;
+      Free_Found : Boolean := False;
+   begin
+      for I in DB.Elements'Range
+      loop
+         if DB.Elements (I).Valid and then DB.Elements (I).Elem = E then
+            return Cursor_Option'(Result => Status_OK, Cursor => (Inner => I));
+         end if;
+         if not DB.Elements (I).Valid then
+            Free := (Inner => I);
+            Free_Found := True;
+         end if;
+      end loop;
+      if Free_Found then
+         return Cursor_Option'(Result => Status_Not_Found, Cursor => Free);
+      end if;
+      return Cursor_Option'(Result => Status_Overflow);
+   end Search_Value;
+
    ---------
    -- Get --
    ---------

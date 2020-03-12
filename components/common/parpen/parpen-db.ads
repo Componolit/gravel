@@ -29,6 +29,9 @@ is
    function Find (DB : Database; K : Key) return Cursor_Option with
       Pre => Initialized (DB);
 
+   function Search_Value (DB : Database; E : Element) return Cursor_Option with
+      Pre => Initialized (DB);
+
    function Get (DB : Database; C : Curs) return Element with
       Pre => Initialized (DB);
 
