@@ -106,6 +106,9 @@ package body Test_DB is
    is
       Database : DB.Database (20);
       Cursor   : DB.Cursor_Option;
+
+      function Match (L, R: Element) return Boolean is (L.Left = R.Left);
+      function Search_Partial is new DB.Search (Match);
    begin
       Database.Initialize;
 
@@ -113,7 +116,7 @@ package body Test_DB is
       Assert (Cursor.Result = DB.Status_Not_Found, "Value found in empty database");
 
       Database.Insert (C => Cursor.Cursor, K => 15, E => (43, 44));
-      Cursor := Database.Search_Value (E => (43, 44));
+      Cursor := Search_Partial (Database, E => (43, 44));
       Assert (Cursor.Result = DB.Status_OK, "Value not found database");
       Assert (Database.Get (C => Cursor.Cursor) = (43, 44), "Invalid element for result of Search_Value");
    end Test_Search_Partial_Value;

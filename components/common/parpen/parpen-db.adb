@@ -2,9 +2,9 @@ package body Parpen.DB is
 
    generic
       with function Match (E : Internal_Element) return Boolean;
-   function Search (DB : Database) return Cursor_Option;
+   function Search_Internal (DB : Database) return Cursor_Option;
 
-   function Search (DB : Database) return Cursor_Option
+   function Search_Internal (DB : Database) return Cursor_Option
    is
       Free       : Curs;
       Free_Found : Boolean := False;
@@ -23,7 +23,7 @@ package body Parpen.DB is
          return Cursor_Option'(Result => Status_Not_Found, Cursor => Free);
       end if;
       return Cursor_Option'(Result => Status_Overflow);
-   end Search;
+   end Search_Internal;
 
    -----------------
    -- Initialized --
@@ -52,7 +52,7 @@ package body Parpen.DB is
    function Find (DB : Database; K : Key) return Cursor_Option
    is
       function Match (Current : Internal_Element) return Boolean is (Current.Valid and Current.Kee = K);
-      function Search_Key is new Search (Match);
+      function Search_Key is new Search_Internal (Match);
    begin
       return Search_Key (DB);
    end Find;
@@ -64,10 +64,23 @@ package body Parpen.DB is
    function Search_Value (DB : Database; E : Element) return Cursor_Option
    is
       function Match (Current : Internal_Element) return Boolean is (Current.Valid and Current.Elem = E);
-      function Search_Equal is new Search (Match);
+      function Search_Equal is new Search_Internal (Match);
    begin
       return Search_Equal (DB);
    end Search_Value;
+
+   ------------
+   -- Search --
+   ------------
+
+   function Search (DB : Database; E : Element) return Cursor_Option
+   is
+      function Match_Internal (Current : Internal_Element) return Boolean is
+         (Current.Valid and Match (Current.Elem, E));
+      function Search_Match is new Search_Internal (Match_Internal);
+   begin
+      return Search_Match (DB);
+   end Search;
 
    ---------
    -- Get --

@@ -32,6 +32,11 @@ is
    function Search_Value (DB : Database; E : Element) return Cursor_Option with
       Pre => Initialized (DB);
 
+   generic
+      with function Match (Left, Right : Element) return Boolean;
+   function Search (DB : Database; E : Element) return Cursor_Option with
+      Pre => Initialized (DB);
+
    function Get (DB : Database; C : Curs) return Element with
       Pre => Initialized (DB);
 
