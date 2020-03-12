@@ -1,6 +1,7 @@
 with AUnit.Assertions; use AUnit.Assertions;
 with Parpen.Generic_Types;
 with Parpen.Protocol.Generic_IBinder;
+with Parpen.Resolve;
 
 package body Test_Parse is
 
@@ -25,7 +26,7 @@ package body Test_Parse is
          "sb*" & 16#85#                      -- Strong binder
          & 16#00# & 16#00# & 16#01# & 16#00# -- flat_binder_flags with accept_fds set
          & 16#01# & 16#00# & 16#00# & 16#00# -- binder (value: 100000000000001)
-         & 16#00# & 16#00# & 16#00# & 16#01# -- 
+         & 16#00# & 16#00# & 16#00# & 16#01# --
          & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
@@ -96,6 +97,37 @@ package body Test_Parse is
       Assert (C = 16#123456789abcdef0#, "Invalid cookie value (" & C'Img & ")");
    end Test_Parse_Weak_Handle;
 
+   procedure Test_Resolve_Handle (T : in out Aunit.Test_Cases.Test_Case'Class)
+   is
+      Input : String_Ptr :=
+      new String'(
+         "wh*" & 16#85#                      -- Weak handle
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#12# & 16#34# & 16#00# & 16#00# -- handle (value: 12340000)
+         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+      );
+
+      Expected : String_Ptr :=
+      new String'(
+         "wb*" & 16#85#                      -- Weak binder
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#01# & 16#00# & 16#00# & 16#00# -- binder (value: 100000000000001)
+         & 16#00# & 16#00# & 16#00# & 16#01# --
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+      );
+
+      package Resolve is new Parpen.Resolve (Types);
+      use type Resolve.Result_Type;
+      Result : Resolve.Result_Type;
+   begin
+      Resolve.Resolve_Handle (Input, 0, Result);
+      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
+      Assert (Input = Expected, "Binder not resolved correctly");
+   end Test_Resolve_Handle;
+
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
    begin
@@ -107,6 +139,7 @@ package body Test_Parse is
    begin
       Register_Routine (T, Test_Parse_Strong_Binder'Access, "Parse strong binder");
       Register_Routine (T, Test_Parse_Weak_Handle'Access, "Parse weak handle");
+      Register_Routine (T, Test_Resolve_Handle'Access, "Resolve handle");
    end Register_Tests;
 
 end Test_Parse;
