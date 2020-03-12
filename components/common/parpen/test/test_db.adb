@@ -3,8 +3,14 @@ with Parpen.DB;
 
 package body Test_DB is
 
-   package DB is new Parpen.DB (Element      => Natural,
-                                Null_Element => 0,
+   type Element is
+   record
+      Left  : Natural;
+      Right : Natural;
+   end record;
+
+   package DB is new Parpen.DB (Element      => Element,
+                                Null_Element => (0, 0),
                                 Key          => Natural,
                                 Null_Key     => 0);
 
@@ -29,8 +35,8 @@ package body Test_DB is
       Cursor := Database.Find (K => 14);
       Assert (Cursor.Result = DB.Status_Not_Found, "Element found in empty database");
 
-      Database.Insert (C => Cursor.Cursor, K => 14, E => 100);
-      Assert (Database.Get (C => Cursor.Cursor) = 100, "Invalid element");
+      Database.Insert (C => Cursor.Cursor, K => 14, E => (100, 200));
+      Assert (Database.Get (C => Cursor.Cursor) = (100, 200), "Invalid element");
 
       Cursor := Database.Find (K => 14);
       Assert (Cursor.Result = DB.Status_OK, "Element not found in database");
@@ -52,12 +58,12 @@ package body Test_DB is
       Cursor := Database.Find (K => 14);
       Assert (Cursor.Result = DB.Status_Not_Found, "Element found in empty database");
 
-      Database.Insert (C => Cursor.Cursor, K => 14, E => 100);
-      Assert (Database.Get (C => Cursor.Cursor) = 100, "Invalid element");
+      Database.Insert (C => Cursor.Cursor, K => 14, E => (100, 200));
+      Assert (Database.Get (C => Cursor.Cursor) = (100, 200), "Invalid element");
 
       Database.Delete (C => Cursor.Cursor);
-      Database.Insert (C => Cursor.Cursor, K => 15, E => 200);
-      Assert (Database.Get (C => Cursor.Cursor) = 200, "Invalid element after deletion");
+      Database.Insert (C => Cursor.Cursor, K => 15, E => (200, 400));
+      Assert (Database.Get (C => Cursor.Cursor) = (200, 400), "Invalid element after deletion");
 
       Cursor := Database.Find (K => 14);
       Assert (Cursor.Result = DB.Status_Not_Found, "Element found after deletion database");
@@ -72,8 +78,8 @@ package body Test_DB is
       for I in Natural range 1 .. 73 loop
          Cursor := Database.Find (K => I);
          Assert (Cursor.Result = DB.Status_Not_Found, "Element" & I'Img & " found in empty database");
-         Database.Insert (C => Cursor.Cursor, K => I, E => I);
-         Assert (Database.Get (C => Cursor.Cursor) = I, "Invalid element for iteration" & I'Img);
+         Database.Insert (C => Cursor.Cursor, K => I, E => (I, I + 1));
+         Assert (Database.Get (C => Cursor.Cursor) = (I, I + 1), "Invalid element for iteration" & I'Img);
       end loop;
 
       Cursor := Database.Find (K => 74);
@@ -87,14 +93,30 @@ package body Test_DB is
    begin
       Database.Initialize;
 
-      Cursor := Database.Search_Value (E => 43);
+      Cursor := Database.Search_Value (E => (43, 44));
       Assert (Cursor.Result = DB.Status_Not_Found, "Value found in empty database");
 
-      Database.Insert (C => Cursor.Cursor, K => 15, E => 43);
-      Cursor := Database.Search_Value (E => 43);
+      Database.Insert (C => Cursor.Cursor, K => 15, E => (43, 44));
+      Cursor := Database.Search_Value (E => (43, 44));
       Assert (Cursor.Result = DB.Status_OK, "Value not found database");
-      Assert (Database.Get (C => Cursor.Cursor) = 43, "Invalid element for result of Search_Value");
+      Assert (Database.Get (C => Cursor.Cursor) = (43, 44), "Invalid element for result of Search_Value");
    end Test_Search_Value;
+
+   procedure Test_Search_Partial_Value (T : in out Aunit.Test_Cases.Test_Case'Class)
+   is
+      Database : DB.Database (20);
+      Cursor   : DB.Cursor_Option;
+   begin
+      Database.Initialize;
+
+      Cursor := Database.Search_Value (E => (43, 44));
+      Assert (Cursor.Result = DB.Status_Not_Found, "Value found in empty database");
+
+      Database.Insert (C => Cursor.Cursor, K => 15, E => (43, 44));
+      Cursor := Database.Search_Value (E => (43, 44));
+      Assert (Cursor.Result = DB.Status_OK, "Value not found database");
+      Assert (Database.Get (C => Cursor.Cursor) = (43, 44), "Invalid element for result of Search_Value");
+   end Test_Search_Partial_Value;
 
    procedure Register_Tests (T : in out Test) is
       use AUnit.Test_Cases.Registration;
@@ -103,6 +125,7 @@ package body Test_DB is
       Register_Routine (T, Test_Basic_Delete'Access, "Basic delete");
       Register_Routine (T, Test_Overflow'Access, "Overflow");
       Register_Routine (T, Test_Search_Value'Access, "Search value");
+      Register_Routine (T, Test_Search_Partial_Value'Access, "Search partial value");
    end Register_Tests;
 
 end Test_DB;
