@@ -1,11 +1,11 @@
 with Parpen.Generic_Types;
-with Parpen.DB;
+with Parpen.Unique_Map;
 with Parpen.Protocol;
 
 generic
-   type Client_ID is private;
+   type Client_ID is (<>);
    Null_Client_ID : Client_ID;
-   type Node_ID is private;
+   type Node_ID is (<>);
    Null_Node_ID : Node_ID;
    with package Types is new Parpen.Generic_Types (<>);
 package Parpen.Resolve
@@ -13,10 +13,11 @@ is
    type Result_Type is (Result_OK, Result_Invalid, Result_Needless);
 
    type Node_Cursor_Option is tagged private;
+   type Client_Cursor_Option is tagged private;
 
    function Valid (N : Node_Cursor_Option) return Boolean;
 
-   type Database (Num_Nodes : Natural) is tagged private;
+   type Database is tagged private;
 
    function Initialized (DB : Database) return Boolean with Ghost;
 
@@ -52,24 +53,38 @@ private
    Null_Node : constant Node_Type := (Owner => Null_Client_ID,
                                       Value => 0);
 
-   package Node_DB is new Parpen.DB (Key          => Node_ID,
-                                     Null_Key     => Null_Node_ID,
-                                     Element      => Node_Type,
-                                     Null_Element => Null_Node);
+   package Node_DB is new Parpen.Unique_Map (Key          => Node_ID,
+                                             Null_Key     => Null_Node_ID,
+                                             Element      => Node_Type,
+                                             Null_Element => Null_Node);
    use type Node_DB.Status;
 
    type Node_Cursor_Option is tagged
       record
-         Inner : Node_DB.Cursor_Option;
+         Inner : Node_DB.Option;
       end record;
 
    function Valid (N : Node_Cursor_Option) return Boolean is
       (N.Inner.Result = Node_DB.Status_OK
        or N.Inner.Result = Node_DB.Status_Not_Found);
 
-   type Database (Num_Nodes : Natural) is tagged
+   type Client_Type is null record;
+   Null_Client : constant Client_Type := (null record);
+
+   package Client_DB is new Parpen.Unique_Map (Key          => Client_ID,
+                                               Null_Key     => Null_Client_ID,
+                                               Element      => Client_Type,
+                                               Null_Element => Null_Client);
+
+   type Client_Cursor_Option is tagged
       record
-         Nodes : Node_DB.Database (Num_Nodes);
+         Inner : Client_DB.Option;
+      end record;
+
+   type Database is tagged
+      record
+         Nodes   : Node_DB.Database;
+         Clients : Client_DB.Database;
       end record;
 
    function Initialized (DB : Database) return Boolean is (DB.Nodes.Initialized);

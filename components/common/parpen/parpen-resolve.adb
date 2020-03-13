@@ -12,6 +12,7 @@ package body Parpen.Resolve is
    is
    begin
       DB.Nodes.Initialize;
+      DB.Clients.Initialize;
    end Initialize;
 
    -----------------
@@ -24,10 +25,8 @@ package body Parpen.Resolve is
                           Value  :        Parpen.Protocol.Binder)
    is
    begin
-      null;
-      --  DB.Nodes.Insert (C => Cursor.Inner.Cursor,
-      --                   K => ,
-      --                   E => );
+      DB.Nodes.Insert (K => Cursor.Inner.Cursor,
+                       E => (Owner, Value));
    end Insert_Node;
 
    --------------------

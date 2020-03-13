@@ -17,12 +17,12 @@ package body Test_Parse is
    package IBinder_Package is new Parpen.Protocol.Generic_IBinder (Types);
 
    type Client_ID is new Natural range 1 .. 10;
-   type Node_ID is new Natural;
+   type Node_ID is new Natural range 1 .. 50;
 
    package Resolve is new Parpen.Resolve (Client_ID      => Client_ID,
                                           Null_Client_ID => Client_ID'Last,
                                           Node_ID        => Node_ID,
-                                          Null_Node_ID   => 0,
+                                          Null_Node_ID   => Node_ID'Last,
                                           Types          => Types);
 
    function "&" (Left : String; Right : Natural) return String is
@@ -130,11 +130,12 @@ package body Test_Parse is
 
       use type Resolve.Result_Type;
       Result   : Resolve.Result_Type;
-      Database : Resolve.Database (Num_Nodes => 200);
+      Database : Resolve.Database;
       Node     : Resolve.Node_Cursor_Option;
+      Source   : Resolve.Client_Cursor_Option;
+      Dest     : Resolve.Client_Cursor_Option;
    begin
       Database.Initialize;
-      --  FIXME: Add node with value 100000000000001 to NodeDB DB
       Node := Database.Find_Node (Owner => 1, Value => 16#100000000000001#);
       if not Node.Valid then
          Database.Insert_Node (Cursor => Node, Owner => 1, Value => 16#100000000000001#);
