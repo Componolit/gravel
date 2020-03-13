@@ -4,8 +4,41 @@ package body Parpen.Resolve is
 
    package IBinder_Package is new Parpen.Protocol.Generic_IBinder (Types);
 
-   procedure Resolve_Handle (Buffer : in out Types.Bytes_Ptr;
+   ----------------
+   -- Initialize --
+   ----------------
+
+   procedure Initialize (DB : in out Database)
+   is
+   begin
+      DB.Nodes.Initialize;
+   end Initialize;
+
+   -----------------
+   -- Insert_Node --
+   -----------------
+
+   procedure Insert_Node (DB     : in out Database'Class;
+                          Cursor :        Node_Cursor_Option;
+                          Owner  :        Client_ID;
+                          Value  :        Parpen.Protocol.Binder)
+   is
+   begin
+      null;
+      --  DB.Nodes.Insert (C => Cursor.Inner.Cursor,
+      --                   K => ,
+      --                   E => );
+   end Insert_Node;
+
+   --------------------
+   -- Resolve_Handle --
+   --------------------
+
+   procedure Resolve_Handle (DB     :        Database;
+                             Buffer : in out Types.Bytes_Ptr;
                              Offset :        Types.Bit_Length;
+                             Source :        Client_ID;
+                             Dest   :        Client_ID;
                              Result :    out Result_Type)
    is
       Context : IBinder_Package.Context := IBinder_Package.Create;

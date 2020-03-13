@@ -16,6 +16,15 @@ package body Test_Parse is
                                               Bit_Length => Bit_Length);
    package IBinder_Package is new Parpen.Protocol.Generic_IBinder (Types);
 
+   type Client_ID is new Natural range 1 .. 10;
+   type Node_ID is new Natural;
+
+   package Resolve is new Parpen.Resolve (Client_ID      => Client_ID,
+                                          Null_Client_ID => Client_ID'Last,
+                                          Node_ID        => Node_ID,
+                                          Null_Node_ID   => 0,
+                                          Types          => Types);
+
    function "&" (Left : String; Right : Natural) return String is
       (Left & (1 => Character'Val (Right)));
 
@@ -119,11 +128,26 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      package Resolve is new Parpen.Resolve (Types);
       use type Resolve.Result_Type;
-      Result : Resolve.Result_Type;
+      Result   : Resolve.Result_Type;
+      Database : Resolve.Database (Num_Nodes => 200);
+      Node     : Resolve.Node_Cursor_Option;
    begin
-      Resolve.Resolve_Handle (Input, 0, Result);
+      Database.Initialize;
+      --  FIXME: Add node with value 100000000000001 to NodeDB DB
+      Node := Database.Find_Node (Owner => 1, Value => 16#100000000000001#);
+      if not Node.Valid then
+         Database.Insert_Node (Cursor => Node, Owner => 1, Value => 16#100000000000001#);
+      end if;
+
+      --  FIXME: Add source handle to DB (client 1)
+      --  FIXME: Add dest handle to DB (client 2)
+      --  FIXME: Resolve from client 1 to client 2
+      Database.Resolve_Handle (Buffer => Input,
+                               Offset => 0,
+                               Source => 1,
+                               Dest   => 2,
+                               Result => Result);
       Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
       Assert (Input = Expected, "Binder not resolved correctly");
    end Test_Resolve_Handle;
