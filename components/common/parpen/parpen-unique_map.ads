@@ -19,6 +19,7 @@ is
    end record;
 
    type Database is tagged private;
+   Null_DB : constant Database;
 
    function Initialized (DB : Database) return Boolean with Ghost;
 
@@ -58,5 +59,6 @@ private
    record
       Elements : Element_Array;
    end record;
+   Null_DB : constant Database := (Elements => (others => Null_Internal_Element));
 
 end Parpen.Unique_Map;

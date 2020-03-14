@@ -7,6 +7,8 @@ generic
    Null_Client_ID : Client_ID;
    type Node_ID is (<>);
    Null_Node_ID : Node_ID;
+   type Handle_ID is (<>);
+   Null_Handle_ID : Handle_ID;
    with package Types is new Parpen.Generic_Types (<>);
 package Parpen.Resolve
 is
@@ -34,6 +36,11 @@ is
                           Owner  :        Client_ID;
                           Value  :        Parpen.Protocol.Binder) with
       Pre => Initialized (DB);
+
+   procedure Add_Handle (DB    : in out Database'Class;
+                         Owner :        Client_ID;
+                         Node  :        Node_Cursor_Option) with
+      PRe => Initialized (DB);
 
    procedure Resolve_Handle (DB     :        Database;
                              Buffer : in out Types.Bytes_Ptr;
@@ -68,8 +75,16 @@ private
       (N.Inner.Result = Node_DB.Status_OK
        or N.Inner.Result = Node_DB.Status_Not_Found);
 
-   type Client_Type is null record;
-   Null_Client : constant Client_Type := (null record);
+   package Handle_DB is new Parpen.Unique_Map (Key          => Handle_ID,
+                                               Null_Key     => Null_Handle_ID,
+                                               Element      => Node_ID,
+                                               Null_Element => Null_Node_ID);
+
+   type Client_Type is
+      record
+         Handles : Handle_DB.Database;
+      end record;
+   Null_Client : constant Client_Type := (Handles => Handle_DB.Null_DB);
 
    package Client_DB is new Parpen.Unique_Map (Key          => Client_ID,
                                                Null_Key     => Null_Client_ID,
@@ -87,7 +102,8 @@ private
          Clients : Client_DB.Database;
       end record;
 
-   function Initialized (DB : Database) return Boolean is (DB.Nodes.Initialized);
+   function Initialized (DB : Database) return Boolean is
+      (DB.Nodes.Initialized and DB.Clients.Initialized);
 
    function Find_Node (DB    : Database'Class;
                        Owner : Client_ID;

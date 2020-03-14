@@ -18,11 +18,14 @@ package body Test_Parse is
 
    type Client_ID is new Natural range 1 .. 10;
    type Node_ID is new Natural range 1 .. 50;
+   type Handle_ID is new Natural range 1 .. 50;
 
    package Resolve is new Parpen.Resolve (Client_ID      => Client_ID,
                                           Null_Client_ID => Client_ID'Last,
                                           Node_ID        => Node_ID,
                                           Null_Node_ID   => Node_ID'Last,
+                                          Handle_ID      => Handle_ID,
+                                          Null_Handle_ID => Handle_ID'Last,
                                           Types          => Types);
 
    function "&" (Left : String; Right : Natural) return String is
@@ -112,7 +115,7 @@ package body Test_Parse is
       new String'(
          "wh*" & 16#85#                      -- Weak handle
          & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
-         & 16#12# & 16#34# & 16#00# & 16#00# -- handle (value: 12340000)
+         & 16#00# & 16#00# & 16#00# & 16#12# -- handle (value: 16#12#)
          & 16#00# & 16#00# & 16#00# & 16#00# -- padding
          & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
@@ -132,8 +135,6 @@ package body Test_Parse is
       Result   : Resolve.Result_Type;
       Database : Resolve.Database;
       Node     : Resolve.Node_Cursor_Option;
-      Source   : Resolve.Client_Cursor_Option;
-      Dest     : Resolve.Client_Cursor_Option;
    begin
       Database.Initialize;
       Node := Database.Find_Node (Owner => 1, Value => 16#100000000000001#);
@@ -141,13 +142,11 @@ package body Test_Parse is
          Database.Insert_Node (Cursor => Node, Owner => 1, Value => 16#100000000000001#);
       end if;
 
-      --  FIXME: Add source handle to DB (client 1)
-      --  FIXME: Add dest handle to DB (client 2)
-      --  FIXME: Resolve from client 1 to client 2
+      Database.Add_Handle (Owner => 2, Node => Node);
       Database.Resolve_Handle (Buffer => Input,
                                Offset => 0,
-                               Source => 1,
-                               Dest   => 2,
+                               Source => 2,
+                               Dest   => 1,
                                Result => Result);
       Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
       Assert (Input = Expected, "Binder not resolved correctly");

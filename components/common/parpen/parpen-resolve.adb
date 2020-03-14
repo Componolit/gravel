@@ -29,6 +29,18 @@ package body Parpen.Resolve is
                        E => (Owner, Value));
    end Insert_Node;
 
+   ----------------
+   -- Add_Handle --
+   ----------------
+
+   procedure Add_Handle (DB    : in out Database'Class;
+                         Owner :        Client_ID;
+                         Node  :        Node_Cursor_Option)
+   is
+   begin
+      null;
+   end Add_Handle;
+
    --------------------
    -- Resolve_Handle --
    --------------------
