@@ -37,8 +37,20 @@ package body Parpen.Resolve is
                          Owner :        Client_ID;
                          Node  :        Node_Cursor_Option)
    is
+      procedure Add_Node (Client : in out Client_Type)
+      is
+         Result : Handle_DB.Option;
+         use type Handle_DB.Status;
+      begin
+         Result := Client.Handles.Search_Value (Node.Inner.Cursor);
+         if Result.Result = Handle_DB.Status_Not_Found then
+            Client.Handles.Insert (K => Result.Cursor, E => Node.Inner.Cursor);
+         end if;
+      end Add_Node;
+
+      procedure Add_Node is new Client_DB.Apply (Operation => Add_Node);
    begin
-      null;
+      Add_Node (DB.Clients, Owner);
    end Add_Handle;
 
    --------------------

@@ -40,7 +40,7 @@ is
    procedure Add_Handle (DB    : in out Database'Class;
                          Owner :        Client_ID;
                          Node  :        Node_Cursor_Option) with
-      PRe => Initialized (DB);
+      Pre => Initialized (DB);
 
    procedure Resolve_Handle (DB     :        Database;
                              Buffer : in out Types.Bytes_Ptr;
