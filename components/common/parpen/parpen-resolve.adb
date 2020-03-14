@@ -30,6 +30,22 @@ package body Parpen.Resolve is
    end Insert_Node;
 
    ----------------
+   -- Add_Client --
+   ----------------
+
+   procedure Add_Client (DB : in out Database'Class;
+                         ID :        Client_ID)
+   is
+      C : Client_DB.Option;
+      use type Client_DB.Status;
+   begin
+      C := DB.Clients.Find (ID);
+      if C.Result = Client_DB.Status_Not_Found then
+         DB.Clients.Insert (K => ID, E => (Handles => Handle_DB.Null_DB));
+      end if;
+   end Add_Client;
+
+   ----------------
    -- Add_Handle --
    ----------------
 
@@ -67,7 +83,16 @@ package body Parpen.Resolve is
       Context : IBinder_Package.Context := IBinder_Package.Create;
       use type Types.Bit_Length;
       use type Parpen.Protocol.Binder_Kind;
+      use type Client_DB.Status;
+
+      C : Client_DB.Option;
    begin
+      C := DB.Clients.Find (Source);
+      if C.Result /= Client_DB.Status_OK then
+         Result := Result_Invalid_Source;
+         return;
+      end if;
+
       IBinder_Package.Initialize (Context,
                                   Buffer,
                                   Types.Bit_Length (Buffer'First) + Offset,

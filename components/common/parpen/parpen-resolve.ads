@@ -12,7 +12,11 @@ generic
    with package Types is new Parpen.Generic_Types (<>);
 package Parpen.Resolve
 is
-   type Result_Type is (Result_OK, Result_Invalid, Result_Needless);
+   type Result_Type is
+      (Result_OK,
+       Result_Invalid,
+       Result_Invalid_Source,
+       Result_Needless);
 
    type Node_Cursor_Option is tagged private;
    type Client_Cursor_Option is tagged private;
@@ -35,6 +39,10 @@ is
                           Cursor :        Node_Cursor_Option;
                           Owner  :        Client_ID;
                           Value  :        Parpen.Protocol.Binder) with
+      Pre => Initialized (DB);
+
+   procedure Add_Client (DB  : in out Database'Class;
+                         ID  :        Client_ID) with
       Pre => Initialized (DB);
 
    procedure Add_Handle (DB    : in out Database'Class;
