@@ -126,6 +126,24 @@ package body Test_Parse is
    end Test_Resolve_Invalid_Source;
 
 
+   procedure Test_Resolve_Invalid_Dest (T : in out Aunit.Test_Cases.Test_Case'Class)
+   is
+      Input    : String_Ptr := new String'("Dummy");
+      Result   : Resolve.Result_Type;
+      Database : Resolve.Database;
+      use type Resolve.Result_Type;
+   begin
+      Database.Initialize;
+      Database.Add_Client (ID => 1);
+      Database.Resolve_Handle (Buffer => Input,
+                               Offset => 0,
+                               Source => 1,
+                               Dest   => 2,
+                               Result => Result);
+      Assert (Result = Resolve.Result_Invalid_Destination, "Invalid destination not detected");
+   end Test_Resolve_Invalid_Dest;
+
+
    procedure Test_Resolve_Handle (T : in out Aunit.Test_Cases.Test_Case'Class)
    is
       Input : String_Ptr :=
@@ -184,6 +202,7 @@ package body Test_Parse is
       Register_Routine (T, Test_Parse_Strong_Binder'Access, "Parse strong binder");
       Register_Routine (T, Test_Parse_Weak_Handle'Access, "Parse weak handle");
       Register_Routine (T, Test_Resolve_Invalid_Source'Access, "Resolve invalid source");
+      Register_Routine (T, Test_Resolve_Invalid_Dest'Access, "Resolve invalid destination");
       Register_Routine (T, Test_Resolve_Handle'Access, "Resolve handle");
    end Register_Tests;
 

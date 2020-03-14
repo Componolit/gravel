@@ -16,6 +16,7 @@ is
       (Result_OK,
        Result_Invalid,
        Result_Invalid_Source,
+       Result_Invalid_Destination,
        Result_Needless);
 
    type Node_Cursor_Option is tagged private;

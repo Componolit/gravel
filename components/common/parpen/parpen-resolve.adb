@@ -93,6 +93,12 @@ package body Parpen.Resolve is
          return;
       end if;
 
+      C := DB.Clients.Find (Dest);
+      if C.Result /= Client_DB.Status_OK then
+         Result := Result_Invalid_Destination;
+         return;
+      end if;
+
       IBinder_Package.Initialize (Context,
                                   Buffer,
                                   Types.Bit_Length (Buffer'First) + Offset,
