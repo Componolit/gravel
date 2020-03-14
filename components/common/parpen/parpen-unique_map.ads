@@ -40,6 +40,11 @@ is
    function Get (DB : Database; K : Key) return Element with
       Pre => Initialized (DB);
 
+   generic
+      with procedure Operation (E : in out Element);
+   procedure Apply (DB : in out Database; K : Key) with
+      Pre => Initialized (DB);
+
    procedure Insert (DB : in out Database; K : Key; E : Element) with
       Pre => Initialized (DB);
 

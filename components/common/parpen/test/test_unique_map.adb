@@ -103,6 +103,56 @@ package body Test_Unique_Map is
       Assert (Database.Get (K => Cursor.Cursor) = (43, 44), "Invalid element for result of Search_Value");
    end Test_Search_Partial_Value;
 
+   procedure Test_Nested_Insert (T : in out Aunit.Test_Cases.Test_Case'Class)
+   is
+      package Inner is new Parpen.Unique_Map (Element      => Element,
+                                              Null_Element => (0, 0),
+                                              Key          => Key,
+                                              Null_Key     => 0);
+
+      package Outer is new Parpen.Unique_Map (Element      => Inner.Database,
+                                              Null_Element => Inner.Null_DB,
+                                              Key          => Key,
+                                              Null_Key     => 0);
+      Outer_Cursor : Outer.Option;
+      Database     : Outer.Database;
+
+      procedure Set_Value (DB : in out Inner.Database)
+      is
+         Result : Inner.Option;
+         use type Inner.Status;
+      begin
+         Result := DB.Find (K => 11);
+         Assert (Result.Result = Inner.Status_Not_Found, "Element found in empty database");
+         DB.Insert (K => Result.Cursor, E => (1234, 5678));
+      end Set_Value;
+
+      procedure Check_Value (DB : in out Inner.Database)
+      is
+         Result : Inner.Option;
+         use type Inner.Status;
+      begin
+         Result := DB.Find (K => 11);
+         Assert (Result.Result = Inner.Status_OK, "Element not found");
+         Assert (DB.Get (K => Result.Cursor) = (1234, 5678), "Invalid value");
+      end Check_Value;
+
+      procedure Set_Value is new Outer.Apply (Operation => Set_Value);
+      procedure Check_Value is new Outer.Apply (Operation => Check_Value);
+
+      use type Outer.Status;
+      use type Outer.Option;
+   begin
+      Database.Initialize;
+
+      Outer_Cursor := Database.Find (K => 14);
+      Assert (Outer_Cursor.Result = Outer.Status_Not_Found, "Element found in empty database");
+      Database.Insert (K => Outer_Cursor.Cursor, E => Inner.Null_DB);
+
+      Set_Value (DB => Database, K => 14);
+      Check_Value (DB => Database, K => 14);
+   end Test_Nested_Insert;
+
    procedure Register_Tests (T : in out Test) is
       use AUnit.Test_Cases.Registration;
    begin
@@ -110,6 +160,7 @@ package body Test_Unique_Map is
       Register_Routine (T, Test_Basic_Delete'Access, "Basic delete");
       Register_Routine (T, Test_Search_Value'Access, "Search value");
       Register_Routine (T, Test_Search_Partial_Value'Access, "Search partial value");
+      Register_Routine (T, Test_Nested_Insert'Access, "Nested insert");
    end Register_Tests;
 
 end Test_Unique_Map;

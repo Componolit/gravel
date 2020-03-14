@@ -91,6 +91,15 @@ package body Parpen.Unique_Map is
       return DB.Elements (K).Elem;
    end Get;
 
+   -----------
+   -- Apply --
+   -----------
+
+   procedure Apply (DB : in out Database; K : Key) is
+   begin
+      Operation (DB.Elements (K).Elem);
+   end Apply;
+
    ------------
    -- Insert --
    ------------
