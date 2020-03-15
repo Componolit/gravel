@@ -18,6 +18,7 @@ private
    procedure Test_Resolve_Invalid_Source (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Resolve_Invalid_Dest (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Resolve_Invalid_Node (T : in out AUnit.Test_Cases.Test_Case'Class);
+   procedure Test_Resolve_Missing_Node (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Resolve_Handle (T : in out AUnit.Test_Cases.Test_Case'Class);
 
 end Test_Parse;

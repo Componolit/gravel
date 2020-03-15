@@ -222,6 +222,35 @@ package body Test_Parse is
    end Test_Resolve_Invalid_Node;
 
 
+   procedure Test_Resolve_Missing_Node (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Input : String_Ptr :=
+      new String'(
+         "wh*" & 16#85#                      -- Weak handle
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#00# & 16#00# & 16#00# & 16#12# -- handle (value: 16#12#)
+         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+      );
+
+      use type Resolve.Result_Type;
+      Result   : Resolve.Result_Type;
+      Database : Resolve.Database;
+   begin
+      Database.Initialize;
+      Database.Add_Client (ID => 1);
+      Database.Add_Client (ID => 2);
+      Database.Resolve_Handle (Buffer => Input,
+                               Offset => 0,
+                               Source => 2,
+                               Dest   => 1,
+                               Result => Result);
+      Assert (Result = Resolve.Result_Handle_Not_Found, "Missing node not detected: " & Result'Img);
+   end Test_Resolve_Missing_Node;
+
+
    procedure Test_Resolve_Handle (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
@@ -284,6 +313,7 @@ package body Test_Parse is
       Register_Routine (T, Test_Resolve_Invalid_Source'Access, "Resolve invalid source");
       Register_Routine (T, Test_Resolve_Invalid_Dest'Access, "Resolve invalid destination");
       Register_Routine (T, Test_Resolve_Invalid_Node'Access, "Resolve invalid node");
+      Register_Routine (T, Test_Resolve_Missing_Node'Access, "Resolve missing node");
       Register_Routine (T, Test_Resolve_Handle'Access, "Resolve handle");
    end Register_Tests;
 
