@@ -28,7 +28,7 @@ package body Parpen.NameDB is
    procedure Add
      (DB : in out Database; Elem : Element; Query : Query_String; Result : out Status)
    is
-      H : Hash_Type := Hash (Query);
+      H : constant Hash_Type := Hash (Query);
       C : Name_DB.Cursor_Option;
    begin
       C := DB.Inner.Find (H);
@@ -49,7 +49,7 @@ package body Parpen.NameDB is
 
    function Exists (DB : Database; Query : Query_String) return Boolean
    is
-      H : Hash_Type := Hash (Query);
+      H : constant Hash_Type := Hash (Query);
       C : Name_DB.Cursor_Option;
       use type Name_DB.Status;
    begin
@@ -66,7 +66,7 @@ package body Parpen.NameDB is
 
    procedure Get (DB : Database; Query : Query_String; Res : out Result)
    is
-      H : Hash_Type := Hash (Query);
+      H : constant Hash_Type := Hash (Query);
       C : Name_DB.Cursor_Option;
       use type Name_DB.Status;
    begin

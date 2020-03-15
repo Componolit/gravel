@@ -7,4 +7,29 @@ project Test is
    for Source_Dirs use (".", "..", "../generated");
    for Object_Dir use "obj";
    for Main use ("main.adb");
+
+   package Builder is
+      for Default_Switches ("Ada") use ( 
+         "-gnatVa",
+         "-gnatwa",
+         "-gnatwl",
+         "-gnaty3yM120",
+         "-gnatwe"
+      );
+   end Builder;
+
+   package Compiler is
+      for Switches ("*-builtin_types-*") use ( 
+         "-gnatwR"
+      );
+      for Switches ("*-generic_types.adb") use ( 
+         "-gnatwRU",
+         "-gnaty-sM120"
+      );
+      for Switches ("parpen-protocol*.ad*") use ( 
+         "-gnatwRUC",
+         "-gnaty-sM120i"
+      );
+   end Compiler;
+
 end Test;

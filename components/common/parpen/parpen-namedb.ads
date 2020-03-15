@@ -1,4 +1,3 @@
-with System;
 with Parpen.DB;
 
 generic
@@ -32,11 +31,11 @@ package Parpen.NameDB is
 
    function Exists (DB    :     Database;
                     Query :     Query_String) return Boolean;
-   
+
    procedure Get (DB    :     Database;
                   Query :     Query_String;
                   Res   : out Result);
-   
+
 private
 
    type Byte is mod 2**8;

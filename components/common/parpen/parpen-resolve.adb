@@ -53,6 +53,8 @@ package body Parpen.Resolve is
                          Owner :        Client_ID;
                          Node  :        Node_Cursor_Option)
    is
+      procedure Add_Node (Client : in out Client_Type);
+
       procedure Add_Node (Client : in out Client_Type)
       is
          Result : Handle_DB.Option;
@@ -83,11 +85,10 @@ package body Parpen.Resolve is
       Context : IBinder_Package.Context := IBinder_Package.Create;
       use type Types.Bit_Length;
       use type Parpen.Protocol.Binder_Kind;
-      use type Parpen.Protocol.Handle;
       use type Client_DB.Status;
 
       S, D   : Client_DB.Option;
-      H      : Node_DB.Option;
+      --  H      : Node_DB.Option;
       Handle : Parpen.Protocol.Handle;
    begin
       S := DB.Clients.Find (Source);
@@ -128,7 +129,7 @@ package body Parpen.Resolve is
          Result := Result_Invalid_Handle;
          return;
       end if;
-      H := DB.Nodes.Find (Node_ID'Val (Parpen.Protocol.Handle'Pos (Handle)));
+      --  H := DB.Nodes.Find (Node_ID'Val (Parpen.Protocol.Handle'Pos (Handle)));
 
       Result := Result_Invalid;
    end Resolve_Handle;

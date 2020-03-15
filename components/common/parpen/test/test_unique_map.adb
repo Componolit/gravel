@@ -13,8 +13,7 @@ package body Test_Unique_Map is
 
    package DB is new Parpen.Unique_Map (Element      => Element,
                                         Null_Element => (0, 0),
-                                        Key          => Key,
-                                        Null_Key     => 0);
+                                        Key          => Key);
 
    use type DB.Status;
    use type DB.Option;
@@ -25,8 +24,9 @@ package body Test_Unique_Map is
       return AUnit.Format ("Fixed map");
    end Name;
 
-   procedure Test_Basic_Insert (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Basic_Insert (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Database   : DB.Database;
       Cursor     : DB.Option;
       New_Cursor : DB.Option;
@@ -49,8 +49,9 @@ package body Test_Unique_Map is
       Assert (Cursor.Result = DB.Status_Not_Found, "Non-existing element found in database");
    end Test_Basic_Insert;
 
-   procedure Test_Basic_Delete (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Basic_Delete (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Database : DB.Database;
       Cursor   : DB.Option;
    begin
@@ -68,8 +69,9 @@ package body Test_Unique_Map is
       Assert (Cursor.Result = DB.Status_Not_Found, "Element found after deletion database");
    end Test_Basic_Delete;
 
-   procedure Test_Search_Value (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Search_Value (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Database : DB.Database;
       Cursor   : DB.Option;
    begin
@@ -84,12 +86,13 @@ package body Test_Unique_Map is
       Assert (Database.Get (K => Cursor.Cursor) = (43, 44), "Invalid element for result of Search_Value");
    end Test_Search_Value;
 
-   procedure Test_Search_Partial_Value (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Search_Partial_Value (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Database : DB.Database;
       Cursor   : DB.Option;
 
-      function Match (L, R: Element) return Boolean is (L.Left = R.Left);
+      function Match (L, R : Element) return Boolean is (L.Left = R.Left);
       function Search_Partial is new DB.Search (Match);
    begin
       Database.Initialize;
@@ -103,19 +106,21 @@ package body Test_Unique_Map is
       Assert (Database.Get (K => Cursor.Cursor) = (43, 44), "Invalid element for result of Search_Value");
    end Test_Search_Partial_Value;
 
-   procedure Test_Nested_Insert (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Nested_Insert (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       package Inner is new Parpen.Unique_Map (Element      => Element,
                                               Null_Element => (0, 0),
-                                              Key          => Key,
-                                              Null_Key     => 0);
+                                              Key          => Key);
 
       package Outer is new Parpen.Unique_Map (Element      => Inner.Database,
                                               Null_Element => Inner.Null_DB,
-                                              Key          => Key,
-                                              Null_Key     => 0);
+                                              Key          => Key);
       Outer_Cursor : Outer.Option;
       Database     : Outer.Database;
+
+      procedure Set_Value (DB : in out Inner.Database);
+      procedure Check_Value (DB : in out Inner.Database);
 
       procedure Set_Value (DB : in out Inner.Database)
       is
@@ -141,7 +146,6 @@ package body Test_Unique_Map is
       procedure Check_Value is new Outer.Apply (Operation => Check_Value);
 
       use type Outer.Status;
-      use type Outer.Option;
    begin
       Database.Initialize;
 

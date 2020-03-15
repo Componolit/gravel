@@ -1,6 +1,5 @@
 generic
    type Key is (<>);
-   Null_Key : Key;
    type Element is private;
    Null_Element : Element;
 package Parpen.Unique_Map with SPARK_Mode
@@ -58,7 +57,7 @@ private
       Elem  : Element;
    end record;
    Null_Internal_Element : constant Internal_Element := (False, Null_Element);
-   
+
    type Element_Array is array (Key) of Internal_Element;
    type Database is tagged
    record

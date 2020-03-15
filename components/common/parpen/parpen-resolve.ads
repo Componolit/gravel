@@ -8,7 +8,6 @@ generic
    type Node_ID is (<>);
    Null_Node_ID : Node_ID;
    type Handle_ID is (<>);
-   Null_Handle_ID : Handle_ID;
    with package Types is new Parpen.Generic_Types (<>);
 package Parpen.Resolve
 is
@@ -71,7 +70,6 @@ private
                                       Value => 0);
 
    package Node_DB is new Parpen.Unique_Map (Key          => Node_ID,
-                                             Null_Key     => Null_Node_ID,
                                              Element      => Node_Type,
                                              Null_Element => Null_Node);
    use type Node_DB.Status;
@@ -86,7 +84,6 @@ private
        or N.Inner.Result = Node_DB.Status_Not_Found);
 
    package Handle_DB is new Parpen.Unique_Map (Key          => Handle_ID,
-                                               Null_Key     => Null_Handle_ID,
                                                Element      => Node_ID,
                                                Null_Element => Null_Node_ID);
 
@@ -97,7 +94,6 @@ private
    Null_Client : constant Client_Type := (Handles => Handle_DB.Null_DB);
 
    package Client_DB is new Parpen.Unique_Map (Key          => Client_ID,
-                                               Null_Key     => Null_Client_ID,
                                                Element      => Client_Type,
                                                Null_Element => Null_Client);
 

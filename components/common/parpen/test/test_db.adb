@@ -15,7 +15,6 @@ package body Test_DB is
                                 Null_Key     => 0);
 
    use type DB.Status;
-   use type DB.Curs;
    use type DB.Cursor_Option;
 
    function Name (T : Test) return AUnit.Message_String is
@@ -24,8 +23,9 @@ package body Test_DB is
       return AUnit.Format ("Parpen database");
    end Name;
 
-   procedure Test_Basic_Insert (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Basic_Insert (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Database   : DB.Database (100);
       Cursor     : DB.Cursor_Option;
       New_Cursor : DB.Cursor_Option;
@@ -48,8 +48,9 @@ package body Test_DB is
       Assert (Cursor.Result = DB.Status_Not_Found, "Non-existing element found in database");
    end Test_Basic_Insert;
 
-   procedure Test_Basic_Delete (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Basic_Delete (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Database : DB.Database (100);
       Cursor   : DB.Cursor_Option;
    begin
@@ -69,8 +70,9 @@ package body Test_DB is
       Assert (Cursor.Result = DB.Status_Not_Found, "Element found after deletion database");
    end Test_Basic_Delete;
 
-   procedure Test_Overflow (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Overflow (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Database : DB.Database (73);
       Cursor   : DB.Cursor_Option;
    begin
@@ -86,8 +88,9 @@ package body Test_DB is
       Assert (Cursor.Result = DB.Status_Overflow, "Overflow not detected");
    end Test_Overflow;
 
-   procedure Test_Search_Value (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Search_Value (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Database : DB.Database (20);
       Cursor   : DB.Cursor_Option;
    begin
@@ -102,12 +105,13 @@ package body Test_DB is
       Assert (Database.Get (C => Cursor.Cursor) = (43, 44), "Invalid element for result of Search_Value");
    end Test_Search_Value;
 
-   procedure Test_Search_Partial_Value (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Search_Partial_Value (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Database : DB.Database (20);
       Cursor   : DB.Cursor_Option;
 
-      function Match (L, R: Element) return Boolean is (L.Left = R.Left);
+      function Match (L, R : Element) return Boolean is (L.Left = R.Left);
       function Search_Partial is new DB.Search (Match);
    begin
       Database.Initialize;

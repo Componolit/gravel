@@ -57,7 +57,7 @@ private
       Elem  : Element;
    end record;
    Null_Internal_Element : constant Internal_Element := (False, Null_Key, Null_Element);
-   
+
    type Element_Array is array (Natural range <>) of Internal_Element;
    type Database (Size : Natural) is tagged
    record

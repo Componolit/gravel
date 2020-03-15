@@ -32,6 +32,7 @@ package body Parpen.DB is
    function Initialized (DB : Database) return Boolean with
       SPARK_Mode => Off
    is
+      pragma Unreferenced (DB);
    begin
       return False;
    end Initialized;

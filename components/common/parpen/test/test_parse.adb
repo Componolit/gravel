@@ -8,6 +8,8 @@ package body Test_Parse is
    type String_Ptr is access all String;
    type Bit_Length is range 0 .. Natural'Last * 8;
 
+   pragma Warnings (Off, "value not in range of type *");
+
    package Types is new Parpen.Generic_Types (Index      => Positive,
                                               Byte       => Character,
                                               Bytes      => String,
@@ -25,14 +27,14 @@ package body Test_Parse is
                                           Node_ID        => Node_ID,
                                           Null_Node_ID   => Node_ID'Last,
                                           Handle_ID      => Handle_ID,
-                                          Null_Handle_ID => Handle_ID'Last,
                                           Types          => Types);
 
    function "&" (Left : String; Right : Natural) return String is
       (Left & (1 => Character'Val (Right)));
 
-   procedure Test_Parse_Strong_Binder (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Parse_Strong_Binder (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Input : String_Ptr :=
       new String'(
          "sb*" & 16#85#                      -- Strong binder
@@ -70,8 +72,9 @@ package body Test_Parse is
       Assert (C = 16#123456789abcdef0#, "Invalid cookie value (" & C'Img & ")");
    end Test_Parse_Strong_Binder;
 
-   procedure Test_Parse_Weak_Handle (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Parse_Weak_Handle (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Input : String_Ptr :=
       new String'(
          "wh*" & 16#85#                      -- Weak handle
@@ -109,8 +112,9 @@ package body Test_Parse is
       Assert (C = 16#123456789abcdef0#, "Invalid cookie value (" & C'Img & ")");
    end Test_Parse_Weak_Handle;
 
-   procedure Test_Parse_Weak_Handle_With_Offset (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Parse_Weak_Handle_With_Offset (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Input : String_Ptr :=
       new String'(
          "ABC"                               -- Unrelated data (offset: 24 bit)
@@ -152,8 +156,9 @@ package body Test_Parse is
       Assert (C = 16#123456789abcdef0#, "Invalid cookie value (" & C'Img & ")");
    end Test_Parse_Weak_Handle_With_Offset;
 
-   procedure Test_Resolve_Invalid_Source (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Resolve_Invalid_Source (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Input    : String_Ptr := new String'("Dummy");
       Result   : Resolve.Result_Type;
       Database : Resolve.Database;
@@ -169,8 +174,9 @@ package body Test_Parse is
    end Test_Resolve_Invalid_Source;
 
 
-   procedure Test_Resolve_Invalid_Dest (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Resolve_Invalid_Dest (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Input    : String_Ptr := new String'("Dummy");
       Result   : Resolve.Result_Type;
       Database : Resolve.Database;
@@ -187,8 +193,9 @@ package body Test_Parse is
    end Test_Resolve_Invalid_Dest;
 
 
-   procedure Test_Resolve_Invalid_Node (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Resolve_Invalid_Node (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Input : String_Ptr :=
       new String'(
          "wh*" & 16#85#                      -- Weak handle
@@ -215,8 +222,9 @@ package body Test_Parse is
    end Test_Resolve_Invalid_Node;
 
 
-   procedure Test_Resolve_Handle (T : in out Aunit.Test_Cases.Test_Case'Class)
+   procedure Test_Resolve_Handle (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
+      pragma Unreferenced (T);
       Input : String_Ptr :=
       new String'(
          "wh*" & 16#85#                      -- Weak handle
@@ -227,7 +235,7 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      Expected : String_Ptr :=
+      Expected : constant String_Ptr :=
       new String'(
          "wb*" & 16#85#                      -- Weak binder
          & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
