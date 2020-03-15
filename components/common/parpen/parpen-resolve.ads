@@ -24,6 +24,7 @@ is
    type Client_Cursor_Option is tagged private;
 
    function Valid (N : Node_Cursor_Option) return Boolean;
+   function Found (N : Node_Cursor_Option) return Boolean;
 
    type Database is tagged private;
 
@@ -83,6 +84,10 @@ private
    function Valid (N : Node_Cursor_Option) return Boolean is
       (N.Inner.Result = Node_DB.Status_OK
        or N.Inner.Result = Node_DB.Status_Not_Found);
+
+   function Found (N : Node_Cursor_Option) return Boolean is
+      (Valid (N)
+       and N.Inner.Result /= Node_DB.Status_Not_Found);
 
    package Handle_DB is new Parpen.Unique_Map (Key          => Handle_ID,
                                                Element      => Node_ID,

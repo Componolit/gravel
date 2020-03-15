@@ -14,7 +14,7 @@ package body Parpen.Unique_Map is
          if Match (DB.Elements (I)) then
             return Option'(Result => Status_OK, Cursor => I);
          end if;
-         if not DB.Elements (I).Valid then
+         if not DB.Elements (I).Valid and not Free_Found then
             Free := I;
             Free_Found := True;
          end if;
