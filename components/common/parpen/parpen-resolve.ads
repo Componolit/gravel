@@ -38,10 +38,10 @@ is
                        Value : Parpen.Protocol.Binder) return Node_Cursor_Option with
       Pre => Initialized (DB);
 
-   procedure Insert_Node (DB     : in out Database'Class;
-                          Cursor :        Node_Cursor_Option;
-                          Owner  :        Client_ID;
-                          Value  :        Parpen.Protocol.Binder) with
+   procedure Add_Node (DB     : in out Database'Class;
+                       Cursor :        Node_Cursor_Option;
+                       Owner  :        Client_ID;
+                       Value  :        Parpen.Protocol.Binder) with
       Pre => Initialized (DB);
 
    procedure Add_Client (DB  : in out Database'Class;

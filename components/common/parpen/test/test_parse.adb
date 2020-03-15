@@ -19,8 +19,8 @@ package body Test_Parse is
    package IBinder_Package is new Parpen.Protocol.Generic_IBinder (Types);
 
    type Client_ID is new Natural range 1 .. 10;
-   type Node_ID is new Natural range 18 .. 50;
-   type Handle_ID is new Natural range 1 .. 50;
+   type Node_ID is new Natural range 1 .. 50;
+   type Handle_ID is new Natural range 18 .. 50;
 
    package Resolve is new Parpen.Resolve (Client_ID      => Client_ID,
                                           Null_Client_ID => Client_ID'Last,
@@ -282,12 +282,12 @@ package body Test_Parse is
       Database.Initialize;
       Node := Database.Find_Node (Owner => 1, Value => 16#100000000000001#);
       Assert (not Node.Found, "Node already present");
-      Database.Insert_Node (Cursor => Node, Owner => 1, Value => 16#100000000000001#);
+      Database.Add_Node (Cursor => Node, Owner => 1, Value => 16#100000000000001#);
 
       Database.Add_Client (ID => 1);
       Database.Add_Client (ID => 2);
 
-      --  The Node_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
+      --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
       Database.Add_Handle (Owner => 2, Node => Node);
 
       Database.Resolve_Handle (Buffer => Input,

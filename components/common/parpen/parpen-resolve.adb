@@ -15,19 +15,19 @@ package body Parpen.Resolve is
       DB.Clients.Initialize;
    end Initialize;
 
-   -----------------
-   -- Insert_Node --
-   -----------------
+   --------------
+   -- Add_Node --
+   --------------
 
-   procedure Insert_Node (DB     : in out Database'Class;
-                          Cursor :        Node_Cursor_Option;
-                          Owner  :        Client_ID;
-                          Value  :        Parpen.Protocol.Binder)
+   procedure Add_Node (DB     : in out Database'Class;
+                       Cursor :        Node_Cursor_Option;
+                       Owner  :        Client_ID;
+                       Value  :        Parpen.Protocol.Binder)
    is
    begin
       DB.Nodes.Insert (K => Cursor.Inner.Cursor,
                        E => (Owner, Value));
-   end Insert_Node;
+   end Add_Node;
 
    ----------------
    -- Add_Client --
@@ -86,9 +86,11 @@ package body Parpen.Resolve is
       use type Types.Bit_Length;
       use type Parpen.Protocol.Binder_Kind;
       use type Client_DB.Status;
+      use type Handle_DB.Status;
 
       S, D   : Client_DB.Option;
-      H      : Node_DB.Option;
+      --  N      : Node_DB.Option;
+      H      : Handle_DB.Option;
       Handle : Parpen.Protocol.Handle;
    begin
       S := DB.Clients.Find (Source);
@@ -123,15 +125,15 @@ package body Parpen.Resolve is
 
       Handle := IBinder_Package.Get_Handle (Context);
       if
-         Parpen.Protocol.Handle'Pos (Handle) > Node_ID'Pos (Node_ID'Last)
-         or Parpen.Protocol.Handle'Pos (Handle) < Node_ID'Pos (Node_ID'First)
+         Parpen.Protocol.Handle'Pos (Handle) > Handle_ID'Pos (Handle_ID'Last)
+         or Parpen.Protocol.Handle'Pos (Handle) < Handle_ID'Pos (Handle_ID'First)
       then
          Result := Result_Invalid_Handle;
          return;
       end if;
 
-      H := DB.Nodes.Find (Node_ID'Val (Parpen.Protocol.Handle'Pos (Handle)));
-      if H.Result /= Node_DB.Status_OK then
+      H := DB.Clients.Get (S.Cursor).Handles.Find (Handle_ID'Val (Parpen.Protocol.Handle'Pos (Handle)));
+      if H.Result /= Handle_DB.Status_OK then
          Result := Result_Handle_Not_Found;
          return;
       end if;
