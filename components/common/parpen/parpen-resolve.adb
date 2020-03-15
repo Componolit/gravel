@@ -83,26 +83,29 @@ package body Parpen.Resolve is
       Context : IBinder_Package.Context := IBinder_Package.Create;
       use type Types.Bit_Length;
       use type Parpen.Protocol.Binder_Kind;
+      use type Parpen.Protocol.Handle;
       use type Client_DB.Status;
 
-      C : Client_DB.Option;
+      S, D   : Client_DB.Option;
+      H      : Node_DB.Option;
+      Handle : Parpen.Protocol.Handle;
    begin
-      C := DB.Clients.Find (Source);
-      if C.Result /= Client_DB.Status_OK then
+      S := DB.Clients.Find (Source);
+      if S.Result /= Client_DB.Status_OK then
          Result := Result_Invalid_Source;
          return;
       end if;
 
-      C := DB.Clients.Find (Dest);
-      if C.Result /= Client_DB.Status_OK then
+      D := DB.Clients.Find (Dest);
+      if D.Result /= Client_DB.Status_OK then
          Result := Result_Invalid_Destination;
          return;
       end if;
 
       IBinder_Package.Initialize (Context,
                                   Buffer,
-                                  Types.Bit_Length (Buffer'First) + Offset,
-                                  Types.Bit_Length (Buffer'Last));
+                                  Types.First_Bit_Index (Buffer'First) + Offset,
+                                  Types.Last_Bit_Index (Buffer'Last));
       IBinder_Package.Verify_Message (Context);
       if not IBinder_Package.Valid_Message (Context) then
          Result := Result_Invalid;
@@ -116,6 +119,16 @@ package body Parpen.Resolve is
          Result := Result_Needless;
          return;
       end if;
+
+      Handle := IBinder_Package.Get_Handle (Context);
+      if
+         Parpen.Protocol.Handle'Pos (Handle) > Node_ID'Pos (Node_ID'Last)
+         or Parpen.Protocol.Handle'Pos (Handle) < Node_ID'Pos (Node_ID'First)
+      then
+         Result := Result_Invalid_Handle;
+         return;
+      end if;
+      H := DB.Nodes.Find (Node_ID'Val (Parpen.Protocol.Handle'Pos (Handle)));
 
       Result := Result_Invalid;
    end Resolve_Handle;
