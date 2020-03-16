@@ -10,8 +10,10 @@ is
    type Option (Result : Status := Status_Invalid) is
    record
       case Result is
-         when Status_OK | Status_Not_Found =>
-            Cursor : Key;
+         when Status_OK =>
+            Data     : Element;
+         when Status_Not_Found =>
+            Position : Key;
          when Status_Invalid =>
             null;
       end case;
@@ -25,23 +27,20 @@ is
    procedure Initialize (DB : out Database) with
       Post => Initialized (DB);
 
-   function Find (DB : Database; K : Key) return Option with
+   function Get (DB : Database; K : Key) return Option with
       Pre => Initialized (DB);
 
-   function Search_Value (DB : Database; E : Element) return Option with
+   function Find (DB : Database; E : Element) return Option with
       Pre => Initialized (DB);
 
    generic
       with function Match (Left, Right : Element) return Boolean;
-   function Search (DB : Database; E : Element) return Option with
-      Pre => Initialized (DB);
-
-   function Get (DB : Database; K : Key) return Element with
+   function Generic_Find (DB : Database; E : Element) return Option with
       Pre => Initialized (DB);
 
    generic
       with procedure Operation (E : in out Element);
-   procedure Apply (DB : in out Database; K : Key) with
+   procedure Generic_Apply (DB : in out Database; K : Key) with
       Pre => Initialized (DB);
 
    procedure Insert (DB : in out Database; K : Key; E : Element) with

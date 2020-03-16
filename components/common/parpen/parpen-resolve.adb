@@ -20,12 +20,12 @@ package body Parpen.Resolve is
    --------------
 
    procedure Add_Node (DB     : in out Database'Class;
-                       Cursor :        Node_Cursor_Option;
+                       Cursor :        Node_Option;
                        Owner  :        Client_ID;
                        Value  :        Parpen.Protocol.Binder)
    is
    begin
-      DB.Nodes.Insert (K => Cursor.Inner.Cursor,
+      DB.Nodes.Insert (K => Cursor.Inner.Position,
                        E => (Owner, Value));
    end Add_Node;
 
@@ -36,13 +36,8 @@ package body Parpen.Resolve is
    procedure Add_Client (DB : in out Database'Class;
                          ID :        Client_ID)
    is
-      C : Client_DB.Option;
-      use type Client_DB.Status;
    begin
-      C := DB.Clients.Find (ID);
-      if C.Result = Client_DB.Status_Not_Found then
-         DB.Clients.Insert (K => ID, E => (Handles => Handle_DB.Null_DB));
-      end if;
+      DB.Clients.Insert (K => ID, E => (Handles => Handle_DB.Null_DB));
    end Add_Client;
 
    ----------------
@@ -51,7 +46,7 @@ package body Parpen.Resolve is
 
    procedure Add_Handle (DB    : in out Database'Class;
                          Owner :        Client_ID;
-                         Node  :        Node_Cursor_Option)
+                         Node  :        Node_Option)
    is
       procedure Add_Node (Client : in out Client_Type);
 
@@ -60,13 +55,13 @@ package body Parpen.Resolve is
          Result : Handle_DB.Option;
          use type Handle_DB.Status;
       begin
-         Result := Client.Handles.Search_Value (Node.Inner.Cursor);
+         Result := Client.Handles.Find (Node.Inner.Position);
          if Result.Result = Handle_DB.Status_Not_Found then
-            Client.Handles.Insert (K => Result.Cursor, E => Node.Inner.Cursor);
+            Client.Handles.Insert (K => Result.Position, E => Node.Inner.Position);
          end if;
       end Add_Node;
 
-      procedure Add_Node is new Client_DB.Apply (Operation => Add_Node);
+      procedure Add_Node is new Client_DB.Generic_Apply (Operation => Add_Node);
    begin
       Add_Node (DB.Clients, Owner);
    end Add_Handle;
@@ -94,13 +89,13 @@ package body Parpen.Resolve is
       Handle : Parpen.Protocol.Handle;
       H_ID   : Handle_ID;
    begin
-      S := DB.Clients.Find (Source);
+      S := DB.Clients.Get (Source);
       if S.Result /= Client_DB.Status_OK then
          Result := Result_Invalid_Source;
          return;
       end if;
 
-      D := DB.Clients.Find (Dest);
+      D := DB.Clients.Get (Dest);
       if D.Result /= Client_DB.Status_OK then
          Result := Result_Invalid_Destination;
          return;
@@ -135,13 +130,13 @@ package body Parpen.Resolve is
 
       H_ID := Handle_ID'Val (Parpen.Protocol.Handle'Pos (Handle));
 
-      H := DB.Clients.Get (S.Cursor).Handles.Find (H_ID);
+      H := S.Data.Handles.Get (H_ID);
       if H.Result /= Handle_DB.Status_OK then
          Result := Result_Handle_Not_Found;
          return;
       end if;
 
-      N := DB.Nodes.Find (DB.Clients.Get (S.Cursor).Handles.Get (H.Cursor));
+      N := DB.Nodes.Get (H.Data);
       if N.Result /= Node_DB.Status_OK then
          Result := Result_Node_Not_Found;
          return;

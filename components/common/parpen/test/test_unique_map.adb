@@ -28,82 +28,87 @@ package body Test_Unique_Map is
    is
       pragma Unreferenced (T);
       Database   : DB.Database;
-      Cursor     : DB.Option;
-      New_Cursor : DB.Option;
+      Result     : DB.Option;
+      New_Result : DB.Option;
    begin
       Database.Initialize;
 
-      Cursor := Database.Find (K => 14);
-      Assert (Cursor.Result = DB.Status_Not_Found, "Element found in empty database");
+      Result := Database.Get (K => 14);
+      Assert (Result.Result = DB.Status_Not_Found, "Element found in empty database");
 
-      Database.Insert (K => Cursor.Cursor, E => (100, 200));
-      Assert (Database.Get (K => Cursor.Cursor) = (100, 200), "Invalid element");
+      Database.Insert (K => 14, E => (100, 200));
+      Result := Database.Get (K => 14);
+      Assert (Result.Result = DB.Status_OK, "Unexpected result");
+      Assert (Result.Data = (100, 200), "Invalid element");
 
-      Cursor := Database.Find (K => 14);
-      Assert (Cursor.Result = DB.Status_OK, "Element not found in database");
+      Result := Database.Get (K => 14);
+      Assert (Result.Result = DB.Status_OK, "Element not found in database");
 
-      New_Cursor := Database.Find (K => 14);
-      Assert (New_Cursor = Cursor, "Cursor differ between requests");
+      New_Result := Database.Get (K => 14);
+      Assert (New_Result = Result, "Result differ between requests");
 
-      Cursor := Database.Find (K => 15);
-      Assert (Cursor.Result = DB.Status_Not_Found, "Non-existing element found in database");
+      Result := Database.Get (K => 15);
+      Assert (Result.Result = DB.Status_Not_Found, "Non-existing element found in database");
    end Test_Basic_Insert;
 
    procedure Test_Basic_Delete (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
       Database : DB.Database;
-      Cursor   : DB.Option;
+      Result   : DB.Option;
    begin
       Database.Initialize;
 
-      Cursor := Database.Find (K => 14);
-      Assert (Cursor.Result = DB.Status_Not_Found, "Element found in empty database");
+      Result := Database.Get (K => 14);
+      Assert (Result.Result = DB.Status_Not_Found, "Element found in empty database");
 
-      Database.Insert (K => Cursor.Cursor, E => (100, 200));
-      Assert (Database.Get (K => Cursor.Cursor) = (100, 200), "Invalid element");
+      Database.Insert (K => 14, E => (100, 200));
+      Result := Database.Get (K => 14);
+      Assert (Result.Result = DB.Status_OK, "Unexpected element");
+      Assert (Result.Data = (100, 200), "Invalid element");
 
-      Database.Delete (K => Cursor.Cursor);
-
-      Cursor := Database.Find (K => 14);
-      Assert (Cursor.Result = DB.Status_Not_Found, "Element found after deletion database");
+      Database.Delete (K => 14);
+      Result := Database.Get (K => 14);
+      Assert (Result.Result = DB.Status_Not_Found, "Element found after deletion database");
    end Test_Basic_Delete;
 
    procedure Test_Search_Value (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
       Database : DB.Database;
-      Cursor   : DB.Option;
+      Result   : DB.Option;
    begin
       Database.Initialize;
 
-      Cursor := Database.Search_Value (E => (43, 44));
-      Assert (Cursor.Result = DB.Status_Not_Found, "Value found in empty database");
+      Result := Database.Find (E => (43, 44));
+      Assert (Result.Result = DB.Status_Not_Found, "Value found in empty database");
 
-      Database.Insert (K => Cursor.Cursor, E => (43, 44));
-      Cursor := Database.Search_Value (E => (43, 44));
-      Assert (Cursor.Result = DB.Status_OK, "Value not found database");
-      Assert (Database.Get (K => Cursor.Cursor) = (43, 44), "Invalid element for result of Search_Value");
+      Database.Insert (K => 14, E => (43, 44));
+      Result := Database.Find (E => (43, 44));
+      Assert (Result.Result = DB.Status_OK, "Value not found database");
+      Assert (Result.Data = (43, 44), "Invalid element for result of Search_Value");
    end Test_Search_Value;
 
    procedure Test_Search_Partial_Value (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
       Database : DB.Database;
-      Cursor   : DB.Option;
+      Result   : DB.Option;
 
       function Match (L, R : Element) return Boolean is (L.Left = R.Left);
-      function Search_Partial is new DB.Search (Match);
+      function Search_Partial is new DB.Generic_Find (Match);
    begin
       Database.Initialize;
 
-      Cursor := Database.Search_Value (E => (43, 44));
-      Assert (Cursor.Result = DB.Status_Not_Found, "Value found in empty database");
+      Result := Database.Find (E => (43, 44));
+      Assert (Result.Result = DB.Status_Not_Found, "Value found in empty database");
 
-      Database.Insert (K => Cursor.Cursor, E => (43, 44));
-      Cursor := Search_Partial (Database, E => (43, 44));
-      Assert (Cursor.Result = DB.Status_OK, "Value not found database");
-      Assert (Database.Get (K => Cursor.Cursor) = (43, 44), "Invalid element for result of Search_Value");
+      Database.Insert (K => 14, E => (43, 44));
+      Result := Search_Partial (Database, E => (43, 44));
+      Assert (Result.Result = DB.Status_OK, "Value not found database");
+      Result := Database.Get (K => 14);
+      Assert (Result.Result = DB.Status_OK, "Value not found database");
+      Assert (Result.Data = (43, 44), "Invalid element for result of Search_Value");
    end Test_Search_Partial_Value;
 
    procedure Test_Nested_Insert (T : in out AUnit.Test_Cases.Test_Case'Class)
@@ -116,7 +121,7 @@ package body Test_Unique_Map is
       package Outer is new Parpen.Unique_Map (Element      => Inner.Database,
                                               Null_Element => Inner.Null_DB,
                                               Key          => Key);
-      Outer_Cursor : Outer.Option;
+      Outer_Result : Outer.Option;
       Database     : Outer.Database;
 
       procedure Set_Value (DB : in out Inner.Database);
@@ -127,9 +132,9 @@ package body Test_Unique_Map is
          Result : Inner.Option;
          use type Inner.Status;
       begin
-         Result := DB.Find (K => 11);
+         Result := DB.Get (K => 11);
          Assert (Result.Result = Inner.Status_Not_Found, "Element found in empty database");
-         DB.Insert (K => Result.Cursor, E => (1234, 5678));
+         DB.Insert (K => 11, E => (1234, 5678));
       end Set_Value;
 
       procedure Check_Value (DB : in out Inner.Database)
@@ -137,21 +142,23 @@ package body Test_Unique_Map is
          Result : Inner.Option;
          use type Inner.Status;
       begin
-         Result := DB.Find (K => 11);
+         Result := DB.Get (K => 11);
          Assert (Result.Result = Inner.Status_OK, "Element not found");
-         Assert (DB.Get (K => Result.Cursor) = (1234, 5678), "Invalid value");
+         Result := DB.Get (K => 11);
+         Assert (Result.Result = Inner.Status_OK, "Element not found");
+         Assert (Result.Data = (1234, 5678), "Invalid value");
       end Check_Value;
 
-      procedure Set_Value is new Outer.Apply (Operation => Set_Value);
-      procedure Check_Value is new Outer.Apply (Operation => Check_Value);
+      procedure Set_Value is new Outer.Generic_Apply (Operation => Set_Value);
+      procedure Check_Value is new Outer.Generic_Apply (Operation => Check_Value);
 
       use type Outer.Status;
    begin
       Database.Initialize;
 
-      Outer_Cursor := Database.Find (K => 14);
-      Assert (Outer_Cursor.Result = Outer.Status_Not_Found, "Element found in empty database");
-      Database.Insert (K => Outer_Cursor.Cursor, E => Inner.Null_DB);
+      Outer_Result := Database.Get (K => 14);
+      Assert (Outer_Result.Result = Outer.Status_Not_Found, "Element found in empty database");
+      Database.Insert (K => 14, E => Inner.Null_DB);
 
       Set_Value (DB => Database, K => 14);
       Check_Value (DB => Database, K => 14);

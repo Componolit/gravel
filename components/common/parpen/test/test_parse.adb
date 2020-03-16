@@ -268,10 +268,10 @@ package body Test_Parse is
       Result   : Resolve.Result_Type;
       Database : Resolve.Database;
       D2       : Resolve.Database;
-      Node     : Resolve.Node_Cursor_Option;
+      Node     : Resolve.Node_Option;
    begin
       D2.Initialize;
-      Node := D2.Find_Node (Owner => 1, Value => 16#1#);
+      Node := D2.Get_Node (Owner => 1, Value => 16#1#);
       D2.Add_Node (Cursor => Node, Owner => 1, Value => 16#1#);
 
       Database.Initialize;
@@ -316,10 +316,10 @@ package body Test_Parse is
       use type Resolve.Result_Type;
       Result   : Resolve.Result_Type;
       Database : Resolve.Database;
-      Node     : Resolve.Node_Cursor_Option;
+      Node     : Resolve.Node_Option;
    begin
       Database.Initialize;
-      Node := Database.Find_Node (Owner => 1, Value => 16#100000000000001#);
+      Node := Database.Get_Node (Owner => 1, Value => 16#100000000000001#);
       Assert (not Node.Found, "Node already present");
       Database.Add_Node (Cursor => Node, Owner => 1, Value => 16#100000000000001#);
 

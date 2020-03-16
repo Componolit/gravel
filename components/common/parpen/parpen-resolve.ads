@@ -21,11 +21,11 @@ is
        Result_Node_Not_Found,
        Result_Needless);
 
-   type Node_Cursor_Option is tagged private;
+   type Node_Option is tagged private;
    type Client_Cursor_Option is tagged private;
 
-   function Valid (N : Node_Cursor_Option) return Boolean;
-   function Found (N : Node_Cursor_Option) return Boolean;
+   function Valid (N : Node_Option) return Boolean;
+   function Found (N : Node_Option) return Boolean;
 
    type Database is tagged private;
 
@@ -34,13 +34,13 @@ is
    procedure Initialize (DB : in out Database) with
       Post => Initialized (DB);
 
-   function Find_Node (DB    : Database'Class;
-                       Owner : Client_ID;
-                       Value : Parpen.Protocol.Binder) return Node_Cursor_Option with
+   function Get_Node (DB    : Database'Class;
+                      Owner : Client_ID;
+                      Value : Parpen.Protocol.Binder) return Node_Option with
       Pre => Initialized (DB);
 
    procedure Add_Node (DB     : in out Database'Class;
-                       Cursor :        Node_Cursor_Option;
+                       Cursor :        Node_Option;
                        Owner  :        Client_ID;
                        Value  :        Parpen.Protocol.Binder) with
       Pre => Initialized (DB);
@@ -51,7 +51,7 @@ is
 
    procedure Add_Handle (DB    : in out Database'Class;
                          Owner :        Client_ID;
-                         Node  :        Node_Cursor_Option) with
+                         Node  :        Node_Option) with
       Pre => Initialized (DB);
 
    procedure Resolve_Handle (DB     :        Database;
@@ -77,16 +77,16 @@ private
                                              Null_Element => Null_Node);
    use type Node_DB.Status;
 
-   type Node_Cursor_Option is tagged
+   type Node_Option is tagged
       record
          Inner : Node_DB.Option;
       end record;
 
-   function Valid (N : Node_Cursor_Option) return Boolean is
+   function Valid (N : Node_Option) return Boolean is
       (N.Inner.Result = Node_DB.Status_OK
        or N.Inner.Result = Node_DB.Status_Not_Found);
 
-   function Found (N : Node_Cursor_Option) return Boolean is
+   function Found (N : Node_Option) return Boolean is
       (Valid (N)
        and N.Inner.Result /= Node_DB.Status_Not_Found);
 
@@ -118,9 +118,9 @@ private
    function Initialized (DB : Database) return Boolean is
       (DB.Nodes.Initialized and DB.Clients.Initialized);
 
-   function Find_Node (DB    : Database'Class;
-                       Owner : Client_ID;
-                       Value : Parpen.Protocol.Binder) return Node_Cursor_Option is
-      (Inner => DB.Nodes.Search_Value ((Owner => Owner, Value => Value)));
+   function Get_Node (DB    : Database'Class;
+                      Owner : Client_ID;
+                      Value : Parpen.Protocol.Binder) return Node_Option is
+      (Inner => DB.Nodes.Find ((Owner => Owner, Value => Value)));
 
 end Parpen.Resolve;
