@@ -165,11 +165,11 @@ package body Test_Parse is
       use type Resolve.Result_Type;
    begin
       Database.Initialize;
-      Database.Resolve_Handle (Buffer => Input,
-                               Offset => 0,
-                               Source => 1,
-                               Dest   => 2,
-                               Result => Result);
+      Database.Resolve_Handle (Buffer    => Input,
+                               Offset    => 0,
+                               Source_ID => 1,
+                               Dest_ID   => 2,
+                               Result    => Result);
       Assert (Result = Resolve.Result_Invalid_Source, "Invalid source not detected");
    end Test_Resolve_Invalid_Source;
 
@@ -184,11 +184,11 @@ package body Test_Parse is
    begin
       Database.Initialize;
       Database.Add_Client (ID => 1);
-      Database.Resolve_Handle (Buffer => Input,
-                               Offset => 0,
-                               Source => 1,
-                               Dest   => 2,
-                               Result => Result);
+      Database.Resolve_Handle (Buffer    => Input,
+                               Offset    => 0,
+                               Source_ID => 1,
+                               Dest_ID   => 2,
+                               Result    => Result);
       Assert (Result = Resolve.Result_Invalid_Destination, "Invalid destination not detected");
    end Test_Resolve_Invalid_Dest;
 
@@ -213,11 +213,11 @@ package body Test_Parse is
       Database.Initialize;
       Database.Add_Client (ID => 1);
       Database.Add_Client (ID => 2);
-      Database.Resolve_Handle (Buffer => Input,
-                               Offset => 0,
-                               Source => 2,
-                               Dest   => 1,
-                               Result => Result);
+      Database.Resolve_Handle (Buffer    => Input,
+                               Offset    => 0,
+                               Source_ID => 2,
+                               Dest_ID   => 1,
+                               Result    => Result);
       Assert (Result = Resolve.Result_Invalid_Handle, "Invalid node not detected: " & Result'Img);
    end Test_Resolve_Invalid_Node;
 
@@ -242,11 +242,11 @@ package body Test_Parse is
       Database.Initialize;
       Database.Add_Client (ID => 1);
       Database.Add_Client (ID => 2);
-      Database.Resolve_Handle (Buffer => Input,
-                               Offset => 0,
-                               Source => 2,
-                               Dest   => 1,
-                               Result => Result);
+      Database.Resolve_Handle (Buffer    => Input,
+                               Offset    => 0,
+                               Source_ID => 2,
+                               Dest_ID   => 1,
+                               Result    => Result);
       Assert (Result = Resolve.Result_Handle_Not_Found, "Missing node not detected: " & Result'Img);
    end Test_Resolve_Missing_Handle;
 
@@ -281,11 +281,11 @@ package body Test_Parse is
       --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
       Database.Add_Handle (Owner => 2, Node => Node);
 
-      Database.Resolve_Handle (Buffer => Input,
-                               Offset => 0,
-                               Source => 2,
-                               Dest   => 1,
-                               Result => Result);
+      Database.Resolve_Handle (Buffer    => Input,
+                               Offset    => 0,
+                               Source_ID => 2,
+                               Dest_ID   => 1,
+                               Result    => Result);
       Assert (Result = Resolve.Result_Node_Not_Found, "Missing node not detected");
    end Test_Resolve_Missing_Node;
 
@@ -329,11 +329,11 @@ package body Test_Parse is
       --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
       Database.Add_Handle (Owner => 2, Node => Node);
 
-      Database.Resolve_Handle (Buffer => Input,
-                               Offset => 0,
-                               Source => 2,
-                               Dest   => 1,
-                               Result => Result);
+      Database.Resolve_Handle (Buffer    => Input,
+                               Offset    => 0,
+                               Source_ID => 2,
+                               Dest_ID   => 1,
+                               Result    => Result);
       Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
       Assert (Input = Expected, "Binder not resolved correctly");
    end Test_Resolve_Handle;

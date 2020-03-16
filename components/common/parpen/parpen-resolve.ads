@@ -54,12 +54,12 @@ is
                          Node  :        Node_Option) with
       Pre => Initialized (DB);
 
-   procedure Resolve_Handle (DB     :        Database;
-                             Buffer : in out Types.Bytes_Ptr;
-                             Offset :        Types.Bit_Length;
-                             Source :        Client_ID;
-                             Dest   :        Client_ID;
-                             Result :    out Result_Type) with
+   procedure Resolve_Handle (DB        :        Database;
+                             Buffer    : in out Types.Bytes_Ptr;
+                             Offset    :        Types.Bit_Length;
+                             Source_ID :        Client_ID;
+                             Dest_ID   :        Client_ID;
+                             Result    :    out Result_Type) with
       Pre => Initialized (DB);
 
 private

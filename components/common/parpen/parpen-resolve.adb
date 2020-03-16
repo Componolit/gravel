@@ -70,12 +70,12 @@ package body Parpen.Resolve is
    -- Resolve_Handle --
    --------------------
 
-   procedure Resolve_Handle (DB     :        Database;
-                             Buffer : in out Types.Bytes_Ptr;
-                             Offset :        Types.Bit_Length;
-                             Source :        Client_ID;
-                             Dest   :        Client_ID;
-                             Result :    out Result_Type)
+   procedure Resolve_Handle (DB        :        Database;
+                             Buffer    : in out Types.Bytes_Ptr;
+                             Offset    :        Types.Bit_Length;
+                             Source_ID :        Client_ID;
+                             Dest_ID   :        Client_ID;
+                             Result    :    out Result_Type)
    is
       Context : IBinder_Package.Context := IBinder_Package.Create;
       use type Types.Bit_Length;
@@ -83,20 +83,21 @@ package body Parpen.Resolve is
       use type Client_DB.Status;
       use type Handle_DB.Status;
 
-      S, D   : Client_DB.Option;
-      N      : Node_DB.Option;
-      H      : Handle_DB.Option;
-      Handle : Parpen.Protocol.Handle;
-      H_ID   : Handle_ID;
+      Source_Handle    : Handle_DB.Option;
+      Source_Handle_ID : Handle_ID;
+      Source           : Client_DB.Option;
+      Dest             : Client_DB.Option;
+      Node             : Node_DB.Option;
+      Handle           : Parpen.Protocol.Handle;
    begin
-      S := DB.Clients.Get (Source);
-      if S.Result /= Client_DB.Status_OK then
+      Source := DB.Clients.Get (Source_ID);
+      if Source.Result /= Client_DB.Status_OK then
          Result := Result_Invalid_Source;
          return;
       end if;
 
-      D := DB.Clients.Get (Dest);
-      if D.Result /= Client_DB.Status_OK then
+      Dest := DB.Clients.Get (Dest_ID);
+      if Dest.Result /= Client_DB.Status_OK then
          Result := Result_Invalid_Destination;
          return;
       end if;
@@ -128,18 +129,26 @@ package body Parpen.Resolve is
          return;
       end if;
 
-      H_ID := Handle_ID'Val (Parpen.Protocol.Handle'Pos (Handle));
+      Source_Handle_ID := Handle_ID'Val (Parpen.Protocol.Handle'Pos (Handle));
 
-      H := S.Data.Handles.Get (H_ID);
-      if H.Result /= Handle_DB.Status_OK then
+      Source_Handle := Source.Data.Handles.Get (Source_Handle_ID);
+      if Source_Handle.Result /= Handle_DB.Status_OK then
          Result := Result_Handle_Not_Found;
          return;
       end if;
 
-      N := DB.Nodes.Get (H.Data);
-      if N.Result /= Node_DB.Status_OK then
+      Node := DB.Nodes.Get (Source_Handle.Data);
+      if Node.Result /= Node_DB.Status_OK then
          Result := Result_Node_Not_Found;
          return;
+      end if;
+
+      if Node.Data.Owner = Dest_ID then
+         --  Replace handle by binder to N.Data.Value
+         null;
+      else
+         --  Replace handle by handle in destination handle list
+         null;
       end if;
 
       Result := Result_Invalid;
