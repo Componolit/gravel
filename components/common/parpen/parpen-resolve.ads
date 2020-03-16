@@ -18,6 +18,7 @@ is
        Result_Invalid_Destination,
        Result_Invalid_Handle,
        Result_Handle_Not_Found,
+       Result_Node_Not_Found,
        Result_Needless);
 
    type Node_Cursor_Option is tagged private;

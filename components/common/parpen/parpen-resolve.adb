@@ -89,9 +89,10 @@ package body Parpen.Resolve is
       use type Handle_DB.Status;
 
       S, D   : Client_DB.Option;
-      --  N      : Node_DB.Option;
+      N      : Node_DB.Option;
       H      : Handle_DB.Option;
       Handle : Parpen.Protocol.Handle;
+      H_ID   : Handle_ID;
    begin
       S := DB.Clients.Find (Source);
       if S.Result /= Client_DB.Status_OK then
@@ -132,9 +133,17 @@ package body Parpen.Resolve is
          return;
       end if;
 
-      H := DB.Clients.Get (S.Cursor).Handles.Find (Handle_ID'Val (Parpen.Protocol.Handle'Pos (Handle)));
+      H_ID := Handle_ID'Val (Parpen.Protocol.Handle'Pos (Handle));
+
+      H := DB.Clients.Get (S.Cursor).Handles.Find (H_ID);
       if H.Result /= Handle_DB.Status_OK then
          Result := Result_Handle_Not_Found;
+         return;
+      end if;
+
+      N := DB.Nodes.Find (DB.Clients.Get (S.Cursor).Handles.Get (H.Cursor));
+      if N.Result /= Node_DB.Status_OK then
+         Result := Result_Node_Not_Found;
          return;
       end if;
 

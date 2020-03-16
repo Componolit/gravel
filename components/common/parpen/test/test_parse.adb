@@ -222,7 +222,7 @@ package body Test_Parse is
    end Test_Resolve_Invalid_Node;
 
 
-   procedure Test_Resolve_Missing_Node (T : in out AUnit.Test_Cases.Test_Case'Class)
+   procedure Test_Resolve_Missing_Handle (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
       Input : String_Ptr :=
@@ -248,6 +248,45 @@ package body Test_Parse is
                                Dest   => 1,
                                Result => Result);
       Assert (Result = Resolve.Result_Handle_Not_Found, "Missing node not detected: " & Result'Img);
+   end Test_Resolve_Missing_Handle;
+
+
+   procedure Test_Resolve_Missing_Node (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Input : String_Ptr :=
+      new String'(
+         "wh*" & 16#85#                      -- Weak handle
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#00# & 16#00# & 16#00# & 16#12# -- handle (value: 16#12#)
+         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+      );
+
+      use type Resolve.Result_Type;
+      Result   : Resolve.Result_Type;
+      Database : Resolve.Database;
+      D2       : Resolve.Database;
+      Node     : Resolve.Node_Cursor_Option;
+   begin
+      D2.Initialize;
+      Node := D2.Find_Node (Owner => 1, Value => 16#1#);
+      D2.Add_Node (Cursor => Node, Owner => 1, Value => 16#1#);
+
+      Database.Initialize;
+      Database.Add_Client (ID => 1);
+      Database.Add_Client (ID => 2);
+
+      --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
+      Database.Add_Handle (Owner => 2, Node => Node);
+
+      Database.Resolve_Handle (Buffer => Input,
+                               Offset => 0,
+                               Source => 2,
+                               Dest   => 1,
+                               Result => Result);
+      Assert (Result = Resolve.Result_Node_Not_Found, "Missing node not detected");
    end Test_Resolve_Missing_Node;
 
 
