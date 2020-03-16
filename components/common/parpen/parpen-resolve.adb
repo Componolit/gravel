@@ -89,6 +89,8 @@ package body Parpen.Resolve is
       Dest             : Client_DB.Option;
       Node             : Node_DB.Option;
       Handle           : Parpen.Protocol.Handle;
+      Cookie           : Parpen.Protocol.Cookie;
+      Flags            : Parpen.Protocol.Flat_Binder_Flags;
    begin
       Source := DB.Clients.Get (Source_ID);
       if Source.Result /= Client_DB.Status_OK then
@@ -145,7 +147,22 @@ package body Parpen.Resolve is
 
       if Node.Data.Owner = Dest_ID then
          --  Replace handle by binder to N.Data.Value
-         null;
+         Cookie := IBinder_Package.Get_Cookie (Context);
+         Flags  := IBinder_Package.Get_Flags (Context);
+
+         if IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_HANDLE then
+            IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_WEAK_BINDER);
+         elsif IBinder_Package.Get_Kind (Context) /= Parpen.Protocol.BK_STRONG_HANDLE then
+            IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_STRONG_BINDER);
+         end if;
+         IBinder_Package.Set_Arity (Context, Parpen.Protocol.BA_SINGLE);
+         IBinder_Package.Set_Tag (Context, 16#85#);
+         IBinder_Package.Set_Flags (Context, Flags);
+         IBinder_Package.Set_Binder (Context, Node.Data.Value);
+         IBinder_Package.Set_Cookie (Context, Cookie);
+         IBinder_Package.Take_Buffer (Context, Buffer);
+         Result := Result_OK;
+         return;
       else
          --  Replace handle by handle in destination handle list
          null;

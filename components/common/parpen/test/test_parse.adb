@@ -290,7 +290,7 @@ package body Test_Parse is
    end Test_Resolve_Missing_Node;
 
 
-   procedure Test_Resolve_Handle (T : in out AUnit.Test_Cases.Test_Case'Class)
+   procedure Test_Resolve_Handle_To_Binder (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
       Input : String_Ptr :=
@@ -318,6 +318,7 @@ package body Test_Parse is
       Database : Resolve.Database;
       Node     : Resolve.Node_Option;
    begin
+      Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
       Node := Database.Get_Node (Owner => 1, Value => 16#100000000000001#);
       Assert (not Node.Found, "Node already present");
@@ -335,8 +336,8 @@ package body Test_Parse is
                                Dest_ID   => 1,
                                Result    => Result);
       Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
-      Assert (Input = Expected, "Binder not resolved correctly");
-   end Test_Resolve_Handle;
+      Assert (Input.all = Expected.all, "Binder not resolved correctly");
+   end Test_Resolve_Handle_To_Binder;
 
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
@@ -354,7 +355,7 @@ package body Test_Parse is
       Register_Routine (T, Test_Resolve_Invalid_Dest'Access, "Resolve invalid destination");
       Register_Routine (T, Test_Resolve_Invalid_Node'Access, "Resolve invalid node");
       Register_Routine (T, Test_Resolve_Missing_Node'Access, "Resolve missing node");
-      Register_Routine (T, Test_Resolve_Handle'Access, "Resolve handle");
+      Register_Routine (T, Test_Resolve_Handle_To_Binder'Access, "Resolve handle to binder");
    end Register_Tests;
 
 end Test_Parse;
