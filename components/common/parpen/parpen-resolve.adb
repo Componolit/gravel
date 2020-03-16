@@ -66,16 +66,16 @@ package body Parpen.Resolve is
       Add_Node (DB.Clients, Owner);
    end Add_Handle;
 
-   --------------------
-   -- Resolve_Handle --
-   --------------------
+   -------------
+   -- Resolve --
+   -------------
 
-   procedure Resolve_Handle (DB        :        Database;
-                             Buffer    : in out Types.Bytes_Ptr;
-                             Offset    :        Types.Bit_Length;
-                             Source_ID :        Client_ID;
-                             Dest_ID   :        Client_ID;
-                             Result    :    out Result_Type)
+   procedure Resolve (DB        :        Database;
+                      Buffer    : in out Types.Bytes_Ptr;
+                      Offset    :        Types.Bit_Length;
+                      Source_ID :        Client_ID;
+                      Dest_ID   :        Client_ID;
+                      Result    :    out Result_Type)
    is
       Context : IBinder_Package.Context := IBinder_Package.Create;
       use type Types.Bit_Length;
@@ -169,6 +169,6 @@ package body Parpen.Resolve is
       end if;
 
       Result := Result_Invalid;
-   end Resolve_Handle;
+   end Resolve;
 
 end Parpen.Resolve;
