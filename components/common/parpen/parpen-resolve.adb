@@ -4,6 +4,18 @@ package body Parpen.Resolve is
 
    package IBinder_Package is new Parpen.Protocol.Generic_IBinder (Types);
 
+   procedure Resolve_Handle (DB        : in     Database;
+                             Context   : in out IBinder_Package.Context;
+                             Source_ID :        Client_ID;
+                             Dest_ID   :        Client_ID;
+                             Result    :    out Result_Type);
+
+   procedure Resolve_Binder (DB        : in out Database;
+                             Context   : in out IBinder_Package.Context;
+                             Source_ID :        Client_ID;
+                             Dest_ID   :        Client_ID;
+                             Result    :    out Result_Type);
+
    ----------------
    -- Initialize --
    ----------------
@@ -20,24 +32,29 @@ package body Parpen.Resolve is
    --------------
 
    procedure Add_Node (DB     : in out Database'Class;
-                       Cursor :        Node_Option;
+                       Cursor : in out Node_Option;
                        Owner  :        Client_ID;
                        Value  :        Parpen.Protocol.Binder)
    is
+      E : Node_DB.Option := (Result   => Node_DB.Status_Not_Found,
+                             Data     => (Owner, Value),
+                             Position => Cursor.Inner.Position);
    begin
-      DB.Nodes.Insert (K => Cursor.Inner.Position,
-                       E => (Owner, Value));
+      DB.Nodes.Insert (E);
    end Add_Node;
 
    ----------------
    -- Add_Client --
    ----------------
 
-   procedure Add_Client (DB : in out Database'Class;
-                         ID :        Client_ID)
+   procedure Add_Client (DB  : in out Database'Class;
+                         ID  :        Client_ID)
    is
+      E : Client_DB.Option := (Result   => Client_DB.Status_Not_Found,
+                               Position => ID,
+                               Data     => (Handles => Handle_DB.Null_DB));
    begin
-      DB.Clients.Insert (K => ID, E => (Handles => Handle_DB.Null_DB));
+      DB.Clients.Insert (E);
    end Add_Client;
 
    ----------------
@@ -57,7 +74,8 @@ package body Parpen.Resolve is
       begin
          Result := Client.Handles.Find (Node.Inner.Position);
          if Result.Result = Handle_DB.Status_Not_Found then
-            Client.Handles.Insert (K => Result.Position, E => Node.Inner.Position);
+            Result.Data := Node.Inner.Position;
+            Client.Handles.Insert (Result);
          end if;
       end Add_Node;
 
@@ -66,11 +84,131 @@ package body Parpen.Resolve is
       Add_Node (DB.Clients, Owner);
    end Add_Handle;
 
+   --------------------
+   -- Resolve_Handle --
+   --------------------
+
+   procedure Resolve_Binder (DB        : in out Database;
+                             Context   : in out IBinder_Package.Context;
+                             Source_ID :        Client_ID;
+                             Dest_ID   :        Client_ID;
+                             Result    :    out Result_Type)
+   is
+      Dest   : Client_DB.Option;
+      Node   : Node_DB.Option;
+      Handle : Handle_DB.Option;
+      Binder : Parpen.Protocol.Binder;
+      Cookie : Parpen.Protocol.Cookie;
+      Flags  : Parpen.Protocol.Flat_Binder_Flags;
+      use type Handle_DB.Status;
+      use type Parpen.Protocol.Binder_Kind;
+   begin
+      Binder := IBinder_Package.Get_Binder (Context);
+      Node := DB.Nodes.Find ((Source_ID, Binder));
+      if Node.Result = Node_DB.Status_Not_Found then
+         Node.Data := (Source_ID, Binder);
+         DB.Nodes.Insert (Node);
+      end if;
+
+      Dest := DB.Clients.Get (Dest_ID);
+
+      Handle := Dest.Data.Handles.Find (Node.Position);
+      if Handle.Result = Handle_DB.Status_Not_Found then
+         Handle.Data := Node.Position;
+         Dest.Data.Handles.Insert (Handle);
+      end if;
+
+      --  Replace binder by handle
+      Cookie := IBinder_Package.Get_Cookie (Context);
+      Flags  := IBinder_Package.Get_Flags (Context);
+
+      if IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_BINDER then
+         IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_WEAK_HANDLE);
+      elsif IBinder_Package.Get_Kind (Context) /= Parpen.Protocol.BK_STRONG_BINDER then
+         IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_STRONG_HANDLE);
+      end if;
+      IBinder_Package.Set_Arity (Context, Parpen.Protocol.BA_SINGLE);
+      IBinder_Package.Set_Tag (Context, 16#85#);
+      IBinder_Package.Set_Flags (Context, Flags);
+      IBinder_Package.Set_Handle (Context, Parpen.Protocol.Handle'Val (Handle_ID'Pos (Handle.Position)));
+      IBinder_Package.Set_Unused_Padding (Context, 0);
+      IBinder_Package.Set_Cookie (Context, Cookie);
+      Result := Result_OK;
+   end Resolve_Binder;
+
+   --------------------
+   -- Resolve_Handle --
+   --------------------
+
+   procedure Resolve_Handle (DB        : in     Database;
+                             Context   : in out IBinder_Package.Context;
+                             Source_ID :        Client_ID;
+                             Dest_ID   :        Client_ID;
+                             Result    :    out Result_Type)
+   is
+      Source           : Client_DB.Option;
+      Source_Handle    : Handle_DB.Option;
+      Source_Handle_ID : Handle_ID;
+      Handle           : Parpen.Protocol.Handle;
+      Node             : Node_DB.Option;
+      Cookie           : Parpen.Protocol.Cookie;
+      Flags            : Parpen.Protocol.Flat_Binder_Flags;
+      use type Handle_DB.Status;
+      use type Parpen.Protocol.Binder_Kind;
+   begin
+      Handle := IBinder_Package.Get_Handle (Context);
+      if
+         Parpen.Protocol.Handle'Pos (Handle) > Handle_ID'Pos (Handle_ID'Last)
+         or Parpen.Protocol.Handle'Pos (Handle) < Handle_ID'Pos (Handle_ID'First)
+      then
+         Result := Result_Invalid_Handle;
+         return;
+      end if;
+
+      Source_Handle_ID := Handle_ID'Val (Parpen.Protocol.Handle'Pos (Handle));
+
+      Source := DB.Clients.Get (Source_ID);
+      Source_Handle := Source.Data.Handles.Get (Source_Handle_ID);
+      if Source_Handle.Result /= Handle_DB.Status_OK then
+         Result := Result_Handle_Not_Found;
+         return;
+      end if;
+
+      Node := DB.Nodes.Get (Source_Handle.Data);
+      if Node.Result /= Node_DB.Status_OK then
+         Result := Result_Node_Not_Found;
+         return;
+      end if;
+
+      if Node.Data.Owner = Dest_ID then
+         Cookie := IBinder_Package.Get_Cookie (Context);
+         Flags  := IBinder_Package.Get_Flags (Context);
+
+         if IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_HANDLE then
+            IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_WEAK_BINDER);
+         elsif IBinder_Package.Get_Kind (Context) /= Parpen.Protocol.BK_STRONG_HANDLE then
+            IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_STRONG_BINDER);
+         end if;
+         IBinder_Package.Set_Arity (Context, Parpen.Protocol.BA_SINGLE);
+         IBinder_Package.Set_Tag (Context, 16#85#);
+         IBinder_Package.Set_Flags (Context, Flags);
+         IBinder_Package.Set_Binder (Context, Node.Data.Value);
+         IBinder_Package.Set_Cookie (Context, Cookie);
+         Result := Result_OK;
+         return;
+      else
+         --  Replace handle by handle in destination handle list
+         null;
+      end if;
+
+      Result := Result_Invalid;
+   end Resolve_Handle;
+
    -------------
    -- Resolve --
    -------------
 
-   procedure Resolve (DB        :        Database;
+   procedure Resolve (DB        : in out Database;
                       Buffer    : in out Types.Bytes_Ptr;
                       Offset    :        Types.Bit_Length;
                       Source_ID :        Client_ID;
@@ -78,20 +216,14 @@ package body Parpen.Resolve is
                       Result    :    out Result_Type)
    is
       Context : IBinder_Package.Context := IBinder_Package.Create;
-      use type Types.Bit_Length;
-      use type Parpen.Protocol.Binder_Kind;
-      use type Client_DB.Status;
-      use type Handle_DB.Status;
+      Source : Client_DB.Option;
+      Dest   : Client_DB.Option;
 
-      Source_Handle    : Handle_DB.Option;
-      Source_Handle_ID : Handle_ID;
-      Source           : Client_DB.Option;
-      Dest             : Client_DB.Option;
-      Node             : Node_DB.Option;
-      Handle           : Parpen.Protocol.Handle;
-      Cookie           : Parpen.Protocol.Cookie;
-      Flags            : Parpen.Protocol.Flat_Binder_Flags;
+      use type Types.Bit_Length;
+      use type Client_DB.Status;
+      use type Parpen.Protocol.Binder_Kind;
    begin
+      Result := Result_Invalid;
       Source := DB.Clients.Get (Source_ID);
       if Source.Result /= Client_DB.Status_OK then
          Result := Result_Invalid_Source;
@@ -110,65 +242,23 @@ package body Parpen.Resolve is
                                   Types.Last_Bit_Index (Buffer'Last));
       IBinder_Package.Verify_Message (Context);
       if not IBinder_Package.Valid_Message (Context) then
-         Result := Result_Invalid;
          return;
       end if;
 
       if
-         IBinder_Package.Get_Kind (Context) /= Parpen.Protocol.BK_WEAK_HANDLE
-         and IBinder_Package.Get_Kind (Context) /= Parpen.Protocol.BK_STRONG_HANDLE
+         IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_HANDLE
+         or IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_STRONG_HANDLE
       then
-         Result := Result_Needless;
-         return;
-      end if;
-
-      Handle := IBinder_Package.Get_Handle (Context);
-      if
-         Parpen.Protocol.Handle'Pos (Handle) > Handle_ID'Pos (Handle_ID'Last)
-         or Parpen.Protocol.Handle'Pos (Handle) < Handle_ID'Pos (Handle_ID'First)
+         Resolve_Handle (DB, Context, Source_ID, Dest_ID, Result);
+      elsif
+         IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_BINDER
+         or IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_STRONG_BINDER
       then
-         Result := Result_Invalid_Handle;
-         return;
-      end if;
-
-      Source_Handle_ID := Handle_ID'Val (Parpen.Protocol.Handle'Pos (Handle));
-
-      Source_Handle := Source.Data.Handles.Get (Source_Handle_ID);
-      if Source_Handle.Result /= Handle_DB.Status_OK then
-         Result := Result_Handle_Not_Found;
-         return;
-      end if;
-
-      Node := DB.Nodes.Get (Source_Handle.Data);
-      if Node.Result /= Node_DB.Status_OK then
-         Result := Result_Node_Not_Found;
-         return;
-      end if;
-
-      if Node.Data.Owner = Dest_ID then
-         --  Replace handle by binder to N.Data.Value
-         Cookie := IBinder_Package.Get_Cookie (Context);
-         Flags  := IBinder_Package.Get_Flags (Context);
-
-         if IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_HANDLE then
-            IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_WEAK_BINDER);
-         elsif IBinder_Package.Get_Kind (Context) /= Parpen.Protocol.BK_STRONG_HANDLE then
-            IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_STRONG_BINDER);
-         end if;
-         IBinder_Package.Set_Arity (Context, Parpen.Protocol.BA_SINGLE);
-         IBinder_Package.Set_Tag (Context, 16#85#);
-         IBinder_Package.Set_Flags (Context, Flags);
-         IBinder_Package.Set_Binder (Context, Node.Data.Value);
-         IBinder_Package.Set_Cookie (Context, Cookie);
-         IBinder_Package.Take_Buffer (Context, Buffer);
-         Result := Result_OK;
-         return;
+         Resolve_Binder (DB, Context, Source_ID, Dest_ID, Result);
       else
-         --  Replace handle by handle in destination handle list
-         null;
+         Result := Result_Needless;
       end if;
-
-      Result := Result_Invalid;
+      IBinder_Package.Take_Buffer (Context, Buffer);
    end Resolve;
 
 end Parpen.Resolve;

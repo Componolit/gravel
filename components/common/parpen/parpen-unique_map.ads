@@ -10,9 +10,8 @@ is
    type Option (Result : Status := Status_Invalid) is
    record
       case Result is
-         when Status_OK =>
+         when Status_OK | Status_Not_Found =>
             Data     : Element;
-         when Status_Not_Found =>
             Position : Key;
          when Status_Invalid =>
             null;
@@ -43,8 +42,9 @@ is
    procedure Generic_Apply (DB : in out Database; K : Key) with
       Pre => Initialized (DB);
 
-   procedure Insert (DB : in out Database; K : Key; E : Element) with
-      Pre => Initialized (DB);
+   procedure Insert (DB : in out Database; E : in out Option) with
+      Pre => Initialized (DB)
+             and E.Result = Status_Not_Found;
 
    procedure Delete (DB : in out Database; K : Key) with
       Pre => Initialized (DB);

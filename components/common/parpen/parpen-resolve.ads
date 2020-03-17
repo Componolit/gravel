@@ -40,13 +40,13 @@ is
       Pre => Initialized (DB);
 
    procedure Add_Node (DB     : in out Database'Class;
-                       Cursor :        Node_Option;
+                       Cursor : in out Node_Option;
                        Owner  :        Client_ID;
                        Value  :        Parpen.Protocol.Binder) with
       Pre => Initialized (DB);
 
-   procedure Add_Client (DB  : in out Database'Class;
-                         ID  :        Client_ID) with
+   procedure Add_Client (DB : in out Database'Class;
+                         ID :        Client_ID) with
       Pre => Initialized (DB);
 
    procedure Add_Handle (DB    : in out Database'Class;
@@ -54,7 +54,7 @@ is
                          Node  :        Node_Option) with
       Pre => Initialized (DB);
 
-   procedure Resolve (DB        :        Database;
+   procedure Resolve (DB        : in out Database;
                       Buffer    : in out Types.Bytes_Ptr;
                       Offset    :        Types.Bit_Length;
                       Source_ID :        Client_ID;

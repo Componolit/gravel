@@ -18,9 +18,12 @@ package body Test_Parse is
                                               Bit_Length => Bit_Length);
    package IBinder_Package is new Parpen.Protocol.Generic_IBinder (Types);
 
-   type Client_ID is new Natural range 1 .. 10;
-   type Node_ID is new Natural range 1 .. 50;
-   type Handle_ID is new Natural range 18 .. 50;
+   type Client_ID is new Natural range 11 .. 21;
+   Client_1 : constant Client_ID := Client_ID'First + 1;
+   Client_2 : constant Client_ID := Client_ID'Last - 1;
+
+   type Node_ID is new Natural range 7 .. 51;
+   type Handle_ID is new Natural range 18 .. 47;
 
    package Resolve is new Parpen.Resolve (Client_ID      => Client_ID,
                                           Null_Client_ID => Client_ID'Last,
@@ -167,8 +170,8 @@ package body Test_Parse is
       Database.Initialize;
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
-                        Source_ID => 1,
-                        Dest_ID   => 2,
+                        Source_ID => Client_1,
+                        Dest_ID   => Client_2,
                         Result    => Result);
       Assert (Result = Resolve.Result_Invalid_Source, "Invalid source not detected");
    end Test_Resolve_Invalid_Source;
@@ -183,11 +186,11 @@ package body Test_Parse is
       use type Resolve.Result_Type;
    begin
       Database.Initialize;
-      Database.Add_Client (ID => 1);
+      Database.Add_Client (ID => Client_1);
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
-                        Source_ID => 1,
-                        Dest_ID   => 2,
+                        Source_ID => Client_1,
+                        Dest_ID   => Client_2,
                         Result    => Result);
       Assert (Result = Resolve.Result_Invalid_Destination, "Invalid destination not detected");
    end Test_Resolve_Invalid_Dest;
@@ -211,12 +214,12 @@ package body Test_Parse is
       Database : Resolve.Database;
    begin
       Database.Initialize;
-      Database.Add_Client (ID => 1);
-      Database.Add_Client (ID => 2);
+      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_2);
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
-                        Source_ID => 2,
-                        Dest_ID   => 1,
+                        Source_ID => Client_2,
+                        Dest_ID   => Client_1,
                         Result    => Result);
       Assert (Result = Resolve.Result_Invalid_Handle, "Invalid node not detected: " & Result'Img);
    end Test_Resolve_Invalid_Node;
@@ -240,12 +243,12 @@ package body Test_Parse is
       Database : Resolve.Database;
    begin
       Database.Initialize;
-      Database.Add_Client (ID => 1);
-      Database.Add_Client (ID => 2);
+      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_2);
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
-                        Source_ID => 2,
-                        Dest_ID   => 1,
+                        Source_ID => Client_2,
+                        Dest_ID   => Client_1,
                         Result    => Result);
       Assert (Result = Resolve.Result_Handle_Not_Found, "Missing node not detected: " & Result'Img);
    end Test_Resolve_Missing_Handle;
@@ -271,20 +274,20 @@ package body Test_Parse is
       Node     : Resolve.Node_Option;
    begin
       D2.Initialize;
-      Node := D2.Get_Node (Owner => 1, Value => 16#1#);
-      D2.Add_Node (Cursor => Node, Owner => 1, Value => 16#1#);
+      Node := D2.Get_Node (Owner => Client_1, Value => 16#1#);
+      D2.Add_Node (Cursor => Node, Owner => Client_1, Value => 16#1#);
 
       Database.Initialize;
-      Database.Add_Client (ID => 1);
-      Database.Add_Client (ID => 2);
+      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_2);
 
       --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
-      Database.Add_Handle (Owner => 2, Node => Node);
+      Database.Add_Handle (Owner => Client_2, Node => Node);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
-                        Source_ID => 2,
-                        Dest_ID   => 1,
+                        Source_ID => Client_2,
+                        Dest_ID   => Client_1,
                         Result    => Result);
       Assert (Result = Resolve.Result_Node_Not_Found, "Missing node not detected");
    end Test_Resolve_Missing_Node;
@@ -320,20 +323,20 @@ package body Test_Parse is
    begin
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
-      Node := Database.Get_Node (Owner => 1, Value => 16#100000000000001#);
+      Node := Database.Get_Node (Owner => Client_1, Value => 16#100000000000001#);
       Assert (not Node.Found, "Node already present");
-      Database.Add_Node (Cursor => Node, Owner => 1, Value => 16#100000000000001#);
+      Database.Add_Node (Cursor => Node, Owner => Client_1, Value => 16#100000000000001#);
 
-      Database.Add_Client (ID => 1);
-      Database.Add_Client (ID => 2);
+      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_2);
 
       --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
-      Database.Add_Handle (Owner => 2, Node => Node);
+      Database.Add_Handle (Owner => Client_2, Node => Node);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
-                        Source_ID => 2,
-                        Dest_ID   => 1,
+                        Source_ID => Client_2,
+                        Dest_ID   => Client_1,
                         Result    => Result);
       Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
@@ -371,13 +374,13 @@ package body Test_Parse is
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => 1);
-      Database.Add_Client (ID => 2);
+      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_2);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
-                        Source_ID => 1,
-                        Dest_ID   => 2,
+                        Source_ID => Client_1,
+                        Dest_ID   => Client_2,
                         Result    => Result);
       Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
