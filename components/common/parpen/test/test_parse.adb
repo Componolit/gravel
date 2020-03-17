@@ -21,6 +21,7 @@ package body Test_Parse is
    type Client_ID is new Natural range 11 .. 21;
    Client_1 : constant Client_ID := Client_ID'First + 1;
    Client_2 : constant Client_ID := Client_ID'Last - 1;
+   Client_3 : constant Client_ID := Client_ID'Last - 2;
 
    type Node_ID is new Natural range 7 .. 51;
    type Handle_ID is new Natural range 18 .. 47;
@@ -282,7 +283,7 @@ package body Test_Parse is
       Database.Add_Client (ID => Client_2);
 
       --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
-      Database.Add_Handle (Owner => Client_2, Node => Node);
+      Database.Add_Handle (ID => Client_2, Node => Node);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -331,7 +332,7 @@ package body Test_Parse is
       Database.Add_Client (ID => Client_2);
 
       --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
-      Database.Add_Handle (Owner => Client_2, Node => Node);
+      Database.Add_Handle (ID => Client_2, Node => Node);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -386,6 +387,60 @@ package body Test_Parse is
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Resolve_Binder_To_Handle;
 
+   procedure Test_Resolve_Handle_To_Handle (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Input : String_Ptr :=
+      new String'(
+         "wh*" & 16#85#                      -- Weak handle
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#00# & 16#00# & 16#00# & 16#12# -- handle (value: 16#12#)
+         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+      );
+
+      Expected : constant String_Ptr :=
+      new String'(
+         "wh*" & 16#85#                      -- Weak binder
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#00# & 16#00# & 16#00# & 16#13# -- handle (value: 16#13#)
+         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+      );
+
+      use type Resolve.Result_Type;
+      Result     : Resolve.Result_Type;
+      Database   : Resolve.Database;
+      Node       : Resolve.Node_Option;
+      Other_Node : Resolve.Node_Option;
+   begin
+      Assert (Input.all /= Expected.all, "Binder do not differ");
+      Database.Initialize;
+
+      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_2);
+      Database.Add_Client (ID => Client_3);
+
+      Node := Database.Get_Node (Owner => Client_3, Value => 16#100000000000001#);
+      Assert (not Node.Found, "Node already present");
+      Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#);
+      Database.Add_Handle (ID => Client_1, Node => Node);
+
+      Other_Node := Database.Get_Node (Owner => Client_2, Value => 16#100000000000123#);
+      Database.Add_Node (Cursor => Other_Node, Owner => Client_2, Value => 16#100000000000123#);
+      Database.Add_Handle (ID => Client_2, Node => Other_Node);
+
+      Database.Resolve (Buffer    => Input,
+                        Offset    => 0,
+                        Source_ID => Client_1,
+                        Dest_ID   => Client_2,
+                        Result    => Result);
+      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
+      Assert (Input.all = Expected.all, "Binder not resolved correctly");
+   end Test_Resolve_Handle_To_Handle;
+
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
    begin
@@ -404,6 +459,7 @@ package body Test_Parse is
       Register_Routine (T, Test_Resolve_Missing_Node'Access, "Resolve missing node");
       Register_Routine (T, Test_Resolve_Handle_To_Binder'Access, "Resolve handle to binder");
       Register_Routine (T, Test_Resolve_Binder_To_Handle'Access, "Resolve binder to handle");
+      Register_Routine (T, Test_Resolve_Handle_To_Handle'Access, "Resolve handle to handle");
    end Register_Tests;
 
 end Test_Parse;

@@ -22,5 +22,6 @@ private
    procedure Test_Resolve_Missing_Node (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Resolve_Handle_To_Binder (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Resolve_Binder_To_Handle (T : in out AUnit.Test_Cases.Test_Case'Class);
+   procedure Test_Resolve_Handle_To_Handle (T : in out AUnit.Test_Cases.Test_Case'Class);
 
 end Test_Parse;

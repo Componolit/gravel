@@ -50,7 +50,7 @@ is
       Pre => Initialized (DB);
 
    procedure Add_Handle (DB    : in out Database'Class;
-                         Owner :        Client_ID;
+                         ID    :        Client_ID;
                          Node  :        Node_Option) with
       Pre => Initialized (DB);
 
