@@ -441,6 +441,70 @@ package body Test_Parse is
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Resolve_Handle_To_Handle;
 
+   procedure Test_Pass_Handle_To_Non_Owner (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Input : String_Ptr :=
+      new String'(
+         "wh*" & 16#85#                      -- Weak handle
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#00# & 16#00# & 16#00# & 16#12# -- handle (value: 16#12#)
+         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+      );
+      Output : constant String := Input.all;
+
+      Expected : constant String_Ptr :=
+      new String'(
+         "wh*" & 16#85#                      -- Weak binder
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#00# & 16#00# & 16#00# & 16#13# -- handle (value: 16#13#)
+         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+      );
+
+      use type Resolve.Result_Type;
+      Result     : Resolve.Result_Type;
+      Database   : Resolve.Database;
+      Node       : Resolve.Node_Option;
+      Other_Node : Resolve.Node_Option;
+   begin
+      Assert (Input.all /= Expected.all, "Binder do not differ");
+      Database.Initialize;
+
+      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_2);
+      Database.Add_Client (ID => Client_3);
+
+      Node := Database.Get_Node (Owner => Client_3, Value => 16#100000000000001#);
+      Assert (not Node.Found, "Node already present");
+      Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#);
+      Database.Add_Handle (ID => Client_1, Node => Node);
+
+      Other_Node := Database.Get_Node (Owner => Client_2, Value => 16#100000000000123#);
+      Database.Add_Node (Cursor => Other_Node, Owner => Client_2, Value => 16#100000000000123#);
+      Database.Add_Handle (ID => Client_2, Node => Other_Node);
+
+      Database.Resolve (Buffer    => Input,
+                        Offset    => 0,
+                        Source_ID => Client_1,
+                        Dest_ID   => Client_2,
+                        Result    => Result);
+      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful (1): " & Result'Img);
+      Assert (Input.all = Expected.all, "Binder not resolved correctly");
+
+      Database.Resolve (Buffer    => Input,
+                        Offset    => 0,
+                        Source_ID => Client_2,
+                        Dest_ID   => Client_1,
+                        Result    => Result);
+      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful (2): " & Result'Img);
+      Assert (Input.all = Output, "Binder not resolved correctly");
+   end Test_Pass_Handle_To_Non_Owner;
+
+
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
    begin
@@ -460,6 +524,7 @@ package body Test_Parse is
       Register_Routine (T, Test_Resolve_Handle_To_Binder'Access, "Resolve handle to binder");
       Register_Routine (T, Test_Resolve_Binder_To_Handle'Access, "Resolve binder to handle");
       Register_Routine (T, Test_Resolve_Handle_To_Handle'Access, "Resolve handle to handle");
+      Register_Routine (T, Test_Pass_Handle_To_Non_Owner'Access, "Pass handle to non-owner");
    end Register_Tests;
 
 end Test_Parse;

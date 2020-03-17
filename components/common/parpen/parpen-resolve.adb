@@ -4,7 +4,7 @@ package body Parpen.Resolve is
 
    package IBinder_Package is new Parpen.Protocol.Generic_IBinder (Types);
 
-   procedure Resolve_Handle (DB        : in     Database;
+   procedure Resolve_Handle (DB        : in out Database;
                              Context   : in out IBinder_Package.Context;
                              Source_ID :        Client_ID;
                              Dest_ID   :        Client_ID;
@@ -16,7 +16,7 @@ package body Parpen.Resolve is
                              Dest_ID   :        Client_ID;
                              Result    :    out Result_Type);
 
-   procedure Install_Handle (DB        :        Database;
+   procedure Install_Handle (DB        : in out Database;
                              Context   : in out IBinder_Package.Context;
                              Dest_ID   :        Client_ID;
                              Node      :        Node_ID;
@@ -94,25 +94,32 @@ package body Parpen.Resolve is
    -- Install_Handle --
    --------------------
 
-   procedure Install_Handle (DB        :        Database;
+   procedure Install_Handle (DB        : in out Database;
                              Context   : in out IBinder_Package.Context;
                              Dest_ID   :        Client_ID;
                              Node      :        Node_ID;
                              Weak      :        Boolean)
    is
-      Dest   : Client_DB.Option;
       Handle : Handle_DB.Option;
       Cookie : Parpen.Protocol.Cookie;
       Flags  : Parpen.Protocol.Flat_Binder_Flags;
-      use type Handle_DB.Status;
-   begin
-      Dest := DB.Clients.Get (Dest_ID);
 
-      Handle := Dest.Data.Handles.Find (Node);
-      if Handle.Result = Handle_DB.Status_Not_Found then
-         Handle.Data := Node;
-         Dest.Data.Handles.Insert (Handle);
-      end if;
+      procedure Insert_Handle (Client : in out Client_Type);
+
+      procedure Insert_Handle (Client : in out Client_Type)
+      is
+         use type Handle_DB.Status;
+      begin
+         Handle := Client.Handles.Find (Node);
+         if Handle.Result = Handle_DB.Status_Not_Found then
+            Handle.Data := Node;
+            Client.Handles.Insert (Handle);
+         end if;
+      end Insert_Handle;
+
+      procedure Update_Client_DB is new Client_DB.Generic_Apply (Insert_Handle);
+   begin
+      Update_Client_DB (DB.Clients, Dest_ID);
 
       --  Replace binder by handle
       Cookie := IBinder_Package.Get_Cookie (Context);
@@ -167,7 +174,7 @@ package body Parpen.Resolve is
    -- Resolve_Handle --
    --------------------
 
-   procedure Resolve_Handle (DB        : in     Database;
+   procedure Resolve_Handle (DB        : in out Database;
                              Context   : in out IBinder_Package.Context;
                              Source_ID :        Client_ID;
                              Dest_ID   :        Client_ID;
