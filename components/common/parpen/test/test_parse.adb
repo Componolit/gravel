@@ -683,6 +683,69 @@ package body Test_Parse is
       Assert (Input.all = Expected, "Binder not resolved correctly");
    end Test_Resolve_Handle_To_Self;
 
+   procedure Test_Embedded_Object (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+
+      Input : String_Ptr :=
+      new String'(
+         "" & 16#a0# & 16#0b# & 16#35# & 16#af# & 16#f1# & 16#12#
+         & "wb*" & 16#85#                    -- Weak binder
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#01# & 16#00# & 16#00# & 16#00# -- binder (value: 100000000000001)
+         & 16#00# & 16#00# & 16#00# & 16#01# --
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+         & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
+      );
+      Output : constant String := Input.all;
+
+      Expected : constant String_Ptr :=
+      new String'(
+         "" & 16#a0# & 16#0b# & 16#35# & 16#af# & 16#f1# & 16#12#
+         & "wh*" & 16#85#                    -- Weak handle
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#00# & 16#00# & 16#00# & 16#12# -- handle (value: 16#12#)
+         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+         & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
+      );
+
+      use type Resolve.Result_Type;
+      Result   : Resolve.Result_Type;
+      Database : Resolve.Database;
+   begin
+      Assert (Input.all /= Expected.all, "Binder do not differ");
+      Database.Initialize;
+
+      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_2);
+      Database.Add_Client (ID => Client_3);
+
+      Database.Resolve (Buffer    => Input,
+                        Offset    => 48,
+                        Source_ID => Client_1,
+                        Dest_ID   => Client_2,
+                        Result    => Result);
+      Assert (Result = Resolve.Result_OK, "Resolving binder unsuccessful: " & Result'Img);
+      Assert (Input.all = Expected.all, "Binder not resolved correctly");
+
+      Database.Resolve (Buffer    => Input,
+                        Offset    => 48,
+                        Source_ID => Client_2,
+                        Dest_ID   => Client_3,
+                        Result    => Result);
+
+      Database.Resolve (Buffer    => Input,
+                        Offset    => 48,
+                        Source_ID => Client_3,
+                        Dest_ID   => Client_1,
+                        Result    => Result);
+      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
+      Assert (Input.all = Output, "Handle not resolved correctly");
+   end Test_Embedded_Object;
+
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
    begin
@@ -707,6 +770,7 @@ package body Test_Parse is
       Register_Routine (T, Test_Send_And_Receive_Binder_Multi'Access, "Send and receive binder (3 parties)");
       Register_Routine (T, Test_Resolve_Binder_To_Self'Access, "Resolve binder to self");
       Register_Routine (T, Test_Resolve_Handle_To_Self'Access, "Resolve handle to self");
+      Register_Routine (T, Test_Embedded_Object'Access, "Embedded object");
    end Register_Tests;
 
 end Test_Parse;
