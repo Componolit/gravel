@@ -25,5 +25,6 @@ private
    procedure Test_Resolve_Handle_To_Handle (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Pass_Handle_To_Non_Owner (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Send_And_Receive_Binder (T : in out AUnit.Test_Cases.Test_Case'Class);
+   procedure Test_Send_And_Receive_Binder_Multi (T : in out AUnit.Test_Cases.Test_Case'Class);
 
 end Test_Parse;

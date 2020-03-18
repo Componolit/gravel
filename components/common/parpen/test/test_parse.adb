@@ -556,6 +556,65 @@ package body Test_Parse is
       Assert (Input.all = Output, "Handle not resolved correctly");
    end Test_Send_And_Receive_Binder;
 
+   procedure Test_Send_And_Receive_Binder_Multi (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+
+      Input : String_Ptr :=
+      new String'(
+         "wb*" & 16#85#                      -- Weak binder
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#01# & 16#00# & 16#00# & 16#00# -- binder (value: 100000000000001)
+         & 16#00# & 16#00# & 16#00# & 16#01# --
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+      );
+      Output : constant String := Input.all;
+
+      Expected : constant String_Ptr :=
+      new String'(
+         "wh*" & 16#85#                      -- Weak handle
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#00# & 16#00# & 16#00# & 16#12# -- handle (value: 16#12#)
+         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+      );
+
+      use type Resolve.Result_Type;
+      Result   : Resolve.Result_Type;
+      Database : Resolve.Database;
+   begin
+      Assert (Input.all /= Expected.all, "Binder do not differ");
+      Database.Initialize;
+
+      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_2);
+      Database.Add_Client (ID => Client_3);
+
+      Database.Resolve (Buffer    => Input,
+                        Offset    => 0,
+                        Source_ID => Client_1,
+                        Dest_ID   => Client_2,
+                        Result    => Result);
+      Assert (Result = Resolve.Result_OK, "Resolving binder unsuccessful: " & Result'Img);
+      Assert (Input.all = Expected.all, "Binder not resolved correctly");
+
+      Database.Resolve (Buffer    => Input,
+                        Offset    => 0,
+                        Source_ID => Client_2,
+                        Dest_ID   => Client_3,
+                        Result    => Result);
+
+      Database.Resolve (Buffer    => Input,
+                        Offset    => 0,
+                        Source_ID => Client_3,
+                        Dest_ID   => Client_1,
+                        Result    => Result);
+      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
+      Assert (Input.all = Output, "Handle not resolved correctly");
+   end Test_Send_And_Receive_Binder_Multi;
+
 
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
@@ -578,6 +637,7 @@ package body Test_Parse is
       Register_Routine (T, Test_Resolve_Handle_To_Handle'Access, "Resolve handle to handle");
       Register_Routine (T, Test_Pass_Handle_To_Non_Owner'Access, "Pass handle to non-owner");
       Register_Routine (T, Test_Send_And_Receive_Binder'Access, "Send and receive binder");
+      Register_Routine (T, Test_Send_And_Receive_Binder_Multi'Access, "Send and receive binder (3 parties)");
    end Register_Tests;
 
 end Test_Parse;
