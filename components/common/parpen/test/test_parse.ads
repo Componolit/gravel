@@ -27,5 +27,6 @@ private
    procedure Test_Send_And_Receive_Binder (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Send_And_Receive_Binder_Multi (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Resolve_Binder_To_Self (T : in out AUnit.Test_Cases.Test_Case'Class);
+   procedure Test_Resolve_Handle_To_Self (T : in out AUnit.Test_Cases.Test_Case'Class);
 
 end Test_Parse;
