@@ -22,6 +22,10 @@ package body Parpen.Resolve is
                              Node      :        Node_ID;
                              Weak      :        Boolean);
 
+   procedure Install_Binder (Context : in out IBinder_Package.Context;
+                             Binder  :        Parpen.Protocol.Binder;
+                             Weak    :        Boolean);
+
    ----------------
    -- Initialize --
    ----------------
@@ -139,6 +143,32 @@ package body Parpen.Resolve is
    end Install_Handle;
 
    --------------------
+   -- Install_Binder --
+   --------------------
+
+   procedure Install_Binder (Context : in out IBinder_Package.Context;
+                             Binder  :        Parpen.Protocol.Binder;
+                             Weak    :        Boolean)
+   is
+      Cookie : Parpen.Protocol.Cookie;
+      Flags  : Parpen.Protocol.Flat_Binder_Flags;
+   begin
+      Cookie := IBinder_Package.Get_Cookie (Context);
+      Flags  := IBinder_Package.Get_Flags (Context);
+
+      if Weak then
+         IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_WEAK_BINDER);
+      else
+         IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_STRONG_BINDER);
+      end if;
+      IBinder_Package.Set_Arity (Context, Parpen.Protocol.BA_SINGLE);
+      IBinder_Package.Set_Tag (Context, 16#85#);
+      IBinder_Package.Set_Flags (Context, Flags);
+      IBinder_Package.Set_Binder (Context, Binder);
+      IBinder_Package.Set_Cookie (Context, Cookie);
+   end Install_Binder;
+
+   --------------------
    -- Resolve_Handle --
    --------------------
 
@@ -166,7 +196,18 @@ package body Parpen.Resolve is
          Weak := False;
       end if;
 
-      Install_Handle (DB, Context, Dest_ID, Node.Position, Weak);
+      if Node.Data.Owner = Dest_ID then
+         Install_Binder (Context => Context,
+                         Binder  => Node.Data.Value,
+                         Weak    => Weak);
+      else
+         Install_Handle (DB      => DB,
+                         Context => Context,
+                         Dest_ID => Dest_ID,
+                         Node    => Node.Position,
+                         Weak    => Weak);
+      end if;
+
       Result := Result_OK;
    end Resolve_Binder;
 
@@ -185,8 +226,6 @@ package body Parpen.Resolve is
       Source_Handle_ID : Handle_ID;
       Handle           : Parpen.Protocol.Handle;
       Node             : Node_DB.Option;
-      Cookie           : Parpen.Protocol.Cookie;
-      Flags            : Parpen.Protocol.Flat_Binder_Flags;
       Weak             : Boolean;
       use type Handle_DB.Status;
       use type Parpen.Protocol.Binder_Kind;
@@ -218,29 +257,18 @@ package body Parpen.Resolve is
       Weak := IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_HANDLE;
 
       if Node.Data.Owner = Dest_ID then
-         Cookie := IBinder_Package.Get_Cookie (Context);
-         Flags  := IBinder_Package.Get_Flags (Context);
-
-         if Weak then
-            IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_WEAK_BINDER);
-         else
-            IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_STRONG_BINDER);
-         end if;
-         IBinder_Package.Set_Arity (Context, Parpen.Protocol.BA_SINGLE);
-         IBinder_Package.Set_Tag (Context, 16#85#);
-         IBinder_Package.Set_Flags (Context, Flags);
-         IBinder_Package.Set_Binder (Context, Node.Data.Value);
-         IBinder_Package.Set_Cookie (Context, Cookie);
-         Result := Result_OK;
-         return;
+         Install_Binder (Context => Context,
+                         Binder  => Node.Data.Value,
+                         Weak    => Weak);
+      else
+         Install_Handle (DB      => DB,
+                         Context => Context,
+                         Dest_ID => Dest_ID,
+                         Node    => Node.Position,
+                         Weak    => Weak);
       end if;
-
-      Install_Handle (DB      => DB,
-                      Context => Context,
-                      Dest_ID => Dest_ID,
-                      Node    => Node.Position,
-                      Weak    => Weak);
       Result := Result_OK;
+
 
    end Resolve_Handle;
 
