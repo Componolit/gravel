@@ -103,11 +103,7 @@ is
      Pre =>
        Valid (Val);
 
-   type Offset_Base is range 0 .. 2**32 - 1 with
-     Size =>
-       32;
-
-   subtype Offset is Offset_Base range 0 .. 2**32 - 1;
+   type Offset is mod 2**64;
 
    pragma Warnings (Off, "precondition is statically false");
 
@@ -119,10 +115,14 @@ is
 
    pragma Warnings (On, "precondition is statically false");
 
-   function Valid (Val : Protocol.Offset_Base) return Boolean is
+   pragma Warnings (Off, "unused variable ""Val""");
+
+   function Valid (Val : Protocol.Offset) return Boolean is
      (True);
 
-   function Convert (Val : Protocol.Offset_Base) return Protocol.Offset is
+   pragma Warnings (On, "unused variable ""Val""");
+
+   function Convert (Val : Protocol.Offset) return Protocol.Offset is
      (Val)
     with
      Pre =>
@@ -555,5 +555,13 @@ is
     with
      Pre =>
        Valid (Val);
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   pragma Warnings (On, "precondition is statically false");
+
+   pragma Warnings (Off, "unused variable ""Val""");
+
+   pragma Warnings (On, "unused variable ""Val""");
 
 end Parpen.Protocol;

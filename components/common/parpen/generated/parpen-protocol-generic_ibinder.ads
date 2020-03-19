@@ -61,7 +61,7 @@ is
             when F_Unused_Padding =>
                Unused_Padding_Value : Protocol.MBZ32_Base;
             when F_Parent_Offset =>
-               Parent_Offset_Value : Protocol.Offset_Base;
+               Parent_Offset_Value : Protocol.Offset;
             when F_Length =>
                Length_Value : Protocol.Length_Base;
             when F_Cookie =>
@@ -1378,7 +1378,7 @@ private
                                     and then Cursors (F_Parent).Predecessor = F_Num_FDs
                                     and then Cursors (F_Parent).First = (Cursors (F_Num_FDs).Last + 1)
                                     and then (if Structural_Valid (Cursors (F_Parent_Offset)) then
-                                       (Cursors (F_Parent_Offset).Last - Cursors (F_Parent_Offset).First + 1) = Protocol.Offset_Base'Size
+                                       (Cursors (F_Parent_Offset).Last - Cursors (F_Parent_Offset).First + 1) = Protocol.Offset'Size
                                          and then Cursors (F_Parent_Offset).Predecessor = F_Parent
                                          and then Cursors (F_Parent_Offset).First = (Cursors (F_Parent).Last + 1)))))
                      and then (if Structural_Valid (Cursors (F_Has_Parent))

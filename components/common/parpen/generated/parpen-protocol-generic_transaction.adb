@@ -156,7 +156,7 @@ is
          when F_Accept_FDs =>
             (case Fld is
                   when F_Send_Offset =>
-                     Protocol.Offset_Base'Size,
+                     Protocol.Offset'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Send_Offset =>
@@ -168,7 +168,7 @@ is
          when F_Send_Length =>
             (case Fld is
                   when F_Meta_Offset =>
-                     Protocol.Offset_Base'Size,
+                     Protocol.Offset'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Meta_Offset =>
@@ -180,7 +180,7 @@ is
          when F_Meta_Length =>
             (case Fld is
                   when F_Receive_Offset =>
-                     Protocol.Offset_Base'Size,
+                     Protocol.Offset'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Receive_Offset =>
@@ -615,7 +615,7 @@ is
       function Extract is new Types.Extract (Protocol.Handle_Base);
       function Extract is new Types.Extract (Protocol.Method_Base);
       function Extract is new Types.Extract (Builtin_Types.Boolean_Base);
-      function Extract is new Types.Extract (Protocol.Offset_Base);
+      function Extract is new Types.Extract (Protocol.Offset);
       function Extract is new Types.Extract (Protocol.Length_Base);
    begin
       return ((case Fld is
@@ -674,7 +674,7 @@ is
                                     and then Ctx.Cursors (F_Accept_FDs).Predecessor = F_Oneway
                                     and then Ctx.Cursors (F_Accept_FDs).First = (Ctx.Cursors (F_Oneway).Last + 1)
                                     and then (if Structural_Valid (Ctx.Cursors (F_Send_Offset)) then
-                                       (Ctx.Cursors (F_Send_Offset).Last - Ctx.Cursors (F_Send_Offset).First + 1) = Protocol.Offset_Base'Size
+                                       (Ctx.Cursors (F_Send_Offset).Last - Ctx.Cursors (F_Send_Offset).First + 1) = Protocol.Offset'Size
                                          and then Ctx.Cursors (F_Send_Offset).Predecessor = F_Accept_FDs
                                          and then Ctx.Cursors (F_Send_Offset).First = (Ctx.Cursors (F_Accept_FDs).Last + 1)
                                          and then (if Structural_Valid (Ctx.Cursors (F_Send_Length)) then
@@ -682,7 +682,7 @@ is
                                               and then Ctx.Cursors (F_Send_Length).Predecessor = F_Send_Offset
                                               and then Ctx.Cursors (F_Send_Length).First = (Ctx.Cursors (F_Send_Offset).Last + 1)
                                               and then (if Structural_Valid (Ctx.Cursors (F_Meta_Offset)) then
-                                                 (Ctx.Cursors (F_Meta_Offset).Last - Ctx.Cursors (F_Meta_Offset).First + 1) = Protocol.Offset_Base'Size
+                                                 (Ctx.Cursors (F_Meta_Offset).Last - Ctx.Cursors (F_Meta_Offset).First + 1) = Protocol.Offset'Size
                                                    and then Ctx.Cursors (F_Meta_Offset).Predecessor = F_Send_Length
                                                    and then Ctx.Cursors (F_Meta_Offset).First = (Ctx.Cursors (F_Send_Length).Last + 1)
                                                    and then (if Structural_Valid (Ctx.Cursors (F_Meta_Length)) then
@@ -691,7 +691,7 @@ is
                                                         and then Ctx.Cursors (F_Meta_Length).First = (Ctx.Cursors (F_Meta_Offset).Last + 1)
                                                         and then (if Structural_Valid (Ctx.Cursors (F_Receive_Offset))
                                                              and then Types.Bit_Length (Ctx.Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (False)) then
-                                                           (Ctx.Cursors (F_Receive_Offset).Last - Ctx.Cursors (F_Receive_Offset).First + 1) = Protocol.Offset_Base'Size
+                                                           (Ctx.Cursors (F_Receive_Offset).Last - Ctx.Cursors (F_Receive_Offset).First + 1) = Protocol.Offset'Size
                                                              and then Ctx.Cursors (F_Receive_Offset).Predecessor = F_Meta_Length
                                                              and then Ctx.Cursors (F_Receive_Offset).First = (Ctx.Cursors (F_Meta_Length).Last + 1)
                                                              and then (if Structural_Valid (Ctx.Cursors (F_Receive_Length)) then
@@ -867,7 +867,7 @@ is
       procedure Insert is new Types.Insert (Protocol.Handle_Base);
       procedure Insert is new Types.Insert (Protocol.Method_Base);
       procedure Insert is new Types.Insert (Builtin_Types.Boolean_Base);
-      procedure Insert is new Types.Insert (Protocol.Offset_Base);
+      procedure Insert is new Types.Insert (Protocol.Offset);
       procedure Insert is new Types.Insert (Protocol.Length_Base);
    begin
       Fst := First;

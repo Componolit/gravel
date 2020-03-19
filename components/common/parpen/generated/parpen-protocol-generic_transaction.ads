@@ -41,15 +41,15 @@ is
             when F_Accept_FDs =>
                Accept_FDs_Value : Builtin_Types.Boolean_Base;
             when F_Send_Offset =>
-               Send_Offset_Value : Protocol.Offset_Base;
+               Send_Offset_Value : Protocol.Offset;
             when F_Send_Length =>
                Send_Length_Value : Protocol.Length_Base;
             when F_Meta_Offset =>
-               Meta_Offset_Value : Protocol.Offset_Base;
+               Meta_Offset_Value : Protocol.Offset;
             when F_Meta_Length =>
                Meta_Length_Value : Protocol.Length_Base;
             when F_Receive_Offset =>
-               Receive_Offset_Value : Protocol.Offset_Base;
+               Receive_Offset_Value : Protocol.Offset;
             when F_Receive_Length =>
                Receive_Length_Value : Protocol.Length_Base;
          end case;
@@ -784,7 +784,7 @@ private
                           and then Cursors (F_Accept_FDs).Predecessor = F_Oneway
                           and then Cursors (F_Accept_FDs).First = (Cursors (F_Oneway).Last + 1)
                           and then (if Structural_Valid (Cursors (F_Send_Offset)) then
-                             (Cursors (F_Send_Offset).Last - Cursors (F_Send_Offset).First + 1) = Protocol.Offset_Base'Size
+                             (Cursors (F_Send_Offset).Last - Cursors (F_Send_Offset).First + 1) = Protocol.Offset'Size
                                and then Cursors (F_Send_Offset).Predecessor = F_Accept_FDs
                                and then Cursors (F_Send_Offset).First = (Cursors (F_Accept_FDs).Last + 1)
                                and then (if Structural_Valid (Cursors (F_Send_Length)) then
@@ -792,7 +792,7 @@ private
                                     and then Cursors (F_Send_Length).Predecessor = F_Send_Offset
                                     and then Cursors (F_Send_Length).First = (Cursors (F_Send_Offset).Last + 1)
                                     and then (if Structural_Valid (Cursors (F_Meta_Offset)) then
-                                       (Cursors (F_Meta_Offset).Last - Cursors (F_Meta_Offset).First + 1) = Protocol.Offset_Base'Size
+                                       (Cursors (F_Meta_Offset).Last - Cursors (F_Meta_Offset).First + 1) = Protocol.Offset'Size
                                          and then Cursors (F_Meta_Offset).Predecessor = F_Send_Length
                                          and then Cursors (F_Meta_Offset).First = (Cursors (F_Send_Length).Last + 1)
                                          and then (if Structural_Valid (Cursors (F_Meta_Length)) then
@@ -801,7 +801,7 @@ private
                                               and then Cursors (F_Meta_Length).First = (Cursors (F_Meta_Offset).Last + 1)
                                               and then (if Structural_Valid (Cursors (F_Receive_Offset))
                                                    and then Types.Bit_Length (Cursors (F_Oneway).Value.Oneway_Value) = Types.Bit_Length (Convert (False)) then
-                                                 (Cursors (F_Receive_Offset).Last - Cursors (F_Receive_Offset).First + 1) = Protocol.Offset_Base'Size
+                                                 (Cursors (F_Receive_Offset).Last - Cursors (F_Receive_Offset).First + 1) = Protocol.Offset'Size
                                                    and then Cursors (F_Receive_Offset).Predecessor = F_Meta_Length
                                                    and then Cursors (F_Receive_Offset).First = (Cursors (F_Meta_Length).Last + 1)
                                                    and then (if Structural_Valid (Cursors (F_Receive_Length)) then

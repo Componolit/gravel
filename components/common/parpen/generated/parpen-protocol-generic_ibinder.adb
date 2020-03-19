@@ -296,7 +296,7 @@ is
          when F_Parent =>
             (case Fld is
                   when F_Parent_Offset =>
-                     Protocol.Offset_Base'Size,
+                     Protocol.Offset'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Buffer =>
@@ -1259,7 +1259,7 @@ is
       function Extract is new Types.Extract (Protocol.MBZ31_Base);
       function Extract is new Types.Extract (Protocol.Binder);
       function Extract is new Types.Extract (Protocol.Index);
-      function Extract is new Types.Extract (Protocol.Offset_Base);
+      function Extract is new Types.Extract (Protocol.Offset);
       function Extract is new Types.Extract (Protocol.Length_Base);
       function Extract is new Types.Extract (Protocol.Cookie);
    begin
@@ -1357,7 +1357,7 @@ is
                                               and then Ctx.Cursors (F_Parent).Predecessor = F_Num_FDs
                                               and then Ctx.Cursors (F_Parent).First = (Ctx.Cursors (F_Num_FDs).Last + 1)
                                               and then (if Structural_Valid (Ctx.Cursors (F_Parent_Offset)) then
-                                                 (Ctx.Cursors (F_Parent_Offset).Last - Ctx.Cursors (F_Parent_Offset).First + 1) = Protocol.Offset_Base'Size
+                                                 (Ctx.Cursors (F_Parent_Offset).Last - Ctx.Cursors (F_Parent_Offset).First + 1) = Protocol.Offset'Size
                                                    and then Ctx.Cursors (F_Parent_Offset).Predecessor = F_Parent
                                                    and then Ctx.Cursors (F_Parent_Offset).First = (Ctx.Cursors (F_Parent).Last + 1)))))
                                and then (if Structural_Valid (Ctx.Cursors (F_Has_Parent))
@@ -1691,7 +1691,7 @@ is
       procedure Insert is new Types.Insert (Protocol.MBZ31_Base);
       procedure Insert is new Types.Insert (Protocol.Binder);
       procedure Insert is new Types.Insert (Protocol.Index);
-      procedure Insert is new Types.Insert (Protocol.Offset_Base);
+      procedure Insert is new Types.Insert (Protocol.Offset);
       procedure Insert is new Types.Insert (Protocol.Length_Base);
       procedure Insert is new Types.Insert (Protocol.Cookie);
    begin
