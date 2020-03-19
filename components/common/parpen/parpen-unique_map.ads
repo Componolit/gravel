@@ -6,9 +6,9 @@ is
 
    type Status is (Status_Valid, Status_Not_Found, Status_Invalid);
 
-   type Option (Result : Status := Status_Invalid) is
+   type Option (State : Status := Status_Invalid) is
    record
-      case Result is
+      case State is
          when Status_Valid =>
             Data     : Element;
             Position : Key;
@@ -45,7 +45,7 @@ is
 
    procedure Insert (DB : in out Database; E : in out Option) with
       Pre => Initialized (DB)
-             and E.Result = Status_Valid;
+             and E.State = Status_Valid;
 
    procedure Delete (DB : in out Database; K : Key) with
       Pre => Initialized (DB);

@@ -78,12 +78,12 @@ private
       end record;
 
    function Valid (N : Node_Option) return Boolean is
-      (N.Inner.Result = Node_DB.Status_Valid
-       or N.Inner.Result = Node_DB.Status_Not_Found);
+      (N.Inner.State = Node_DB.Status_Valid
+       or N.Inner.State = Node_DB.Status_Not_Found);
 
    function Found (N : Node_Option) return Boolean is
       (Valid (N)
-       and N.Inner.Result /= Node_DB.Status_Not_Found);
+       and N.Inner.State /= Node_DB.Status_Not_Found);
 
    package Handle_DB is new Parpen.Unique_Map (Key     => Handle_ID,
                                                Element => Node_ID);

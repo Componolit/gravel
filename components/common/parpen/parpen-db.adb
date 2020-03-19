@@ -12,7 +12,7 @@ package body Parpen.DB is
       for I in DB.Elements'Range
       loop
          if Match (DB.Elements (I)) then
-            return Cursor_Option'(Result => Status_OK, Cursor => (Inner => I));
+            return Cursor_Option'(State => Status_OK, Cursor => (Inner => I));
          end if;
          if not DB.Elements (I).Valid then
             Free := (Inner => I);
@@ -20,9 +20,9 @@ package body Parpen.DB is
          end if;
       end loop;
       if Free_Found then
-         return Cursor_Option'(Result => Status_Not_Found, Cursor => Free);
+         return Cursor_Option'(State => Status_Not_Found, Cursor => Free);
       end if;
-      return Cursor_Option'(Result => Status_Overflow);
+      return Cursor_Option'(State => Status_Overflow);
    end Search_Internal;
 
    -----------------

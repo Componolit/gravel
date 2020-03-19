@@ -7,9 +7,9 @@ is
    type Curs is private;
    type Status is (Status_OK, Status_Not_Found, Status_Overflow);
 
-   type Cursor_Option (Result : Status := Status_Overflow) is
+   type Cursor_Option (State : Status := Status_Overflow) is
    record
-      case Result is
+      case State is
          when Status_OK | Status_Not_Found =>
             Cursor : Curs;
          when Status_Overflow =>

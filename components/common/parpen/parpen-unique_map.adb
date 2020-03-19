@@ -12,7 +12,7 @@ package body Parpen.Unique_Map is
       for I in DB.Elements'Range
       loop
          if Match (DB.Elements (I)) then
-            return Option'(Result => Status_Valid, Data => DB.Elements (I).Elem.E, Position => I);
+            return Option'(State => Status_Valid, Data => DB.Elements (I).Elem.E, Position => I);
          end if;
          if not DB.Elements (I).Valid and not Free_Found then
             Free := I;
@@ -20,9 +20,9 @@ package body Parpen.Unique_Map is
          end if;
       end loop;
       if Free_Found then
-         return Option'(Result => Status_Not_Found, Free => Free);
+         return Option'(State => Status_Not_Found, Free => Free);
       end if;
-      return Option'(Result => Status_Invalid);
+      return Option'(State => Status_Invalid);
    end Internal_Find;
 
    -----------------
@@ -54,8 +54,8 @@ package body Parpen.Unique_Map is
    is
    begin
       return (if DB.Elements (K).Valid
-              then (Result => Status_Valid, Data => DB.Elements (K).Elem.E, Position => K)
-              else (Result => Status_Not_Found, Free => K));
+              then (State => Status_Valid, Data => DB.Elements (K).Elem.E, Position => K)
+              else (State => Status_Not_Found, Free => K));
    end Get;
 
    ----------
@@ -100,7 +100,7 @@ package body Parpen.Unique_Map is
    procedure Insert (DB : in out Database; E : in out Option) is
    begin
       DB.Elements (E.Position) := (Valid => True, Elem => (Valid => True, E => E.Data));
-      E := (Result => Status_Valid, Position => E.Position, Data => E.Data);
+      E := (State => Status_Valid, Position => E.Position, Data => E.Data);
    end Insert;
 
    ------------

@@ -32,7 +32,7 @@ package body Parpen.NameDB is
       C : Name_DB.Cursor_Option;
    begin
       C := DB.Inner.Find (H);
-      case C.Result is
+      case C.State is
          when Name_DB.Status_OK =>
             Result := Status_In_Use;
          when Name_DB.Status_Overflow =>
@@ -54,7 +54,7 @@ package body Parpen.NameDB is
       use type Name_DB.Status;
    begin
       C := DB.Inner.Find (H);
-      if C.Result = Name_DB.Status_OK then
+      if C.State = Name_DB.Status_OK then
          return True;
       end if;
       return False;
@@ -71,7 +71,7 @@ package body Parpen.NameDB is
       use type Name_DB.Status;
    begin
       C := DB.Inner.Find (H);
-      if C.Result = Name_DB.Status_OK then
+      if C.State = Name_DB.Status_OK then
          Res := (Valid => True, Elem => DB.Inner.Get (C.Cursor));
          return;
       end if;
