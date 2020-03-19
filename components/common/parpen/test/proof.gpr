@@ -1,0 +1,8 @@
+project Proof is
+
+   for Create_Missing_Dirs use "True";
+   for Source_Dirs use ("..", "../generated");
+   for Object_Dir use "obj";
+
+end Proof;
+
