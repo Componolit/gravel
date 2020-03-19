@@ -26,12 +26,10 @@ package body Test_Parse is
    type Node_ID is new Natural range 7 .. 51;
    type Handle_ID is new Natural range 18 .. 47;
 
-   package Resolve is new Parpen.Resolve (Client_ID      => Client_ID,
-                                          Null_Client_ID => Client_ID'Last,
-                                          Node_ID        => Node_ID,
-                                          Null_Node_ID   => Node_ID'Last,
-                                          Handle_ID      => Handle_ID,
-                                          Types          => Types);
+   package Resolve is new Parpen.Resolve (Client_ID => Client_ID,
+                                          Node_ID   => Node_ID,
+                                          Handle_ID => Handle_ID,
+                                          Types     => Types);
 
    function "&" (Left : String; Right : Natural) return String is
       (Left & (1 => Character'Val (Right)));

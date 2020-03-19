@@ -1,8 +1,6 @@
 generic
    type Key is private;
-   Null_Key : Key;
    type Element is private;
-   Null_Element : Element;
 package Parpen.DB with SPARK_Mode
 is
 
@@ -47,16 +45,35 @@ is
       Pre => Initialized (DB);
 
 private
+
+   type Key_Option (Valid : Boolean := False) is record
+      case Valid is
+         when True =>
+            K : Key;
+         when False =>
+            null;
+      end case;
+   end record;
+
+   type Element_Option (Valid : Boolean := False) is record
+      case Valid is
+         when True =>
+            E : Element;
+         when False =>
+            null;
+      end case;
+   end record;
+
    type Curs is record
       Inner : Natural;
    end record;
    type Internal_Element is
    record
       Valid : Boolean;
-      Kee   : Key;
-      Elem  : Element;
+      Kee   : Key_Option;
+      Elem  : Element_Option;
    end record;
-   Null_Internal_Element : constant Internal_Element := (False, Null_Key, Null_Element);
+   Null_Internal_Element : constant Internal_Element := (False, (Valid => False), (Valid => False));
 
    type Element_Array is array (Natural range <>) of Internal_Element;
    type Database (Size : Natural) is tagged

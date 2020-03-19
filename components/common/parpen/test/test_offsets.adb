@@ -16,9 +16,8 @@ package body Test_Offsets is
 
    type Client_ID is new Natural range 11 .. 21;
 
-   package Message is new Parpen.Message (Client_ID      => Client_ID,
-                                          Null_Client_ID => Client_ID'Last,
-                                          Types          => Types);
+   package Message is new Parpen.Message (Client_ID => Client_ID,
+                                          Types     => Types);
 
    function "&" (Left : String; Right : Natural) return String is
       (Left & (1 => Character'Val (Right)));

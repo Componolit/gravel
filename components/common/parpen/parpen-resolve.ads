@@ -4,9 +4,7 @@ with Parpen.Protocol;
 
 generic
    type Client_ID is (<>);
-   Null_Client_ID : Client_ID;
    type Node_ID is (<>);
-   Null_Node_ID : Node_ID;
    type Handle_ID is (<>);
    with package Types is new Parpen.Generic_Types (<>);
 package Parpen.Resolve
@@ -69,12 +67,9 @@ private
          Owner : Client_ID;
          Value : Parpen.Protocol.Binder;
       end record;
-   Null_Node : constant Node_Type := (Owner => Null_Client_ID,
-                                      Value => 0);
 
-   package Node_DB is new Parpen.Unique_Map (Key          => Node_ID,
-                                             Element      => Node_Type,
-                                             Null_Element => Null_Node);
+   package Node_DB is new Parpen.Unique_Map (Key     => Node_ID,
+                                             Element => Node_Type);
    use type Node_DB.Status;
 
    type Node_Option is tagged
@@ -83,26 +78,23 @@ private
       end record;
 
    function Valid (N : Node_Option) return Boolean is
-      (N.Inner.Result = Node_DB.Status_OK
+      (N.Inner.Result = Node_DB.Status_Valid
        or N.Inner.Result = Node_DB.Status_Not_Found);
 
    function Found (N : Node_Option) return Boolean is
       (Valid (N)
        and N.Inner.Result /= Node_DB.Status_Not_Found);
 
-   package Handle_DB is new Parpen.Unique_Map (Key          => Handle_ID,
-                                               Element      => Node_ID,
-                                               Null_Element => Null_Node_ID);
+   package Handle_DB is new Parpen.Unique_Map (Key     => Handle_ID,
+                                               Element => Node_ID);
 
    type Client_Type is
       record
          Handles : Handle_DB.Database;
       end record;
-   Null_Client : constant Client_Type := (Handles => Handle_DB.Null_DB);
 
-   package Client_DB is new Parpen.Unique_Map (Key          => Client_ID,
-                                               Element      => Client_Type,
-                                               Null_Element => Null_Client);
+   package Client_DB is new Parpen.Unique_Map (Key     => Client_ID,
+                                               Element => Client_Type);
 
    type Client_Cursor_Option is tagged
       record

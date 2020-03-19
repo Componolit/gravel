@@ -2,7 +2,6 @@ with Parpen.DB;
 
 generic
    type Element is private;
-   Null_Element : Element;
    type Query_Index is (<>);
    type Query_Element is (<>);
    type Query_String is array (Query_Index range <>) of Query_Element;
@@ -42,10 +41,8 @@ private
    subtype Hash_Index is Natural range 1 .. 20;
    type Hash_Type is array (Hash_Index) of Byte;
 
-   package Name_DB is new Parpen.DB (Element      => Element,
-                                     Null_Element => Null_Element,
-                                     Key          => Hash_Type,
-                                     Null_Key     => Hash_Type'(others => 0));
+   package Name_DB is new Parpen.DB (Element => Element,
+                                     Key     => Hash_Type);
 
    type Database (Size : Natural) is tagged
    record

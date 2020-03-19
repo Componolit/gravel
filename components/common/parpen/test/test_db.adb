@@ -9,10 +9,8 @@ package body Test_DB is
       Right : Natural;
    end record;
 
-   package DB is new Parpen.DB (Element      => Element,
-                                Null_Element => (0, 0),
-                                Key          => Natural,
-                                Null_Key     => 0);
+   package DB is new Parpen.DB (Element => Element,
+                                Key     => Natural);
 
    use type DB.Status;
    use type DB.Cursor_Option;

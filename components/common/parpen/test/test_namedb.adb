@@ -4,7 +4,6 @@ with Parpen.NameDB;
 package body Test_NameDB is
 
    package NameDB is new Parpen.NameDB (Element       => Natural,
-                                        Null_Element  => 0,
                                         Query_Index   => Positive,
                                         Query_Element => Character,
                                         Query_String  => String);

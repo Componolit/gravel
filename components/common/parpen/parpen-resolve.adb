@@ -46,9 +46,9 @@ package body Parpen.Resolve is
                        Owner  :        Client_ID;
                        Value  :        Parpen.Protocol.Binder)
    is
-      E : Node_DB.Option := (Result   => Node_DB.Status_Not_Found,
+      E : Node_DB.Option := (Result   => Node_DB.Status_Valid,
                              Data     => (Owner, Value),
-                             Position => Cursor.Inner.Position);
+                             Position => Cursor.Inner.Free);
    begin
       DB.Nodes.Insert (E);
    end Add_Node;
@@ -60,7 +60,7 @@ package body Parpen.Resolve is
    procedure Add_Client (DB  : in out Database'Class;
                          ID  :        Client_ID)
    is
-      E : Client_DB.Option := (Result   => Client_DB.Status_Not_Found,
+      E : Client_DB.Option := (Result   => Client_DB.Status_Valid,
                                Position => ID,
                                Data     => (Handles => Handle_DB.Null_DB));
    begin
@@ -82,9 +82,9 @@ package body Parpen.Resolve is
          Result : Handle_DB.Option;
          use type Handle_DB.Status;
       begin
-         Result := Client.Handles.Find (Node.Inner.Position);
+         Result := Client.Handles.Find (Node.Inner.Free);
          if Result.Result = Handle_DB.Status_Not_Found then
-            Result.Data := Node.Inner.Position;
+            Result := (Result => Handle_DB.Status_Valid, Position => Result.Free, Data => Node.Inner.Free);
             Client.Handles.Insert (Result);
          end if;
       end Add_Node;
@@ -116,7 +116,7 @@ package body Parpen.Resolve is
       begin
          Handle := Client.Handles.Find (Node);
          if Handle.Result = Handle_DB.Status_Not_Found then
-            Handle.Data := Node;
+            Handle := (Result => Handle_DB.Status_Valid, Position => Handle.Free, Data => Node);
             Client.Handles.Insert (Handle);
          end if;
       end Insert_Handle;
@@ -186,7 +186,7 @@ package body Parpen.Resolve is
       Binder := IBinder_Package.Get_Binder (Context);
       Node := DB.Nodes.Find ((Source_ID, Binder));
       if Node.Result = Node_DB.Status_Not_Found then
-         Node.Data := (Source_ID, Binder);
+         Node := (Result => Node_DB.Status_Valid, Position => Node.Free, Data => (Source_ID, Binder));
          DB.Nodes.Insert (Node);
       end if;
 
@@ -243,13 +243,13 @@ package body Parpen.Resolve is
 
       Source := DB.Clients.Get (Source_ID);
       Source_Handle := Source.Data.Handles.Get (Source_Handle_ID);
-      if Source_Handle.Result /= Handle_DB.Status_OK then
+      if Source_Handle.Result /= Handle_DB.Status_Valid then
          Result := Result_Handle_Not_Found;
          return;
       end if;
 
       Node := DB.Nodes.Get (Source_Handle.Data);
-      if Node.Result /= Node_DB.Status_OK then
+      if Node.Result /= Node_DB.Status_Valid then
          Result := Result_Node_Not_Found;
          return;
       end if;
@@ -293,13 +293,13 @@ package body Parpen.Resolve is
    begin
       Result := Result_Invalid;
       Source := DB.Clients.Get (Source_ID);
-      if Source.Result /= Client_DB.Status_OK then
+      if Source.Result /= Client_DB.Status_Valid then
          Result := Result_Invalid_Source;
          return;
       end if;
 
       Dest := DB.Clients.Get (Dest_ID);
-      if Dest.Result /= Client_DB.Status_OK then
+      if Dest.Result /= Client_DB.Status_Valid then
          Result := Result_Invalid_Destination;
          return;
       end if;

@@ -1,18 +1,19 @@
 generic
    type Key is (<>);
    type Element is private;
-   Null_Element : Element;
 package Parpen.Unique_Map with SPARK_Mode
 is
 
-   type Status is (Status_OK, Status_Not_Found, Status_Invalid);
+   type Status is (Status_Valid, Status_Not_Found, Status_Invalid);
 
    type Option (Result : Status := Status_Invalid) is
    record
       case Result is
-         when Status_OK | Status_Not_Found =>
+         when Status_Valid =>
             Data     : Element;
             Position : Key;
+         when Status_Not_Found =>
+            Free     : Key;
          when Status_Invalid =>
             null;
       end case;
@@ -44,18 +45,28 @@ is
 
    procedure Insert (DB : in out Database; E : in out Option) with
       Pre => Initialized (DB)
-             and E.Result = Status_Not_Found;
+             and E.Result = Status_Valid;
 
    procedure Delete (DB : in out Database; K : Key) with
       Pre => Initialized (DB);
 
 private
+
+   type Element_Option (Valid : Boolean := False) is record
+      case Valid is
+         when True =>
+            E : Element;
+         when False =>
+            null;
+      end case;
+   end record;
+
    type Internal_Element is
    record
       Valid : Boolean;
-      Elem  : Element;
+      Elem  : Element_Option;
    end record;
-   Null_Internal_Element : constant Internal_Element := (False, Null_Element);
+   Null_Internal_Element : constant Internal_Element := (False, (Valid => False));
 
    type Element_Array is array (Key) of Internal_Element;
    type Database is tagged

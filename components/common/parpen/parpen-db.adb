@@ -52,7 +52,8 @@ package body Parpen.DB is
 
    function Find (DB : Database; K : Key) return Cursor_Option
    is
-      function Match (Current : Internal_Element) return Boolean is (Current.Valid and Current.Kee = K);
+      function Match (Current : Internal_Element) return Boolean is
+         (Current.Valid and then Current.Kee.Valid and then Current.Kee.K = K);
       function Search_Key is new Search_Internal (Match);
    begin
       return Search_Key (DB);
@@ -64,7 +65,8 @@ package body Parpen.DB is
 
    function Search_Value (DB : Database; E : Element) return Cursor_Option
    is
-      function Match (Current : Internal_Element) return Boolean is (Current.Valid and Current.Elem = E);
+      function Match (Current : Internal_Element) return Boolean is
+         (Current.Valid and then Current.Elem.Valid and then Current.Elem.E = E);
       function Search_Equal is new Search_Internal (Match);
    begin
       return Search_Equal (DB);
@@ -77,7 +79,7 @@ package body Parpen.DB is
    function Search (DB : Database; E : Element) return Cursor_Option
    is
       function Match_Internal (Current : Internal_Element) return Boolean is
-         (Current.Valid and Match (Current.Elem, E));
+         (Current.Valid and then Current.Elem.Valid and then Match (Current.Elem.E, E));
       function Search_Match is new Search_Internal (Match_Internal);
    begin
       return Search_Match (DB);
@@ -89,7 +91,7 @@ package body Parpen.DB is
 
    function Get (DB : Database; C : Curs) return Element is
    begin
-      return DB.Elements (C.Inner).Elem;
+      return DB.Elements (C.Inner).Elem.E;
    end Get;
 
    ------------
@@ -98,7 +100,9 @@ package body Parpen.DB is
 
    procedure Insert (DB : in out Database; C : Curs; K : Key; E : Element) is
    begin
-      DB.Elements (C.Inner) := Internal_Element'(Valid => True, Kee => K, Elem => E);
+      DB.Elements (C.Inner) := Internal_Element'(Valid => True,
+                                                 Kee   => (Valid => True, K => K),
+                                                 Elem  => (Valid => True, E => E));
    end Insert;
 
    ------------
