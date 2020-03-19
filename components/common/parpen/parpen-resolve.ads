@@ -55,6 +55,7 @@ is
    procedure Resolve (DB        : in out Database;
                       Buffer    : in out Types.Bytes_Ptr;
                       Offset    :        Types.Bit_Length;
+                      Length    :        Types.Bit_Length;
                       Source_ID :        Client_ID;
                       Dest_ID   :        Client_ID;
                       Result    :    out Result_Type) with

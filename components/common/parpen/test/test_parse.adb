@@ -169,6 +169,7 @@ package body Test_Parse is
       Database.Initialize;
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Result    => Result);
@@ -188,6 +189,7 @@ package body Test_Parse is
       Database.Add_Client (ID => Client_1);
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Result    => Result);
@@ -217,6 +219,7 @@ package body Test_Parse is
       Database.Add_Client (ID => Client_2);
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
                         Result    => Result);
@@ -246,6 +249,7 @@ package body Test_Parse is
       Database.Add_Client (ID => Client_2);
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
                         Result    => Result);
@@ -285,6 +289,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
                         Result    => Result);
@@ -334,6 +339,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
                         Result    => Result);
@@ -378,6 +384,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Result    => Result);
@@ -432,6 +439,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Result    => Result);
@@ -487,6 +495,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Result    => Result);
@@ -495,6 +504,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
                         Result    => Result);
@@ -539,6 +549,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Result    => Result);
@@ -547,6 +558,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
                         Result    => Result);
@@ -592,6 +604,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Result    => Result);
@@ -600,12 +613,14 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_3,
                         Result    => Result);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_3,
                         Dest_ID   => Client_1,
                         Result    => Result);
@@ -637,6 +652,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_1,
                         Result    => Result);
@@ -674,6 +690,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
+                        Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_1,
                         Result    => Result);
@@ -723,6 +740,7 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 48,
+                        Length    => Input.all'Size - 48,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Result    => Result);
@@ -731,12 +749,14 @@ package body Test_Parse is
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 48,
+                        Length    => Input.all'Size - 48,
                         Source_ID => Client_2,
                         Dest_ID   => Client_3,
                         Result    => Result);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 48,
+                        Length    => Input.all'Size - 48,
                         Source_ID => Client_3,
                         Dest_ID   => Client_1,
                         Result    => Result);

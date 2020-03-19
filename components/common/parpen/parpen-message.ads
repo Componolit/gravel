@@ -16,11 +16,14 @@ is
 
    procedure Add_Client (ID : Client_ID);
 
-   procedure Translate (Data      : in out Types.Bytes_Ptr;
-                        Offsets   :        Types.Bytes_Ptr;
-                        Source_ID :        Client_ID;
-                        Dest_ID   :        Client_ID;
-                        Result    :    out Result_Type);
+   procedure Translate (Data           : in out Types.Bytes_Ptr;
+                        Data_Offset    :        Types.Bit_Length;
+                        Data_Length    :        Types.Bit_Length;
+                        Offsets_Offset :        Types.Bit_Length;
+                        Offsets_Length :        Types.Bit_Length;
+                        Source_ID      :        Client_ID;
+                        Dest_ID        :        Client_ID;
+                        Result         :    out Result_Type);
 
 private
 

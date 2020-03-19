@@ -279,6 +279,7 @@ package body Parpen.Resolve is
    procedure Resolve (DB        : in out Database;
                       Buffer    : in out Types.Bytes_Ptr;
                       Offset    :        Types.Bit_Length;
+                      Length    :        Types.Bit_Length;
                       Source_ID :        Client_ID;
                       Dest_ID   :        Client_ID;
                       Result    :    out Result_Type)
@@ -307,7 +308,7 @@ package body Parpen.Resolve is
       IBinder_Package.Initialize (Context,
                                   Buffer,
                                   Types.First_Bit_Index (Buffer'First) + Offset,
-                                  Types.Last_Bit_Index (Buffer'Last));
+                                  Types.First_Bit_Index (Buffer'First) + Offset + Length - 1);
       IBinder_Package.Verify_Message (Context);
       if not IBinder_Package.Valid_Message (Context) then
          return;

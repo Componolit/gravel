@@ -32,7 +32,6 @@ package body Test_Offsets is
    is
       pragma Unreferenced (T);
 
-      Offsets : constant String_Ptr := new String'("");
       Input : String_Ptr :=
       new String'(
          "Test"
@@ -44,11 +43,14 @@ package body Test_Offsets is
 
       use type Message.Result_Type;
    begin
-      Message.Translate (Offsets   => Offsets,
-                         Data      => Input,
-                         Source_ID => Client_1,
-                         Dest_ID   => Client_2,
-                         Result    => Result);
+      Message.Translate (Data           => Input,
+                         Data_Offset    => 0,
+                         Data_Length    => Input'Length,
+                         Offsets_Offset => 0,
+                         Offsets_Length => 0,
+                         Source_ID      => Client_1,
+                         Dest_ID        => Client_2,
+                         Result         => Result);
       Assert (Result = Message.Result_Valid, "Translating message failed: " & Result'Img);
       Assert (Input.all = Expected, "Message not resolved correctly");
    end Test_Empty_Offset_List;
@@ -71,7 +73,10 @@ package body Test_Offsets is
 
       Expected : constant String_Ptr :=
       new String'(
-         "" & 16#a0# & 16#0b# & 16#35# & 16#af# & 16#f1# & 16#12#
+         ""
+         & 16#00# & 16#00# & 16#00# & 16#00#
+         & 16#00# & 16#00# & 16#00# & 16#30#
+         & 16#a0# & 16#0b# & 16#35# & 16#af# & 16#f1# & 16#12#
          & "wh*" & 16#85#                    -- Weak handle
          & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
          & 16#00# & 16#00# & 16#00# & 16#12# -- handle (value: 16#12#)
@@ -81,10 +86,6 @@ package body Test_Offsets is
          & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
       );
 
-      Offsets : constant String_Ptr :=
-      new String'("" & 16#00# & 16#00# & 16#00# & 16#00# & 16#00#
-                     & 16#00# & 16#00# & 16#00# & 16#00# & 16#30#);
-
       Result : Message.Result_Type;
       use type Message.Result_Type;
    begin
@@ -92,11 +93,14 @@ package body Test_Offsets is
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
 
-      Message.Translate (Data      => Input,
-                         Offsets   => Offsets,
-                         Source_ID => Client_1,
-                         Dest_ID   => Client_2,
-                         Result    => Result);
+      Message.Translate (Data           => Input,
+                         Data_Offset    => 64,
+                         Data_Length    => Input.all'Size - 64,
+                         Offsets_Offset => 0,
+                         Offsets_Length => 64,
+                         Source_ID      => Client_1,
+                         Dest_ID        => Client_2,
+                         Result         => Result);
       Assert (Result = Message.Result_Valid, "Resolving binder unsuccessful: " & Result'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Single_Offset;
