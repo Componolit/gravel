@@ -15,5 +15,6 @@ private
    procedure Test_Parse_Offset_List (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Empty_Offset_List (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Single_Offset (T : in out AUnit.Test_Cases.Test_Case'Class);
+   procedure Test_Multiple_Offsets (T : in out AUnit.Test_Cases.Test_Case'Class);
 
 end Test_Offsets;
