@@ -38,10 +38,11 @@ private
 
    type Node_ID is new Natural range 1 .. Num_Nodes;
    type Handle_ID is new Natural range 0 .. Num_Handles;
+   subtype Regular_Handle_ID is Handle_ID range 1 .. Handle_ID'Last;
 
    package Resolve is new Parpen.Resolve (Client_ID => Client_ID,
                                           Node_ID   => Node_ID,
-                                          Handle_ID => Handle_ID,
+                                          Handle_ID => Regular_Handle_ID,
                                           Types     => Types);
 
    type Database is tagged record

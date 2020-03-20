@@ -17,14 +17,36 @@ package body Parpen.Message is
                         Dest_ID        :        Client_ID;
                         Result         :    out Result_Type)
    is
-      pragma Unreferenced (Data, Data_Offset, Data_Length, Offsets_Offset, Source_ID, Dest_ID);
       use type Types.Bit_Length;
+      Internal_Result : Result_Type;
+
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Continue : out Boolean);
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Continue : out Boolean)
+      is
+         R : Resolve.Result_Type;
+         use type Resolve.Result_Type;
+         use type Parpen.Protocol.Offset;
+      begin
+         if O > Parpen.Protocol.Offset (Data_Length) then
+            Continue := False;
+            return;
+         end if;
+         Resolve.Resolve (DB        => Clients.Inner,
+                          Buffer    => Data,
+                          Offset    => Data_Offset + Types.Bit_Length (O),
+                          Length    => Data_Length - Types.Bit_Length (O),
+                          Source_ID => Source_ID,
+                          Dest_ID   => Dest_ID,
+                          Result    => R);
+         Continue := R = Resolve.Result_OK;
+      end Handle_Offset;
+      procedure Iterate_Offsets is new Message.Offsets (Handle_Offset);
    begin
       if Offsets_Length = 0 then
          Result := Result_Valid;
          return;
       end if;
-      Result := Result_Invalid;
+      Iterate_Offsets (Data, Offsets_Offset, Offsets_Length, Internal_Result);
    end Translate;
 
    ----------------
@@ -50,21 +72,23 @@ package body Parpen.Message is
       Context  : Offsets_Package.Context := Offsets_Package.Create;
       Continue : Boolean;
    begin
-      Result := Result_Invalid;
       for I in 0 .. Offsets_Length / 64 - 1 loop
          Offsets_Package.Initialize (Context,
                                      Data,
                                      Types.First_Bit_Index (Data'First) + Offsets_Offset + I * 64,
                                      Types.First_Bit_Index (Data'First) + Offsets_Offset + I * 64 + 63);
          Offsets_Package.Verify_Message (Context);
-         if not Offsets_Package.Valid_Message (Context) then
-            return;
-         end if;
-         Apply (Offsets_Package.Get_Data (Context), Continue);
-         if not Continue then
-            return;
+
+         Continue := False;
+         if Offsets_Package.Valid_Message (Context) then
+            Apply (Offsets_Package.Get_Data (Context), Continue);
          end if;
          Offsets_Package.Take_Buffer (Context, Data);
+
+         if not Continue then
+            Result := Result_Invalid;
+            return;
+         end if;
       end loop;
       Result := Result_Valid;
    end Offsets;

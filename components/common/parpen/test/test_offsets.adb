@@ -96,7 +96,10 @@ package body Test_Offsets is
 
       Input : String_Ptr :=
       new String'(
-         "" & 16#a0# & 16#0b# & 16#35# & 16#af# & 16#f1# & 16#12#
+         ""
+         & 16#00# & 16#00# & 16#00# & 16#00#
+         & 16#00# & 16#00# & 16#00# & 16#30# -- Offset list with single entry (16#30# -> 48 bit offset within data)
+         & 16#a0# & 16#0b# & 16#35# & 16#af# & 16#f1# & 16#12#
          & "wb*" & 16#85#                    -- Weak binder
          & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
          & 16#01# & 16#00# & 16#00# & 16#00# -- binder (value: 100000000000001)
@@ -110,11 +113,11 @@ package body Test_Offsets is
       new String'(
          ""
          & 16#00# & 16#00# & 16#00# & 16#00#
-         & 16#00# & 16#00# & 16#00# & 16#30#
-         & 16#a0# & 16#0b# & 16#35# & 16#af# & 16#f1# & 16#12#
+         & 16#00# & 16#00# & 16#00# & 16#30# -- Offset list with single entry (16#30# -> 48 bit offset within data)
+         & 16#a0# & 16#0b# & 16#35# & 16#af# & 16#f1# & 16#12# -- Unrelated data
          & "wh*" & 16#85#                    -- Weak handle
          & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
-         & 16#00# & 16#00# & 16#00# & 16#12# -- handle (value: 16#12#)
+         & 16#00# & 16#00# & 16#00# & 16#01# -- handle (value: 16#1#)
          & 16#00# & 16#00# & 16#00# & 16#00# -- padding
          & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
@@ -124,7 +127,6 @@ package body Test_Offsets is
       Result : Message.Result_Type;
       use type Message.Result_Type;
    begin
-      Assert (Input.all /= Expected.all, "Binder do not differ");
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
 
