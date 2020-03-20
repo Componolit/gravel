@@ -11,7 +11,8 @@ package Parpen.Message
 is
    type Result_Type is
       (Result_Valid,
-       Result_Invalid);
+       Result_Invalid,
+       Result_Offset_Out_Of_Range);
 
    type Database is private;
 
@@ -27,8 +28,8 @@ is
                         Result         :    out Result_Type);
 
    generic
-      with procedure Apply (Offset   :        Parpen.Protocol.Offset;
-                            Continue :    out Boolean);
+      with procedure Operation (Offset   :        Parpen.Protocol.Offset;
+                                Result   :    out Result_Type);
    procedure Offsets (Data           : in out Types.Bytes_Ptr;
                       Offsets_Offset :        Types.Bit_Length;
                       Offsets_Length :        Types.Bit_Length;

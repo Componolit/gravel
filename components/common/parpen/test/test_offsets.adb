@@ -48,12 +48,12 @@ package body Test_Offsets is
       Result  : Message.Result_Type;
       use type Message.Result_Type;
 
-      procedure Handle_Offset (O : Parpen.Protocol.Offset; Continue : out Boolean);
-      procedure Handle_Offset (O : Parpen.Protocol.Offset; Continue : out Boolean) is
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Message.Result_Type);
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Message.Result_Type) is
       begin
          Last := Last + 1;
          Decoded (Last) := O;
-         Continue := True;
+         Result := Message.Result_Valid;
       end Handle_Offset;
       procedure Iterate is new Message.Offsets (Handle_Offset);
    begin
@@ -358,6 +358,43 @@ package body Test_Offsets is
       Assert (Input.all = Expected.all, "Message not resolved correctly");
    end Test_Multiple_Offsets_Mixed;
 
+   procedure Test_Out_Of_Range_Offset (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+
+      Input : String_Ptr :=
+      new String'(
+         ""
+         & 16#00# & 16#00# & 16#00# & 16#00#
+         & 16#00# & 16#00# & 16#a0# & 16#00# -- Offset list with single entry (16#a000#)
+         & 16#a0# & 16#0b# & 16#35# & 16#af# & 16#f1# & 16#12#
+         & "wb*" & 16#85#                    -- Weak binder
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#01# & 16#00# & 16#00# & 16#00# -- binder (value: 100000000000001)
+         & 16#00# & 16#00# & 16#00# & 16#01# --
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+         & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
+      );
+
+      Result : Message.Result_Type;
+      use type Message.Result_Type;
+   begin
+      Message.Add_Client (ID => Client_1);
+      Message.Add_Client (ID => Client_2);
+
+      Message.Translate (Data           => Input,
+                         Data_Offset    => 64,
+                         Data_Length    => Input.all'Size - 64,
+                         Offsets_Offset => 0,
+                         Offsets_Length => 64,
+                         Source_ID      => Client_1,
+                         Dest_ID        => Client_2,
+                         Result         => Result);
+      Assert (Result = Message.Result_Offset_Out_Of_Range, "Out-of-range offset undetected: " & Result'Img);
+   end Test_Out_Of_Range_Offset;
+
+
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
    begin
@@ -372,6 +409,7 @@ package body Test_Offsets is
       Register_Routine (T, Test_Single_Offset'Access, "Single offset");
       Register_Routine (T, Test_Multiple_Offsets'Access, "Multiple offsets");
       Register_Routine (T, Test_Multiple_Offsets_Mixed'Access, "Multiple offsets mixed handles/binders");
+      Register_Routine (T, Test_Out_Of_Range_Offset'Access, "Out-of-range offset");
    end Register_Tests;
 
 end Test_Offsets;

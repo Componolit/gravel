@@ -17,5 +17,6 @@ private
    procedure Test_Single_Offset (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Multiple_Offsets (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Multiple_Offsets_Mixed (T : in out AUnit.Test_Cases.Test_Case'Class);
+   procedure Test_Out_Of_Range_Offset (T : in out AUnit.Test_Cases.Test_Case'Class);
 
 end Test_Offsets;
