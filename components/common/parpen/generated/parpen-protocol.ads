@@ -556,12 +556,4 @@ is
      Pre =>
        Valid (Val);
 
-   pragma Warnings (Off, "precondition is statically false");
-
-   pragma Warnings (On, "precondition is statically false");
-
-   pragma Warnings (Off, "unused variable ""Val""");
-
-   pragma Warnings (On, "unused variable ""Val""");
-
 end Parpen.Protocol;

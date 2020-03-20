@@ -120,14 +120,11 @@ package Protocol is
 			Cookie              : Cookie;
 		end message;
 
-	type Offset_Array is array of Offset;
-
+	--  Offset lists without explicit length field do not work at the moment (cf. Componolit/RecordFlux#184)
+	--  Just use the message below for retrieving the numeric value and parse the sequence manually.
 	type Offsets is
 		message
-			null
-				then Data
-					with Length => Message'Length;
-			Data : Offset_Array;
+			Data : Offset;
 		end message;
 
 end Protocol;

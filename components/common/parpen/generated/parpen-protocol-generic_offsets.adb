@@ -61,7 +61,7 @@ is
          when F_Initial =>
             (case Fld is
                   when F_Data =>
-                     Message'Length,
+                     Protocol.Offset'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Data | F_Final =>
@@ -98,7 +98,7 @@ is
          when F_Data =>
             Ctx.Cursors (Fld).Predecessor = F_Initial,
          when F_Final =>
-            (Structural_Valid (Ctx.Cursors (F_Data))
+            (Valid (Ctx.Cursors (F_Data))
                  and Ctx.Cursors (Fld).Predecessor = F_Data)));
 
    function Valid_Next (Ctx : Context; Fld : Field) return Boolean is
@@ -158,7 +158,7 @@ is
    function Composite_Field (Fld : Field) return Boolean is
      ((case Fld is
          when F_Data =>
-            True));
+            False));
 
    function Get_Field_Value (Ctx : Context; Fld : Field) return Field_Dependent_Value with
      Pre =>
@@ -176,10 +176,11 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
+      function Extract is new Types.Extract (Protocol.Offset);
    begin
       return ((case Fld is
             when F_Data =>
-               (Fld => F_Data)));
+               (Fld => F_Data, Data_Value => Extract (Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset))));
    end Get_Field_Value;
 
    procedure Verify (Ctx : in out Context; Fld : Field) is
@@ -199,7 +200,7 @@ is
                   Ctx.Cursors (Fld) := (State => S_Valid, First => Field_First (Ctx, Fld), Last => Field_Last (Ctx, Fld), Value => Value, Predecessor => Ctx.Cursors (Fld).Predecessor);
                end if;
                pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Data)) then
-                   (Ctx.Cursors (F_Data).Last - Ctx.Cursors (F_Data).First + 1) = Message'Length
+                   (Ctx.Cursors (F_Data).Last - Ctx.Cursors (F_Data).First + 1) = Protocol.Offset'Size
                      and then Ctx.Cursors (F_Data).Predecessor = F_Initial
                      and then Ctx.Cursors (F_Data).First = Ctx.First));
                if Fld = F_Data then
@@ -239,7 +240,7 @@ is
       or Ctx.Cursors (Fld).State = S_Incomplete);
 
    function Structural_Valid_Message (Ctx : Context) return Boolean is
-     (Structural_Valid (Ctx, F_Data));
+     (Valid (Ctx, F_Data));
 
    function Valid_Message (Ctx : Context) return Boolean is
      (Valid (Ctx, F_Data));
@@ -247,12 +248,8 @@ is
    function Incomplete_Message (Ctx : Context) return Boolean is
      (Incomplete (Ctx, F_Data));
 
-   procedure Get_Data (Ctx : Context) is
-      First : constant Types.Index := Types.Byte_Index (Ctx.Cursors (F_Data).First);
-      Last : constant Types.Index := Types.Byte_Index (Ctx.Cursors (F_Data).Last);
-   begin
-      Process_Data (Ctx.Buffer.all (First .. Last));
-   end Get_Data;
+   function Get_Data (Ctx : Context) return Protocol.Offset is
+     (Ctx.Cursors (F_Data).Value.Data_Value);
 
    procedure Set_Field_Value (Ctx : in out Context; Val : Field_Dependent_Value; Fst, Lst : out Types.Bit_Index) with
      Pre =>
@@ -287,45 +284,29 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
+      procedure Insert is new Types.Insert (Protocol.Offset);
    begin
       Fst := First;
       Lst := Last;
       case Val.Fld is
-         when F_Initial | F_Data | F_Final =>
+         when F_Initial =>
+            null;
+         when F_Data =>
+            Insert (Val.Data_Value, Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset);
+         when F_Final =>
             null;
       end case;
    end Set_Field_Value;
 
-   procedure Switch_To_Data (Ctx : in out Context; Seq_Ctx : out Offset_Array_Sequence.Context) is
-      First : constant Types.Bit_Index := Field_First (Ctx, F_Data);
-      Last : constant Types.Bit_Index := Field_Last (Ctx, F_Data);
-      Buffer : Types.Bytes_Ptr;
+   procedure Set_Data (Ctx : in out Context; Val : Protocol.Offset) is
+      Field_Value : constant Field_Dependent_Value := (F_Data, Val);
+      First, Last : Types.Bit_Index;
    begin
-      if Invalid (Ctx, F_Data) then
-         Reset_Dependent_Fields (Ctx, F_Data);
-         Ctx := (Ctx.Buffer_First, Ctx.Buffer_Last, Ctx.First, Last, Ctx.Buffer, Ctx.Cursors);
-         pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Data)) then
-             (Ctx.Cursors (F_Data).Last - Ctx.Cursors (F_Data).First + 1) = Message'Length
-               and then Ctx.Cursors (F_Data).Predecessor = F_Initial
-               and then Ctx.Cursors (F_Data).First = Ctx.First));
-         Ctx.Cursors (F_Data) := (State => S_Structural_Valid, First => First, Last => Last, Value => (Fld => F_Data), Predecessor => Ctx.Cursors (F_Data).Predecessor);
-         Ctx.Cursors (Successor (Ctx, F_Data)) := (State => S_Invalid, Predecessor => F_Data);
-      end if;
-      Take_Buffer (Ctx, Buffer);
-      pragma Warnings (Off, "unused assignment to ""Buffer""");
-      Offset_Array_Sequence.Initialize (Seq_Ctx, Buffer, Ctx.Buffer_First, Ctx.Buffer_Last, First, Last);
-      pragma Warnings (On, "unused assignment to ""Buffer""");
-   end Switch_To_Data;
-
-   procedure Update_Data (Ctx : in out Context; Seq_Ctx : in out Offset_Array_Sequence.Context) is
-      Valid_Sequence : constant Boolean := Offset_Array_Sequence.Valid (Seq_Ctx);
-      Buffer : Types.Bytes_Ptr;
-   begin
-      Offset_Array_Sequence.Take_Buffer (Seq_Ctx, Buffer, Ctx.Buffer_First, Ctx.Buffer_Last);
-      Ctx.Buffer := Buffer;
-      if Valid_Sequence then
-         Ctx.Cursors (F_Data) := (State => S_Valid, First => Ctx.Cursors (F_Data).First, Last => Ctx.Cursors (F_Data).Last, Value => Ctx.Cursors (F_Data).Value, Predecessor => Ctx.Cursors (F_Data).Predecessor);
-      end if;
-   end Update_Data;
+      Reset_Dependent_Fields (Ctx, F_Data);
+      Set_Field_Value (Ctx, Field_Value, First, Last);
+      Ctx := (Ctx.Buffer_First, Ctx.Buffer_Last, Ctx.First, Last, Ctx.Buffer, Ctx.Cursors);
+      Ctx.Cursors (F_Data) := (State => S_Valid, First => First, Last => Last, Value => Field_Value, Predecessor => Ctx.Cursors (F_Data).Predecessor);
+      Ctx.Cursors (Successor (Ctx, F_Data)) := (State => S_Invalid, Predecessor => F_Data);
+   end Set_Data;
 
 end Parpen.Protocol.Generic_Offsets;

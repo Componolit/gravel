@@ -1,9 +1,7 @@
 with Parpen.Generic_Types;
-with Parpen.Scalar_Sequence;
 
 generic
    with package Types is new Parpen.Generic_Types (<>);
-   with package Offset_Array_Sequence is new Parpen.Scalar_Sequence (Types, others => <>);
 package Parpen.Protocol.Generic_Offsets with
   SPARK_Mode
 is
@@ -29,8 +27,10 @@ is
    type Field_Dependent_Value (Fld : Virtual_Field := F_Initial) is
       record
          case Fld is
-            when F_Initial | F_Data | F_Final =>
+            when F_Initial | F_Final =>
                null;
+            when F_Data =>
+               Data_Value : Protocol.Offset;
          end case;
       end record;
 
@@ -198,69 +198,31 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   generic
-      with procedure Process_Data (Data : Types.Bytes);
-   procedure Get_Data (Ctx : Context) with
+   function Get_Data (Ctx : Context) return Protocol.Offset with
      Pre =>
        Valid_Context (Ctx)
-          and Has_Buffer (Ctx)
-          and Present (Ctx, F_Data);
+          and Valid (Ctx, F_Data);
 
-   procedure Switch_To_Data (Ctx : in out Context; Seq_Ctx : out Offset_Array_Sequence.Context) with
+   procedure Set_Data (Ctx : in out Context; Val : Protocol.Offset) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
-          and then not Seq_Ctx'Constrained
           and then Has_Buffer (Ctx)
           and then Valid_Next (Ctx, F_Data)
-          and then Field_Length (Ctx, F_Data) > 0
           and then Field_Last (Ctx, F_Data) <= Types.Bit_Index'Last / 2
-          and then Field_Condition (Ctx, (Fld => F_Data))
+          and then Field_Condition (Ctx, (F_Data, Val))
+          and then Valid (Val)
           and then Available_Space (Ctx, F_Data) >= Field_Length (Ctx, F_Data),
      Post =>
        Valid_Context (Ctx)
-          and not Has_Buffer (Ctx)
-          and Offset_Array_Sequence.Has_Buffer (Seq_Ctx)
-          and Ctx.Buffer_First = Seq_Ctx.Buffer_First
-          and Ctx.Buffer_Last = Seq_Ctx.Buffer_Last
-          and Seq_Ctx.First = Field_First (Ctx, F_Data)
-          and Seq_Ctx.Last = Field_Last (Ctx, F_Data)
-          and Offset_Array_Sequence.Index (Seq_Ctx) = Seq_Ctx.First
-          and Present (Ctx, F_Data)
+          and Has_Buffer (Ctx)
+          and Valid (Ctx, F_Data)
+          and Get_Data (Ctx) = Val
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
           and Predecessor (Ctx, F_Data) = Predecessor (Ctx, F_Data)'Old
-          and Path_Condition (Ctx, F_Data) = Path_Condition (Ctx, F_Data)'Old,
-     Contract_Cases =>
-       (Structural_Valid (Ctx, F_Data) =>
-           True,
-        others =>
-           True);
-
-   procedure Update_Data (Ctx : in out Context; Seq_Ctx : in out Offset_Array_Sequence.Context) with
-     Pre =>
-       Valid_Context (Ctx)
-          and then Present (Ctx, F_Data)
-          and then not Has_Buffer (Ctx)
-          and then Offset_Array_Sequence.Has_Buffer (Seq_Ctx)
-          and then Ctx.Buffer_First = Seq_Ctx.Buffer_First
-          and then Ctx.Buffer_Last = Seq_Ctx.Buffer_Last
-          and then Seq_Ctx.First = Field_First (Ctx, F_Data)
-          and then Seq_Ctx.Last = Field_Last (Ctx, F_Data),
-     Post =>
-       Valid_Context (Ctx)
-          and Present (Ctx, F_Data)
-          and Has_Buffer (Ctx)
-          and not Offset_Array_Sequence.Has_Buffer (Seq_Ctx)
-          and Seq_Ctx.First = Field_First (Ctx, F_Data)
-          and Seq_Ctx.Last = Field_Last (Ctx, F_Data)
-          and Seq_Ctx.First = Seq_Ctx.First'Old
-          and Seq_Ctx.Last = Seq_Ctx.Last'Old
-          and Ctx.Buffer_First = Ctx.Buffer_First'Old
-          and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
-          and Field_First (Ctx, F_Data) = Field_First (Ctx, F_Data)'Old
-          and Field_Length (Ctx, F_Data) = Field_Length (Ctx, F_Data)'Old;
+          and Valid_Next (Ctx, F_Data) = Valid_Next (Ctx, F_Data)'Old;
 
    function Valid_Context (Ctx : Context) return Boolean with
      Annotate =>
@@ -284,7 +246,7 @@ private
    function Valid_Value (Val : Field_Dependent_Value) return Boolean is
      ((case Val.Fld is
          when F_Data =>
-            True,
+            Valid (Val.Data_Value),
          when F_Initial | F_Final =>
             False));
 
@@ -335,7 +297,7 @@ private
       and then (True)
       and then (True)
       and then (if Structural_Valid (Cursors (F_Data)) then
-         (Cursors (F_Data).Last - Cursors (F_Data).First + 1) = Message'Length
+         (Cursors (F_Data).Last - Cursors (F_Data).First + 1) = Protocol.Offset'Size
            and then Cursors (F_Data).Predecessor = F_Initial
            and then Cursors (F_Data).First = First));
 
