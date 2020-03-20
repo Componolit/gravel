@@ -242,6 +242,121 @@ package body Test_Offsets is
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Multiple_Offsets;
 
+   procedure Test_Multiple_Offsets_Mixed (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+
+      Input : String_Ptr :=
+      new String'(
+         ""
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Offset list with 3 entries (#1: 16#40# -> 64 bit offset within data)
+         & 16#00# & 16#00# & 16#00# & 16#40#
+         & 16#00# & 16#00# & 16#00# & 16#00# -- (#2: 16#120# -> 288 bit offset within data)
+         & 16#00# & 16#00# & 16#01# & 16#20#
+         & 16#00# & 16#00# & 16#00# & 16#00# -- (#3: 16#200# -> 512 bit offset within data)
+         & 16#00# & 16#00# & 16#02# & 16#00#
+
+                                             -- Start of data --
+
+         & 16#a0# & 16#0b# & 16#35# & 16#af# -- Unrelated data
+         & 16#f1# & 16#12# & 16#f1# & 16#12# -- Unrelated data
+
+         & "wb*" & 16#85#                    -- Weak binder @ 64 bit
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#01# & 16#00# & 16#00# & 16#00# -- binder (value: 100000000000001)
+         & 16#00# & 16#00# & 16#00# & 16#01# --
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+
+         & 16#ff# & 16#00# & 16#67# & 16#2f# -- Unrelated data
+
+         & "wb*" & 16#85#                    -- Weak binder @ 288 bit
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#00# & 16#00# & 16#00# & 16#00# -- binder (value: 16#deadc0de#)
+         & 16#de# & 16#ad# & 16#c0# & 16#de# --
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F1# -- cookie (part 2)
+
+         & 16#ff# & 16#00# & 16#67# & 16#2f# -- Unrelated data
+
+         & "wb*" & 16#85#                    -- Weak binder @ 512 bit
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#11# & 16#11# & 16#11# & 16#11# -- binder (value: 16#1111111111111111#)
+         & 16#11# & 16#11# & 16#11# & 16#11# --
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F1# -- cookie (part 2)
+      );
+
+      Expected : constant String_Ptr :=
+      new String'(
+         ""
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Offset list with 3 entries (#1: 16#40# -> 64 bit offset within data)
+         & 16#00# & 16#00# & 16#00# & 16#40#
+         & 16#00# & 16#00# & 16#00# & 16#00# -- (#2: 16#120# -> 288 bit offset within data)
+         & 16#00# & 16#00# & 16#01# & 16#20#
+         & 16#00# & 16#00# & 16#00# & 16#00# -- (#3: 16#200# -> 512 bit offset within data)
+         & 16#00# & 16#00# & 16#02# & 16#00#
+
+                                             -- Start of data --
+
+         & 16#a0# & 16#0b# & 16#35# & 16#af# -- Unrelated data
+         & 16#f1# & 16#12# & 16#f1# & 16#12# -- Unrelated data
+
+         & "wh*" & 16#85#                    -- Weak binder @ 64 bit
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#00# & 16#00# & 16#00# & 16#01# -- handle (value: 16#1#)
+         & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+
+         & 16#ff# & 16#00# & 16#67# & 16#2f# -- Unrelated data
+
+         & "wb*" & 16#85#                    -- Weak binder @ 288 bit
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#00# & 16#00# & 16#00# & 16#00# -- binder (value: 16#deadc0de#)
+         & 16#de# & 16#ad# & 16#c0# & 16#de# --
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F1# -- cookie (part 2)
+
+         & 16#ff# & 16#00# & 16#67# & 16#2f# -- Unrelated data
+
+         & "wb*" & 16#85#                    -- Weak binder @ 512 bit
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#11# & 16#11# & 16#11# & 16#11# -- binder (value: 16#1111111111111111#)
+         & 16#11# & 16#11# & 16#11# & 16#11# --
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F1# -- cookie (part 2)
+      );
+
+      Result : Message.Result_Type;
+      use type Message.Result_Type;
+   begin
+      Message.Add_Client (ID => Client_1);
+      Message.Add_Client (ID => Client_2);
+
+      Message.Translate (Data           => Input,
+                         Data_Offset    => 3 * 64,
+                         Data_Length    => Input.all'Size - 3 * 64,
+                         Offsets_Offset => 64,     --  This is a trick to prevent the first binder
+                         Offsets_Length => 2 * 64, --  from being translated. In the second translation
+                                                   --  this is then used as binder of Client_2.
+                         Source_ID      => Client_1,
+                         Dest_ID        => Client_2,
+                         Result         => Result);
+      Assert (Result = Message.Result_Valid, "Translating Client_1 to Client_2 unsuccessful: " & Result'Img);
+
+      Message.Translate (Data           => Input,
+                         Data_Offset    => 3 * 64,
+                         Data_Length    => Input.all'Size - 3 * 64,
+                         Offsets_Offset => 0,
+                         Offsets_Length => 3 * 64,
+                         Source_ID      => Client_2,
+                         Dest_ID        => Client_1,
+                         Result         => Result);
+
+      Assert (Result = Message.Result_Valid, "Resolving Client_2 to Client_3 unsuccessful: " & Result'Img);
+      Assert (Input.all = Expected.all, "Message not resolved correctly");
+   end Test_Multiple_Offsets_Mixed;
 
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
@@ -256,6 +371,7 @@ package body Test_Offsets is
       Register_Routine (T, Test_Empty_Offset_List'Access, "Empty offset list");
       Register_Routine (T, Test_Single_Offset'Access, "Single offset");
       Register_Routine (T, Test_Multiple_Offsets'Access, "Multiple offsets");
+      Register_Routine (T, Test_Multiple_Offsets_Mixed'Access, "Multiple offsets mixed handles/binders");
    end Register_Tests;
 
 end Test_Offsets;
