@@ -394,6 +394,40 @@ package body Test_Offsets is
       Assert (Result = Message.Result_Offset_Out_Of_Range, "Out-of-range offset undetected: " & Result'Img);
    end Test_Out_Of_Range_Offset;
 
+   procedure Test_Invalid_Binder (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+
+      Input : String_Ptr :=
+      new String'(
+         ""
+         & 16#00# & 16#00# & 16#00# & 16#00#
+         & 16#00# & 16#00# & 16#00# & 16#04# -- Offset list with single entry (16#4#)
+         & 16#a0# & 16#0b# & 16#35# & 16#af#
+         & 16#f1# & 16#12# & 16#ff# & 16#00#
+         & 16#67# & 16#2f# & 16#e4# & 16#ee#
+         & 16#a0# & 16#0b# & 16#35# & 16#af#
+         & 16#f1# & 16#12# & 16#ff# & 16#00#
+         & 16#67# & 16#2f# & 16#e4# & 16#ee#
+      );
+
+      Result : Message.Result_Type;
+      use type Message.Result_Type;
+   begin
+      Message.Add_Client (ID => Client_1);
+      Message.Add_Client (ID => Client_2);
+
+      Message.Translate (Data           => Input,
+                         Data_Offset    => 64,
+                         Data_Length    => Input.all'Size - 64,
+                         Offsets_Offset => 0,
+                         Offsets_Length => 64,
+                         Source_ID      => Client_1,
+                         Dest_ID        => Client_2,
+                         Result         => Result);
+      Assert (Result = Message.Result_Invalid, "Invalid binder undetected: " & Result'Img);
+   end Test_Invalid_Binder;
+
 
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
@@ -410,6 +444,7 @@ package body Test_Offsets is
       Register_Routine (T, Test_Multiple_Offsets'Access, "Multiple offsets");
       Register_Routine (T, Test_Multiple_Offsets_Mixed'Access, "Multiple offsets mixed handles/binders");
       Register_Routine (T, Test_Out_Of_Range_Offset'Access, "Out-of-range offset");
+      Register_Routine (T, Test_Invalid_Binder'Access, "Invalid binder");
    end Register_Tests;
 
 end Test_Offsets;
