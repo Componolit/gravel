@@ -1,5 +1,6 @@
 with Parpen.Generic_Types;
 with Parpen.Resolve;
+with Parpen.Protocol;
 
 generic
    type Client_ID is (<>);
@@ -24,6 +25,14 @@ is
                         Source_ID      :        Client_ID;
                         Dest_ID        :        Client_ID;
                         Result         :    out Result_Type);
+
+   generic
+      with procedure Apply (Offset   :        Parpen.Protocol.Offset;
+                            Continue :    out Boolean);
+   procedure Offsets (Data           : in out Types.Bytes_Ptr;
+                      Offsets_Offset :        Types.Bit_Length;
+                      Offsets_Length :        Types.Bit_Length;
+                      Result         :    out Result_Type);
 
 private
 

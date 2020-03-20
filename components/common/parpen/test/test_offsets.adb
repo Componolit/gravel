@@ -1,6 +1,7 @@
 with AUnit.Assertions; use AUnit.Assertions;
 with Parpen.Generic_Types;
 with Parpen.Message;
+with Parpen.Protocol;
 
 package body Test_Offsets is
 
@@ -27,6 +28,40 @@ package body Test_Offsets is
 
    function "&" (Left : String; Right : Natural) return String is
       (Left & (1 => Character'Val (Right)));
+
+   procedure Test_Parse_Offset_List (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      Input : String_Ptr := new String'(
+         ""
+         & 16#01# & 16#00# & 16#00# & 16#00# & 16#00# & 16#00# & 16#00# & 16#01#
+         & 16#00# & 16#70# & 16#00# & 16#00# & 16#00# & 16#00# & 16#50# & 16#00#
+         & 16#aa# & 16#aa# & 16#aa# & 16#aa# & 16#aa# & 16#aa# & 16#aa# & 16#aa#
+         & 16#01# & 16#02# & 16#03# & 16#04# & 16#05# & 16#06# & 16#07# & 16#08#
+      );
+
+      type Offsets_Array is array (Positive range <>) of Parpen.Protocol.Offset;
+      Expected : constant Offsets_Array (1 .. 4) := (16#0100000000000001#, 16#0070000000005000#,
+                                                     16#aaaaaaaaaaaaaaaa#, 16#0102030405060708#);
+      Decoded : Offsets_Array (1 .. 20);
+      Last    : Natural := 0;
+      Result  : Message.Result_Type;
+      use type Message.Result_Type;
+
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Continue : out Boolean);
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Continue : out Boolean) is
+      begin
+         Last := Last + 1;
+         Decoded (Last) := O;
+         Continue := True;
+      end Handle_Offset;
+      procedure Iterate is new Message.Offsets (Handle_Offset);
+   begin
+      Iterate (Input, 0, 256, Result);
+      Assert (Result = Message.Result_Valid, "Decoding failed");
+      Assert (Last = 4, "Invalid number of offsets");
+      Assert (Decoded (Decoded'First .. Last) = Expected, "Parsed offsets mismatch");
+   end Test_Parse_Offset_List;
 
    procedure Test_Empty_Offset_List (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
@@ -114,6 +149,7 @@ package body Test_Offsets is
    procedure Register_Tests (T : in out Test) is
       use AUnit.Test_Cases.Registration;
    begin
+      Register_Routine (T, Test_Parse_Offset_List'Access, "Parse_Offset_List");
       Register_Routine (T, Test_Empty_Offset_List'Access, "Empty offset list");
       Register_Routine (T, Test_Single_Offset'Access, "Single offset");
    end Register_Tests;
