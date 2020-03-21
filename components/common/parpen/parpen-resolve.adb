@@ -1,8 +1,8 @@
-with Parpen.Protocol.Generic_IBinder;
+with Parpen.Binder.Generic_IBinder;
 
 package body Parpen.Resolve is
 
-   package IBinder_Package is new Parpen.Protocol.Generic_IBinder (Types);
+   package IBinder_Package is new Parpen.Binder.Generic_IBinder (Types);
 
    procedure Resolve_Handle (DB        : in out Database;
                              Context   : in out IBinder_Package.Context;
@@ -23,7 +23,7 @@ package body Parpen.Resolve is
                              Weak      :        Boolean);
 
    procedure Install_Binder (Context : in out IBinder_Package.Context;
-                             Binder  :        Parpen.Protocol.Binder;
+                             Binder  :        Parpen.Binder.Value;
                              Weak    :        Boolean);
 
    ----------------
@@ -44,7 +44,7 @@ package body Parpen.Resolve is
    procedure Add_Node (DB     : in out Database'Class;
                        Cursor : in out Node_Option;
                        Owner  :        Client_ID;
-                       Value  :        Parpen.Protocol.Binder)
+                       Value  :        Parpen.Binder.Value)
    is
       E : Node_DB.Option := (State    => Node_DB.Status_Valid,
                              Data     => (Owner, Value),
@@ -105,8 +105,8 @@ package body Parpen.Resolve is
                              Weak      :        Boolean)
    is
       Handle : Handle_DB.Option;
-      Cookie : Parpen.Protocol.Cookie;
-      Flags  : Parpen.Protocol.Flat_Binder_Flags;
+      Cookie : Parpen.Binder.Cookie;
+      Flags  : Parpen.Binder.Flat_Binder_Flags;
 
       procedure Insert_Handle (Client : in out Client_Type);
 
@@ -130,14 +130,14 @@ package body Parpen.Resolve is
       Flags  := IBinder_Package.Get_Flags (Context);
 
       if Weak then
-         IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_WEAK_HANDLE);
+         IBinder_Package.Set_Kind (Context, Parpen.Binder.BK_WEAK_HANDLE);
       else
-         IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_STRONG_HANDLE);
+         IBinder_Package.Set_Kind (Context, Parpen.Binder.BK_STRONG_HANDLE);
       end if;
-      IBinder_Package.Set_Arity (Context, Parpen.Protocol.BA_SINGLE);
+      IBinder_Package.Set_Arity (Context, Parpen.Binder.BA_SINGLE);
       IBinder_Package.Set_Tag (Context, 16#85#);
       IBinder_Package.Set_Flags (Context, Flags);
-      IBinder_Package.Set_Handle (Context, Parpen.Protocol.Handle'Val (Handle_ID'Pos (Handle.Position)));
+      IBinder_Package.Set_Handle (Context, Parpen.Binder.Handle'Val (Handle_ID'Pos (Handle.Position)));
       IBinder_Package.Set_Unused_Padding (Context, 0);
       IBinder_Package.Set_Cookie (Context, Cookie);
    end Install_Handle;
@@ -147,21 +147,21 @@ package body Parpen.Resolve is
    --------------------
 
    procedure Install_Binder (Context : in out IBinder_Package.Context;
-                             Binder  :        Parpen.Protocol.Binder;
+                             Binder  :        Parpen.Binder.Value;
                              Weak    :        Boolean)
    is
-      Cookie : Parpen.Protocol.Cookie;
-      Flags  : Parpen.Protocol.Flat_Binder_Flags;
+      Cookie : Parpen.Binder.Cookie;
+      Flags  : Parpen.Binder.Flat_Binder_Flags;
    begin
       Cookie := IBinder_Package.Get_Cookie (Context);
       Flags  := IBinder_Package.Get_Flags (Context);
 
       if Weak then
-         IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_WEAK_BINDER);
+         IBinder_Package.Set_Kind (Context, Parpen.Binder.BK_WEAK_BINDER);
       else
-         IBinder_Package.Set_Kind (Context, Parpen.Protocol.BK_STRONG_BINDER);
+         IBinder_Package.Set_Kind (Context, Parpen.Binder.BK_STRONG_BINDER);
       end if;
-      IBinder_Package.Set_Arity (Context, Parpen.Protocol.BA_SINGLE);
+      IBinder_Package.Set_Arity (Context, Parpen.Binder.BA_SINGLE);
       IBinder_Package.Set_Tag (Context, 16#85#);
       IBinder_Package.Set_Flags (Context, Flags);
       IBinder_Package.Set_Binder (Context, Binder);
@@ -179,9 +179,9 @@ package body Parpen.Resolve is
                              Result    :    out Result_Type)
    is
       Node   : Node_DB.Option;
-      Binder : Parpen.Protocol.Binder;
+      Binder : Parpen.Binder.Value;
       Weak   : Boolean;
-      use type Parpen.Protocol.Binder_Kind;
+      use type Parpen.Binder.Binder_Kind;
    begin
       Binder := IBinder_Package.Get_Binder (Context);
       Node := DB.Nodes.Find ((Source_ID, Binder));
@@ -190,9 +190,9 @@ package body Parpen.Resolve is
          DB.Nodes.Insert (Node);
       end if;
 
-      if IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_BINDER then
+      if IBinder_Package.Get_Kind (Context) = Parpen.Binder.BK_WEAK_BINDER then
          Weak := True;
-      elsif IBinder_Package.Get_Kind (Context) /= Parpen.Protocol.BK_STRONG_BINDER then
+      elsif IBinder_Package.Get_Kind (Context) /= Parpen.Binder.BK_STRONG_BINDER then
          Weak := False;
       end if;
 
@@ -224,22 +224,22 @@ package body Parpen.Resolve is
       Source           : Client_DB.Option;
       Source_Handle    : Handle_DB.Option;
       Source_Handle_ID : Handle_ID;
-      Handle           : Parpen.Protocol.Handle;
+      Handle           : Parpen.Binder.Handle;
       Node             : Node_DB.Option;
       Weak             : Boolean;
       use type Handle_DB.Status;
-      use type Parpen.Protocol.Binder_Kind;
+      use type Parpen.Binder.Binder_Kind;
    begin
       Handle := IBinder_Package.Get_Handle (Context);
       if
-         Parpen.Protocol.Handle'Pos (Handle) > Handle_ID'Pos (Handle_ID'Last)
-         or Parpen.Protocol.Handle'Pos (Handle) < Handle_ID'Pos (Handle_ID'First)
+         Parpen.Binder.Handle'Pos (Handle) > Handle_ID'Pos (Handle_ID'Last)
+         or Parpen.Binder.Handle'Pos (Handle) < Handle_ID'Pos (Handle_ID'First)
       then
          Result := Result_Invalid_Handle;
          return;
       end if;
 
-      Source_Handle_ID := Handle_ID'Val (Parpen.Protocol.Handle'Pos (Handle));
+      Source_Handle_ID := Handle_ID'Val (Parpen.Binder.Handle'Pos (Handle));
 
       Source := DB.Clients.Get (Source_ID);
       Source_Handle := Source.Data.Handles.Get (Source_Handle_ID);
@@ -254,7 +254,7 @@ package body Parpen.Resolve is
          return;
       end if;
 
-      Weak := IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_HANDLE;
+      Weak := IBinder_Package.Get_Kind (Context) = Parpen.Binder.BK_WEAK_HANDLE;
 
       if Node.Data.Owner = Dest_ID then
          Install_Binder (Context => Context,
@@ -290,7 +290,7 @@ package body Parpen.Resolve is
 
       use type Types.Bit_Length;
       use type Client_DB.Status;
-      use type Parpen.Protocol.Binder_Kind;
+      use type Parpen.Binder.Binder_Kind;
    begin
       Result := Result_Invalid;
       Source := DB.Clients.Get (Source_ID);
@@ -315,13 +315,13 @@ package body Parpen.Resolve is
       end if;
 
       if
-         IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_HANDLE
-         or IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_STRONG_HANDLE
+         IBinder_Package.Get_Kind (Context) = Parpen.Binder.BK_WEAK_HANDLE
+         or IBinder_Package.Get_Kind (Context) = Parpen.Binder.BK_STRONG_HANDLE
       then
          Resolve_Handle (DB, Context, Source_ID, Dest_ID, Result);
       elsif
-         IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_BINDER
-         or IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_STRONG_BINDER
+         IBinder_Package.Get_Kind (Context) = Parpen.Binder.BK_WEAK_BINDER
+         or IBinder_Package.Get_Kind (Context) = Parpen.Binder.BK_STRONG_BINDER
       then
          Resolve_Binder (DB, Context, Source_ID, Dest_ID, Result);
       else

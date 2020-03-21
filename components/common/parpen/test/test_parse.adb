@@ -1,6 +1,6 @@
 with AUnit.Assertions; use AUnit.Assertions;
 with Parpen.Generic_Types;
-with Parpen.Protocol.Generic_IBinder;
+with Parpen.Binder.Generic_IBinder;
 with Parpen.Resolve;
 
 package body Test_Parse is
@@ -16,7 +16,7 @@ package body Test_Parse is
                                               Bytes_Ptr  => String_Ptr,
                                               Length     => Natural,
                                               Bit_Length => Bit_Length);
-   package IBinder_Package is new Parpen.Protocol.Generic_IBinder (Types);
+   package IBinder_Package is new Parpen.Binder.Generic_IBinder (Types);
 
    type Client_ID is new Natural range 11 .. 21;
    Client_1 : constant Client_ID := Client_ID'First + 1;
@@ -47,23 +47,23 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      B       : Parpen.Protocol.Binder;
-      C       : Parpen.Protocol.Cookie;
+      B       : Parpen.Binder.Value;
+      C       : Parpen.Binder.Cookie;
       Context : IBinder_Package.Context := IBinder_Package.Create;
-      use type Parpen.Protocol.Binder_Kind;
-      use type Parpen.Protocol.Binder;
-      use type Parpen.Protocol.Cookie;
-      use type Parpen.Protocol.Flat_Binder_Flags;
+      use type Parpen.Binder.Binder_Kind;
+      use type Parpen.Binder.Value;
+      use type Parpen.Binder.Cookie;
+      use type Parpen.Binder.Flat_Binder_Flags;
    begin
       IBinder_Package.Initialize (Context, Input);
       IBinder_Package.Verify_Message (Context);
       Assert (IBinder_Package.Valid_Message (Context), "Message invalid");
 
       Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Kind), "Kind invalid");
-      Assert (IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_STRONG_BINDER, "Strong binder expected");
+      Assert (IBinder_Package.Get_Kind (Context) = Parpen.Binder.BK_STRONG_BINDER, "Strong binder expected");
 
       Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Flags), "Flags invalid");
-      Assert (IBinder_Package.Get_Flags (Context) = Parpen.Protocol.FBF_ACCEPT_FDS, "FBF_ACCEPT_FDS not set");
+      Assert (IBinder_Package.Get_Flags (Context) = Parpen.Binder.FBF_ACCEPT_FDS, "FBF_ACCEPT_FDS not set");
 
       Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Binder), "Binder invalid");
       B := IBinder_Package.Get_Binder (Context);
@@ -87,23 +87,23 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      H       : Parpen.Protocol.Handle;
-      C       : Parpen.Protocol.Cookie;
+      H       : Parpen.Binder.Handle;
+      C       : Parpen.Binder.Cookie;
       Context : IBinder_Package.Context := IBinder_Package.Create;
-      use type Parpen.Protocol.Binder_Kind;
-      use type Parpen.Protocol.Handle;
-      use type Parpen.Protocol.Cookie;
-      use type Parpen.Protocol.Flat_Binder_Flags;
+      use type Parpen.Binder.Binder_Kind;
+      use type Parpen.Binder.Handle;
+      use type Parpen.Binder.Cookie;
+      use type Parpen.Binder.Flat_Binder_Flags;
    begin
       IBinder_Package.Initialize (Context, Input);
       IBinder_Package.Verify_Message (Context);
       Assert (IBinder_Package.Valid_Message (Context), "Message invalid");
 
       Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Kind), "Kind invalid");
-      Assert (IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_HANDLE, "Weak handle expected");
+      Assert (IBinder_Package.Get_Kind (Context) = Parpen.Binder.BK_WEAK_HANDLE, "Weak handle expected");
 
       Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Flags), "Flags invalid");
-      Assert (IBinder_Package.Get_Flags (Context) = Parpen.Protocol.FBF_NONE, "FBF_NONE expected");
+      Assert (IBinder_Package.Get_Flags (Context) = Parpen.Binder.FBF_NONE, "FBF_NONE expected");
 
       Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Handle), "Handle invalid");
       H := IBinder_Package.Get_Handle (Context);
@@ -128,13 +128,13 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      H       : Parpen.Protocol.Handle;
-      C       : Parpen.Protocol.Cookie;
+      H       : Parpen.Binder.Handle;
+      C       : Parpen.Binder.Cookie;
       Context : IBinder_Package.Context := IBinder_Package.Create;
-      use type Parpen.Protocol.Binder_Kind;
-      use type Parpen.Protocol.Handle;
-      use type Parpen.Protocol.Cookie;
-      use type Parpen.Protocol.Flat_Binder_Flags;
+      use type Parpen.Binder.Binder_Kind;
+      use type Parpen.Binder.Handle;
+      use type Parpen.Binder.Cookie;
+      use type Parpen.Binder.Flat_Binder_Flags;
    begin
       IBinder_Package.Initialize (Context,
                                   Input,
@@ -144,10 +144,10 @@ package body Test_Parse is
       Assert (IBinder_Package.Valid_Message (Context), "Message invalid");
 
       Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Kind), "Kind invalid");
-      Assert (IBinder_Package.Get_Kind (Context) = Parpen.Protocol.BK_WEAK_HANDLE, "Weak handle expected");
+      Assert (IBinder_Package.Get_Kind (Context) = Parpen.Binder.BK_WEAK_HANDLE, "Weak handle expected");
 
       Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Flags), "Flags invalid");
-      Assert (IBinder_Package.Get_Flags (Context) = Parpen.Protocol.FBF_NONE, "FBF_NONE expected");
+      Assert (IBinder_Package.Get_Flags (Context) = Parpen.Binder.FBF_NONE, "FBF_NONE expected");
 
       Assert (IBinder_Package.Valid (Context, IBinder_Package.F_Handle), "Handle invalid");
       H := IBinder_Package.Get_Handle (Context);

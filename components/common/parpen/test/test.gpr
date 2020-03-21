@@ -30,6 +30,10 @@ project Test is
          "-gnatwRUC",
          "-gnaty-sM120i"
       );
+      for Switches ("parpen-binder*.ad*") use ( 
+         "-gnatwRUC",
+         "-gnaty-sM120i"
+      );
    end Compiler;
 
 end Test;

@@ -1,0 +1,79 @@
+package Binder is
+
+	type Cookie is mod 2**64;
+	type Value  is mod 2**64;
+	type Offset is mod 2**64;
+	type Count  is mod 2**64;
+	type Index  is mod 2**64;
+
+	type Handle is range 0 .. 2**32-1 with Size => 32;
+	type Length is range 0 .. 2**32-1 with Size => 32;
+
+	type MBZ31 is range 0 .. 0 with Size => 31;
+	type MBZ32 is range 0 .. 0 with Size => 32;
+
+	type Binder_Kind is (
+		BK_STRONG_BINDER => 16#7362#, -- 'sb'
+		BK_WEAK_BINDER   => 16#7762#, -- 'wb'
+		BK_STRONG_HANDLE => 16#7368#, -- 'sh'
+		BK_WEAK_HANDLE   => 16#7768#, -- 'wh'
+		BK_POINTER       => 16#7074#, -- 'pt'
+		BK_FD            => 16#6664#  -- 'fd'
+	) with Size => 16;
+
+	type Binder_Arity is (
+		BA_SINGLE => 16#2A#, -- '*'
+		BA_ARRAY  => 16#61#  -- 'a'
+	) with Size => 8;
+
+	type Binder_Tag is range 16#85# .. 16#85# with Size => 8;
+
+	--  FIXME: Treat as real flags
+	type Flat_Binder_Flags is (
+		FBF_NONE       => 16#000#,
+		FBF_ACCEPT_FDS => 16#100#,
+		FBF_INHERIT_RT => 16#800#
+	) with Size => 32;
+
+	type IBinder is
+		message
+			Kind                : Binder_Kind;
+			Arity               : Binder_Arity
+				then Tag if Arity = BA_SINGLE or (Kind = BK_FD and Arity = BA_ARRAY);
+
+			Tag                 : Binder_Tag
+				then Legacy_Flags if Kind = BK_FD,
+				then Has_Parent   if Kind = BK_POINTER,
+				then Flags        if Kind /= BK_POINTER and Kind /= BK_FD;
+
+			Flags               : Flat_Binder_Flags
+				then Binder       if Kind = BK_STRONG_BINDER or Kind = BK_WEAK_BINDER,
+				then Handle       if Kind = BK_STRONG_HANDLE or Kind = BK_WEAK_HANDLE;
+
+			Legacy_Flags        : MBZ32
+				then FD      if Arity = BA_SINGLE,
+				then Num_FDs if Arity = BA_ARRAY;
+
+			Has_Parent          : Boolean;
+			Padding             : MBZ31;
+			Buffer				: Index;
+			Length				: Length
+				then Index if Has_Parent = True,
+				then null  if Has_Parent = False;
+			Index 				: Index then null;
+
+			FD                  : Handle then Cookie;
+
+			Num_FDs		        : Count;
+			Parent		        : Index;
+			Parent_Offset       : Offset then null;
+
+			Binder              : Value then Cookie;
+
+			Handle              : Handle;
+			Unused_Padding      : MBZ32 then Cookie;
+
+			Cookie              : Cookie;
+		end message;
+
+end Binder;

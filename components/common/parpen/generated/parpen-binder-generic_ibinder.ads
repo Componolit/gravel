@@ -5,7 +5,7 @@ with Parpen.Generic_Types;
 
 generic
    with package Types is new Parpen.Generic_Types (<>);
-package Parpen.Protocol.Generic_IBinder with
+package Parpen.Binder.Generic_IBinder with
   SPARK_Mode
 is
 
@@ -33,41 +33,41 @@ is
             when F_Initial | F_Final =>
                null;
             when F_Kind =>
-               Kind_Value : Protocol.Binder_Kind_Base;
+               Kind_Value : Binder.Binder_Kind_Base;
             when F_Arity =>
-               Arity_Value : Protocol.Binder_Arity_Base;
+               Arity_Value : Binder.Binder_Arity_Base;
             when F_Tag =>
-               Tag_Value : Protocol.Binder_Tag_Base;
+               Tag_Value : Binder.Binder_Tag_Base;
             when F_Legacy_Flags =>
-               Legacy_Flags_Value : Protocol.MBZ32_Base;
+               Legacy_Flags_Value : Binder.MBZ32_Base;
             when F_Has_Parent =>
                Has_Parent_Value : Builtin_Types.Boolean_Base;
             when F_Flags =>
-               Flags_Value : Protocol.Flat_Binder_Flags_Base;
+               Flags_Value : Binder.Flat_Binder_Flags_Base;
             when F_FD =>
-               FD_Value : Protocol.Handle_Base;
+               FD_Value : Binder.Handle_Base;
             when F_Num_FDs =>
-               Num_FDs_Value : Protocol.Count;
+               Num_FDs_Value : Binder.Count;
             when F_Padding =>
-               Padding_Value : Protocol.MBZ31_Base;
+               Padding_Value : Binder.MBZ31_Base;
             when F_Binder =>
-               Binder_Value : Protocol.Binder;
+               Binder_Value : Binder.Value;
             when F_Handle =>
-               Handle_Value : Protocol.Handle_Base;
+               Handle_Value : Binder.Handle_Base;
             when F_Parent =>
-               Parent_Value : Protocol.Index;
+               Parent_Value : Binder.Index;
             when F_Buffer =>
-               Buffer_Value : Protocol.Index;
+               Buffer_Value : Binder.Index;
             when F_Unused_Padding =>
-               Unused_Padding_Value : Protocol.MBZ32_Base;
+               Unused_Padding_Value : Binder.MBZ32_Base;
             when F_Parent_Offset =>
-               Parent_Offset_Value : Protocol.Offset;
+               Parent_Offset_Value : Binder.Offset;
             when F_Length =>
-               Length_Value : Protocol.Length_Base;
+               Length_Value : Binder.Length_Base;
             when F_Cookie =>
-               Cookie_Value : Protocol.Cookie;
+               Cookie_Value : Binder.Cookie;
             when F_Index =>
-               Index_Value : Protocol.Index;
+               Index_Value : Binder.Index;
          end case;
       end record;
 
@@ -235,22 +235,22 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   function Get_Kind (Ctx : Context) return Protocol.Binder_Kind with
+   function Get_Kind (Ctx : Context) return Binder.Binder_Kind with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Kind);
 
-   function Get_Arity (Ctx : Context) return Protocol.Binder_Arity with
+   function Get_Arity (Ctx : Context) return Binder.Binder_Arity with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Arity);
 
-   function Get_Tag (Ctx : Context) return Protocol.Binder_Tag with
+   function Get_Tag (Ctx : Context) return Binder.Binder_Tag with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Tag);
 
-   function Get_Legacy_Flags (Ctx : Context) return Protocol.MBZ32 with
+   function Get_Legacy_Flags (Ctx : Context) return Binder.MBZ32 with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Legacy_Flags);
@@ -260,72 +260,72 @@ is
        Valid_Context (Ctx)
           and Valid (Ctx, F_Has_Parent);
 
-   function Get_Flags (Ctx : Context) return Protocol.Flat_Binder_Flags with
+   function Get_Flags (Ctx : Context) return Binder.Flat_Binder_Flags with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Flags);
 
-   function Get_FD (Ctx : Context) return Protocol.Handle with
+   function Get_FD (Ctx : Context) return Binder.Handle with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_FD);
 
-   function Get_Num_FDs (Ctx : Context) return Protocol.Count with
+   function Get_Num_FDs (Ctx : Context) return Binder.Count with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Num_FDs);
 
-   function Get_Padding (Ctx : Context) return Protocol.MBZ31 with
+   function Get_Padding (Ctx : Context) return Binder.MBZ31 with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Padding);
 
-   function Get_Binder (Ctx : Context) return Protocol.Binder with
+   function Get_Binder (Ctx : Context) return Binder.Value with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Binder);
 
-   function Get_Handle (Ctx : Context) return Protocol.Handle with
+   function Get_Handle (Ctx : Context) return Binder.Handle with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Handle);
 
-   function Get_Parent (Ctx : Context) return Protocol.Index with
+   function Get_Parent (Ctx : Context) return Binder.Index with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Parent);
 
-   function Get_Buffer (Ctx : Context) return Protocol.Index with
+   function Get_Buffer (Ctx : Context) return Binder.Index with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Buffer);
 
-   function Get_Unused_Padding (Ctx : Context) return Protocol.MBZ32 with
+   function Get_Unused_Padding (Ctx : Context) return Binder.MBZ32 with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Unused_Padding);
 
-   function Get_Parent_Offset (Ctx : Context) return Protocol.Offset with
+   function Get_Parent_Offset (Ctx : Context) return Binder.Offset with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Parent_Offset);
 
-   function Get_Length (Ctx : Context) return Protocol.Length with
+   function Get_Length (Ctx : Context) return Binder.Length with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Length);
 
-   function Get_Cookie (Ctx : Context) return Protocol.Cookie with
+   function Get_Cookie (Ctx : Context) return Binder.Cookie with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Cookie);
 
-   function Get_Index (Ctx : Context) return Protocol.Index with
+   function Get_Index (Ctx : Context) return Binder.Index with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Index);
 
-   procedure Set_Kind (Ctx : in out Context; Val : Protocol.Binder_Kind) with
+   procedure Set_Kind (Ctx : in out Context; Val : Binder.Binder_Kind) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -365,7 +365,7 @@ is
           and Predecessor (Ctx, F_Kind) = Predecessor (Ctx, F_Kind)'Old
           and Valid_Next (Ctx, F_Kind) = Valid_Next (Ctx, F_Kind)'Old;
 
-   procedure Set_Arity (Ctx : in out Context; Val : Protocol.Binder_Arity) with
+   procedure Set_Arity (Ctx : in out Context; Val : Binder.Binder_Arity) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -409,7 +409,7 @@ is
           and Get_Kind (Ctx) = Get_Kind (Ctx)'Old
           and Cursor (Ctx, F_Kind) = Cursor (Ctx, F_Kind)'Old;
 
-   procedure Set_Tag (Ctx : in out Context; Val : Protocol.Binder_Tag) with
+   procedure Set_Tag (Ctx : in out Context; Val : Binder.Binder_Tag) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -459,7 +459,7 @@ is
           and Cursor (Ctx, F_Kind) = Cursor (Ctx, F_Kind)'Old
           and Cursor (Ctx, F_Arity) = Cursor (Ctx, F_Arity)'Old;
 
-   procedure Set_Legacy_Flags (Ctx : in out Context; Val : Protocol.MBZ32) with
+   procedure Set_Legacy_Flags (Ctx : in out Context; Val : Binder.MBZ32) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -549,7 +549,7 @@ is
           and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
           and Cursor (Ctx, F_Legacy_Flags) = Cursor (Ctx, F_Legacy_Flags)'Old;
 
-   procedure Set_Flags (Ctx : in out Context; Val : Protocol.Flat_Binder_Flags) with
+   procedure Set_Flags (Ctx : in out Context; Val : Binder.Flat_Binder_Flags) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -598,7 +598,7 @@ is
           and Cursor (Ctx, F_Legacy_Flags) = Cursor (Ctx, F_Legacy_Flags)'Old
           and Cursor (Ctx, F_Has_Parent) = Cursor (Ctx, F_Has_Parent)'Old;
 
-   procedure Set_FD (Ctx : in out Context; Val : Protocol.Handle) with
+   procedure Set_FD (Ctx : in out Context; Val : Binder.Handle) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -642,7 +642,7 @@ is
           and Cursor (Ctx, F_Has_Parent) = Cursor (Ctx, F_Has_Parent)'Old
           and Cursor (Ctx, F_Flags) = Cursor (Ctx, F_Flags)'Old;
 
-   procedure Set_Num_FDs (Ctx : in out Context; Val : Protocol.Count) with
+   procedure Set_Num_FDs (Ctx : in out Context; Val : Binder.Count) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -686,7 +686,7 @@ is
           and Cursor (Ctx, F_Flags) = Cursor (Ctx, F_Flags)'Old
           and Cursor (Ctx, F_FD) = Cursor (Ctx, F_FD)'Old;
 
-   procedure Set_Padding (Ctx : in out Context; Val : Protocol.MBZ31) with
+   procedure Set_Padding (Ctx : in out Context; Val : Binder.MBZ31) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -730,7 +730,7 @@ is
           and Cursor (Ctx, F_FD) = Cursor (Ctx, F_FD)'Old
           and Cursor (Ctx, F_Num_FDs) = Cursor (Ctx, F_Num_FDs)'Old;
 
-   procedure Set_Binder (Ctx : in out Context; Val : Protocol.Binder) with
+   procedure Set_Binder (Ctx : in out Context; Val : Binder.Value) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -774,7 +774,7 @@ is
           and Cursor (Ctx, F_Num_FDs) = Cursor (Ctx, F_Num_FDs)'Old
           and Cursor (Ctx, F_Padding) = Cursor (Ctx, F_Padding)'Old;
 
-   procedure Set_Handle (Ctx : in out Context; Val : Protocol.Handle) with
+   procedure Set_Handle (Ctx : in out Context; Val : Binder.Handle) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -818,7 +818,7 @@ is
           and Cursor (Ctx, F_Padding) = Cursor (Ctx, F_Padding)'Old
           and Cursor (Ctx, F_Binder) = Cursor (Ctx, F_Binder)'Old;
 
-   procedure Set_Parent (Ctx : in out Context; Val : Protocol.Index) with
+   procedure Set_Parent (Ctx : in out Context; Val : Binder.Index) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -863,7 +863,7 @@ is
           and Cursor (Ctx, F_Binder) = Cursor (Ctx, F_Binder)'Old
           and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old;
 
-   procedure Set_Buffer (Ctx : in out Context; Val : Protocol.Index) with
+   procedure Set_Buffer (Ctx : in out Context; Val : Binder.Index) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -908,7 +908,7 @@ is
           and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old
           and Cursor (Ctx, F_Parent) = Cursor (Ctx, F_Parent)'Old;
 
-   procedure Set_Unused_Padding (Ctx : in out Context; Val : Protocol.MBZ32) with
+   procedure Set_Unused_Padding (Ctx : in out Context; Val : Binder.MBZ32) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -953,7 +953,7 @@ is
           and Cursor (Ctx, F_Parent) = Cursor (Ctx, F_Parent)'Old
           and Cursor (Ctx, F_Buffer) = Cursor (Ctx, F_Buffer)'Old;
 
-   procedure Set_Parent_Offset (Ctx : in out Context; Val : Protocol.Offset) with
+   procedure Set_Parent_Offset (Ctx : in out Context; Val : Binder.Offset) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -997,7 +997,7 @@ is
           and Cursor (Ctx, F_Buffer) = Cursor (Ctx, F_Buffer)'Old
           and Cursor (Ctx, F_Unused_Padding) = Cursor (Ctx, F_Unused_Padding)'Old;
 
-   procedure Set_Length (Ctx : in out Context; Val : Protocol.Length) with
+   procedure Set_Length (Ctx : in out Context; Val : Binder.Length) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -1044,7 +1044,7 @@ is
           and Cursor (Ctx, F_Unused_Padding) = Cursor (Ctx, F_Unused_Padding)'Old
           and Cursor (Ctx, F_Parent_Offset) = Cursor (Ctx, F_Parent_Offset)'Old;
 
-   procedure Set_Cookie (Ctx : in out Context; Val : Protocol.Cookie) with
+   procedure Set_Cookie (Ctx : in out Context; Val : Binder.Cookie) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -1085,7 +1085,7 @@ is
           and Cursor (Ctx, F_Parent_Offset) = Cursor (Ctx, F_Parent_Offset)'Old
           and Cursor (Ctx, F_Length) = Cursor (Ctx, F_Length)'Old;
 
-   procedure Set_Index (Ctx : in out Context; Val : Protocol.Index) with
+   procedure Set_Index (Ctx : in out Context; Val : Binder.Index) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -1340,45 +1340,45 @@ private
         and then (if Invalid (Cursors (F_Length)) then
            Invalid (Cursors (F_Index))))
       and then (if Structural_Valid (Cursors (F_Kind)) then
-         (Cursors (F_Kind).Last - Cursors (F_Kind).First + 1) = Protocol.Binder_Kind_Base'Size
+         (Cursors (F_Kind).Last - Cursors (F_Kind).First + 1) = Binder.Binder_Kind_Base'Size
            and then Cursors (F_Kind).Predecessor = F_Initial
            and then Cursors (F_Kind).First = First
            and then (if Structural_Valid (Cursors (F_Arity)) then
-              (Cursors (F_Arity).Last - Cursors (F_Arity).First + 1) = Protocol.Binder_Arity_Base'Size
+              (Cursors (F_Arity).Last - Cursors (F_Arity).First + 1) = Binder.Binder_Arity_Base'Size
                 and then Cursors (F_Arity).Predecessor = F_Kind
                 and then Cursors (F_Arity).First = (Cursors (F_Kind).Last + 1)
                 and then (if Structural_Valid (Cursors (F_Tag))
                      and then (Types.Bit_Length (Cursors (F_Arity).Value.Arity_Value) = Types.Bit_Length (Convert (BA_SINGLE))
                        or (Types.Bit_Length (Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_FD))
                          and Types.Bit_Length (Cursors (F_Arity).Value.Arity_Value) = Types.Bit_Length (Convert (BA_ARRAY)))) then
-                   (Cursors (F_Tag).Last - Cursors (F_Tag).First + 1) = Protocol.Binder_Tag_Base'Size
+                   (Cursors (F_Tag).Last - Cursors (F_Tag).First + 1) = Binder.Binder_Tag_Base'Size
                      and then Cursors (F_Tag).Predecessor = F_Arity
                      and then Cursors (F_Tag).First = (Cursors (F_Arity).Last + 1)
                      and then (if Structural_Valid (Cursors (F_Legacy_Flags))
                           and then Types.Bit_Length (Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_FD)) then
-                        (Cursors (F_Legacy_Flags).Last - Cursors (F_Legacy_Flags).First + 1) = Protocol.MBZ32_Base'Size
+                        (Cursors (F_Legacy_Flags).Last - Cursors (F_Legacy_Flags).First + 1) = Binder.MBZ32_Base'Size
                           and then Cursors (F_Legacy_Flags).Predecessor = F_Tag
                           and then Cursors (F_Legacy_Flags).First = (Cursors (F_Tag).Last + 1)
                           and then (if Structural_Valid (Cursors (F_FD))
                                and then Types.Bit_Length (Cursors (F_Arity).Value.Arity_Value) = Types.Bit_Length (Convert (BA_SINGLE)) then
-                             (Cursors (F_FD).Last - Cursors (F_FD).First + 1) = Protocol.Handle_Base'Size
+                             (Cursors (F_FD).Last - Cursors (F_FD).First + 1) = Binder.Handle_Base'Size
                                and then Cursors (F_FD).Predecessor = F_Legacy_Flags
                                and then Cursors (F_FD).First = (Cursors (F_Legacy_Flags).Last + 1)
                                and then (if Structural_Valid (Cursors (F_Cookie)) then
-                                  (Cursors (F_Cookie).Last - Cursors (F_Cookie).First + 1) = Protocol.Cookie'Size
+                                  (Cursors (F_Cookie).Last - Cursors (F_Cookie).First + 1) = Binder.Cookie'Size
                                     and then Cursors (F_Cookie).Predecessor = F_FD
                                     and then Cursors (F_Cookie).First = (Cursors (F_FD).Last + 1)))
                           and then (if Structural_Valid (Cursors (F_Num_FDs))
                                and then Types.Bit_Length (Cursors (F_Arity).Value.Arity_Value) = Types.Bit_Length (Convert (BA_ARRAY)) then
-                             (Cursors (F_Num_FDs).Last - Cursors (F_Num_FDs).First + 1) = Protocol.Count'Size
+                             (Cursors (F_Num_FDs).Last - Cursors (F_Num_FDs).First + 1) = Binder.Count'Size
                                and then Cursors (F_Num_FDs).Predecessor = F_Legacy_Flags
                                and then Cursors (F_Num_FDs).First = (Cursors (F_Legacy_Flags).Last + 1)
                                and then (if Structural_Valid (Cursors (F_Parent)) then
-                                  (Cursors (F_Parent).Last - Cursors (F_Parent).First + 1) = Protocol.Index'Size
+                                  (Cursors (F_Parent).Last - Cursors (F_Parent).First + 1) = Binder.Index'Size
                                     and then Cursors (F_Parent).Predecessor = F_Num_FDs
                                     and then Cursors (F_Parent).First = (Cursors (F_Num_FDs).Last + 1)
                                     and then (if Structural_Valid (Cursors (F_Parent_Offset)) then
-                                       (Cursors (F_Parent_Offset).Last - Cursors (F_Parent_Offset).First + 1) = Protocol.Offset'Size
+                                       (Cursors (F_Parent_Offset).Last - Cursors (F_Parent_Offset).First + 1) = Binder.Offset'Size
                                          and then Cursors (F_Parent_Offset).Predecessor = F_Parent
                                          and then Cursors (F_Parent_Offset).First = (Cursors (F_Parent).Last + 1)))))
                      and then (if Structural_Valid (Cursors (F_Has_Parent))
@@ -1387,50 +1387,50 @@ private
                           and then Cursors (F_Has_Parent).Predecessor = F_Tag
                           and then Cursors (F_Has_Parent).First = (Cursors (F_Tag).Last + 1)
                           and then (if Structural_Valid (Cursors (F_Padding)) then
-                             (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Protocol.MBZ31_Base'Size
+                             (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Binder.MBZ31_Base'Size
                                and then Cursors (F_Padding).Predecessor = F_Has_Parent
                                and then Cursors (F_Padding).First = (Cursors (F_Has_Parent).Last + 1)
                                and then (if Structural_Valid (Cursors (F_Buffer)) then
-                                  (Cursors (F_Buffer).Last - Cursors (F_Buffer).First + 1) = Protocol.Index'Size
+                                  (Cursors (F_Buffer).Last - Cursors (F_Buffer).First + 1) = Binder.Index'Size
                                     and then Cursors (F_Buffer).Predecessor = F_Padding
                                     and then Cursors (F_Buffer).First = (Cursors (F_Padding).Last + 1)
                                     and then (if Structural_Valid (Cursors (F_Length)) then
-                                       (Cursors (F_Length).Last - Cursors (F_Length).First + 1) = Protocol.Length_Base'Size
+                                       (Cursors (F_Length).Last - Cursors (F_Length).First + 1) = Binder.Length_Base'Size
                                          and then Cursors (F_Length).Predecessor = F_Buffer
                                          and then Cursors (F_Length).First = (Cursors (F_Buffer).Last + 1)
                                          and then (if Structural_Valid (Cursors (F_Index))
                                               and then Types.Bit_Length (Cursors (F_Has_Parent).Value.Has_Parent_Value) = Types.Bit_Length (Convert (True)) then
-                                            (Cursors (F_Index).Last - Cursors (F_Index).First + 1) = Protocol.Index'Size
+                                            (Cursors (F_Index).Last - Cursors (F_Index).First + 1) = Binder.Index'Size
                                               and then Cursors (F_Index).Predecessor = F_Length
                                               and then Cursors (F_Index).First = (Cursors (F_Length).Last + 1))))))
                      and then (if Structural_Valid (Cursors (F_Flags))
                           and then (Types.Bit_Length (Cursors (F_Kind).Value.Kind_Value) /= Types.Bit_Length (Convert (BK_POINTER))
                             and Types.Bit_Length (Cursors (F_Kind).Value.Kind_Value) /= Types.Bit_Length (Convert (BK_FD))) then
-                        (Cursors (F_Flags).Last - Cursors (F_Flags).First + 1) = Protocol.Flat_Binder_Flags_Base'Size
+                        (Cursors (F_Flags).Last - Cursors (F_Flags).First + 1) = Binder.Flat_Binder_Flags_Base'Size
                           and then Cursors (F_Flags).Predecessor = F_Tag
                           and then Cursors (F_Flags).First = (Cursors (F_Tag).Last + 1)
                           and then (if Structural_Valid (Cursors (F_Binder))
                                and then (Types.Bit_Length (Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_STRONG_BINDER))
                                  or Types.Bit_Length (Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_WEAK_BINDER))) then
-                             (Cursors (F_Binder).Last - Cursors (F_Binder).First + 1) = Protocol.Binder'Size
+                             (Cursors (F_Binder).Last - Cursors (F_Binder).First + 1) = Binder.Value'Size
                                and then Cursors (F_Binder).Predecessor = F_Flags
                                and then Cursors (F_Binder).First = (Cursors (F_Flags).Last + 1)
                                and then (if Structural_Valid (Cursors (F_Cookie)) then
-                                  (Cursors (F_Cookie).Last - Cursors (F_Cookie).First + 1) = Protocol.Cookie'Size
+                                  (Cursors (F_Cookie).Last - Cursors (F_Cookie).First + 1) = Binder.Cookie'Size
                                     and then Cursors (F_Cookie).Predecessor = F_Binder
                                     and then Cursors (F_Cookie).First = (Cursors (F_Binder).Last + 1)))
                           and then (if Structural_Valid (Cursors (F_Handle))
                                and then (Types.Bit_Length (Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_STRONG_HANDLE))
                                  or Types.Bit_Length (Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_WEAK_HANDLE))) then
-                             (Cursors (F_Handle).Last - Cursors (F_Handle).First + 1) = Protocol.Handle_Base'Size
+                             (Cursors (F_Handle).Last - Cursors (F_Handle).First + 1) = Binder.Handle_Base'Size
                                and then Cursors (F_Handle).Predecessor = F_Flags
                                and then Cursors (F_Handle).First = (Cursors (F_Flags).Last + 1)
                                and then (if Structural_Valid (Cursors (F_Unused_Padding)) then
-                                  (Cursors (F_Unused_Padding).Last - Cursors (F_Unused_Padding).First + 1) = Protocol.MBZ32_Base'Size
+                                  (Cursors (F_Unused_Padding).Last - Cursors (F_Unused_Padding).First + 1) = Binder.MBZ32_Base'Size
                                     and then Cursors (F_Unused_Padding).Predecessor = F_Handle
                                     and then Cursors (F_Unused_Padding).First = (Cursors (F_Handle).Last + 1)
                                     and then (if Structural_Valid (Cursors (F_Cookie)) then
-                                       (Cursors (F_Cookie).Last - Cursors (F_Cookie).First + 1) = Protocol.Cookie'Size
+                                       (Cursors (F_Cookie).Last - Cursors (F_Cookie).First + 1) = Binder.Cookie'Size
                                          and then Cursors (F_Cookie).Predecessor = F_Unused_Padding
                                          and then Cursors (F_Cookie).First = (Cursors (F_Unused_Padding).Last + 1)))))))));
 
@@ -1451,4 +1451,4 @@ private
    function Cursors (Ctx : Context) return Field_Cursors is
      (Ctx.Cursors);
 
-end Parpen.Protocol.Generic_IBinder;
+end Parpen.Binder.Generic_IBinder;

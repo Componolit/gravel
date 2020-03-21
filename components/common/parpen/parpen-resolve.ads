@@ -1,6 +1,6 @@
 with Parpen.Generic_Types;
 with Parpen.Unique_Map;
-with Parpen.Protocol;
+with Parpen.Binder;
 
 generic
    type Client_ID is (<>);
@@ -34,13 +34,13 @@ is
 
    function Get_Node (DB    : Database'Class;
                       Owner : Client_ID;
-                      Value : Parpen.Protocol.Binder) return Node_Option with
+                      Value : Parpen.Binder.Value) return Node_Option with
       Pre => Initialized (DB);
 
    procedure Add_Node (DB     : in out Database'Class;
                        Cursor : in out Node_Option;
                        Owner  :        Client_ID;
-                       Value  :        Parpen.Protocol.Binder) with
+                       Value  :        Parpen.Binder.Value) with
       Pre => Initialized (DB);
 
    procedure Add_Client (DB : in out Database'Class;
@@ -66,7 +66,7 @@ private
    type Node_Type is
       record
          Owner : Client_ID;
-         Value : Parpen.Protocol.Binder;
+         Value : Parpen.Binder.Value;
       end record;
 
    package Node_DB is new Parpen.Unique_Map (Key     => Node_ID,
@@ -113,7 +113,7 @@ private
 
    function Get_Node (DB    : Database'Class;
                       Owner : Client_ID;
-                      Value : Parpen.Protocol.Binder) return Node_Option is
+                      Value : Parpen.Binder.Value) return Node_Option is
       (Inner => DB.Nodes.Find ((Owner => Owner, Value => Value)));
 
 end Parpen.Resolve;
