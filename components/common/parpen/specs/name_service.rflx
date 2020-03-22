@@ -1,0 +1,34 @@
+with Binder;
+
+package Name_Service is
+
+	type Integer is range 0 .. 2**32-1 with Size => 32;
+	type Len is range 1 .. 2**32-1 with Size => 32;
+
+	--  Code: 1
+	type Request_Get_Service is
+		message
+			Len  : Len
+				then Name
+				with Length => Len;
+			Name : Opaque;
+		end message;
+
+	type Reply_Get_Service is
+		message
+			Result : Binder.IBinder;
+		end message;
+
+	--  Code: 2
+	type Request_Add_Service is
+		message
+			Len    		   : Len
+				then Name
+				with Length => Len;
+			Name   		   : Opaque;
+			Server 		   : Binder.IBinder;
+			Allow_Isolated : Boolean;
+			Dump_Flags	   : Integer;
+		end message;
+
+end Name_Service;
