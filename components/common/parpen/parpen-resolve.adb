@@ -221,13 +221,9 @@ package body Parpen.Resolve is
                              Dest_ID   :        Client_ID;
                              Result    :    out Result_Type)
    is
-      Source           : Client_DB.Option;
-      Source_Handle    : Handle_DB.Option;
-      Source_Handle_ID : Handle_ID;
       Handle           : Parpen.Binder.Handle;
       Node             : Node_DB.Option;
       Weak             : Boolean;
-      use type Handle_DB.Status;
       use type Parpen.Binder.Binder_Kind;
    begin
       Handle := IBinder_Package.Get_Handle (Context);
@@ -239,16 +235,9 @@ package body Parpen.Resolve is
          return;
       end if;
 
-      Source_Handle_ID := Handle_ID'Val (Parpen.Binder.Handle'Pos (Handle));
-
-      Source := DB.Clients.Get (Source_ID);
-      Source_Handle := Source.Data.Handles.Get (Source_Handle_ID);
-      if Source_Handle.State /= Handle_DB.Status_Valid then
-         Result := Result_Handle_Not_Found;
-         return;
-      end if;
-
-      Node := DB.Nodes.Get (Source_Handle.Data);
+      Node := Get_Node (DB       => DB,
+                        Owner_ID => Source_ID,
+                        Handle   => Handle).Inner;
       if Node.State /= Node_DB.Status_Valid then
          Result := Result_Node_Not_Found;
          return;
@@ -268,8 +257,6 @@ package body Parpen.Resolve is
                          Weak    => Weak);
       end if;
       Result := Result_OK;
-
-
    end Resolve_Handle;
 
    -------------
@@ -329,5 +316,26 @@ package body Parpen.Resolve is
       end if;
       IBinder_Package.Take_Buffer (Context, Buffer);
    end Resolve;
+
+   --------------
+   -- Get_Node --
+   --------------
+
+   function Get_Node (DB       : Database'Class;
+                      Owner_ID : Client_ID;
+                      Handle   : Parpen.Binder.Handle) return Node_Option
+   is
+      Owner           : Client_DB.Option;
+      Owner_Handle    : Handle_DB.Option;
+      Owner_Handle_ID : constant Handle_ID := Handle_ID'Val (Parpen.Binder.Handle'Pos (Handle));
+      use type Handle_DB.Status;
+   begin
+      Owner := DB.Clients.Get (Owner_ID);
+      Owner_Handle := Owner.Data.Handles.Get (Owner_Handle_ID);
+      if Owner_Handle.State /= Handle_DB.Status_Valid then
+         return (Inner => (State => Node_DB.Status_Invalid));
+      end if;
+      return (Inner => DB.Nodes.Get (Owner_Handle.Data));
+   end Get_Node;
 
 end Parpen.Resolve;

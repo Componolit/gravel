@@ -12,6 +12,7 @@ is
    type Result_Type is
       (Result_OK,
        Result_Invalid,
+       Result_Invalid_Owner,
        Result_Invalid_Source,
        Result_Invalid_Destination,
        Result_Invalid_Handle,
@@ -32,9 +33,14 @@ is
    procedure Initialize (DB : in out Database) with
       Post => Initialized (DB);
 
-   function Get_Node (DB    : Database'Class;
-                      Owner : Client_ID;
-                      Value : Parpen.Binder.Value) return Node_Option with
+   function Get_Node (DB       : Database'Class;
+                      Owner_ID : Client_ID;
+                      Value    : Parpen.Binder.Value) return Node_Option with
+      Pre => Initialized (DB);
+
+   function Get_Node (DB       : Database'Class;
+                      Owner_ID : Client_ID;
+                      Handle   : Parpen.Binder.Handle) return Node_Option with
       Pre => Initialized (DB);
 
    procedure Add_Node (DB     : in out Database'Class;
@@ -111,9 +117,9 @@ private
    function Initialized (DB : Database) return Boolean is
       (DB.Nodes.Initialized and DB.Clients.Initialized);
 
-   function Get_Node (DB    : Database'Class;
-                      Owner : Client_ID;
-                      Value : Parpen.Binder.Value) return Node_Option is
-      (Inner => DB.Nodes.Find ((Owner => Owner, Value => Value)));
+   function Get_Node (DB       : Database'Class;
+                      Owner_ID : Client_ID;
+                      Value    : Parpen.Binder.Value) return Node_Option is
+      (Inner => DB.Nodes.Find ((Owner => Owner_ID, Value => Value)));
 
 end Parpen.Resolve;

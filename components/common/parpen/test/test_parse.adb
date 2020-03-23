@@ -277,7 +277,7 @@ package body Test_Parse is
       Node     : Resolve.Node_Option;
    begin
       D2.Initialize;
-      Node := D2.Get_Node (Owner => Client_1, Value => 16#1#);
+      Node := D2.Get_Node (Owner_ID => Client_1, Value => 16#1#);
       D2.Add_Node (Cursor => Node, Owner => Client_1, Value => 16#1#);
 
       Database.Initialize;
@@ -327,7 +327,7 @@ package body Test_Parse is
    begin
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
-      Node := Database.Get_Node (Owner => Client_1, Value => 16#100000000000001#);
+      Node := Database.Get_Node (Owner_ID => Client_1, Value => 16#100000000000001#);
       Assert (not Node.Found, "Node already present");
       Database.Add_Node (Cursor => Node, Owner => Client_1, Value => 16#100000000000001#);
 
@@ -428,12 +428,12 @@ package body Test_Parse is
       Database.Add_Client (ID => Client_2);
       Database.Add_Client (ID => Client_3);
 
-      Node := Database.Get_Node (Owner => Client_3, Value => 16#100000000000001#);
+      Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
       Assert (not Node.Found, "Node already present");
       Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#);
       Database.Add_Handle (ID => Client_1, Node => Node);
 
-      Other_Node := Database.Get_Node (Owner => Client_2, Value => 16#100000000000123#);
+      Other_Node := Database.Get_Node (Owner_ID => Client_2, Value => 16#100000000000123#);
       Database.Add_Node (Cursor => Other_Node, Owner => Client_2, Value => 16#100000000000123#);
       Database.Add_Handle (ID => Client_2, Node => Other_Node);
 
@@ -484,12 +484,12 @@ package body Test_Parse is
       Database.Add_Client (ID => Client_2);
       Database.Add_Client (ID => Client_3);
 
-      Node := Database.Get_Node (Owner => Client_3, Value => 16#100000000000001#);
+      Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
       Assert (not Node.Found, "Node already present");
       Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#);
       Database.Add_Handle (ID => Client_1, Node => Node);
 
-      Other_Node := Database.Get_Node (Owner => Client_2, Value => 16#100000000000123#);
+      Other_Node := Database.Get_Node (Owner_ID => Client_2, Value => 16#100000000000123#);
       Database.Add_Node (Cursor => Other_Node, Owner => Client_2, Value => 16#100000000000123#);
       Database.Add_Handle (ID => Client_2, Node => Other_Node);
 
@@ -683,7 +683,7 @@ package body Test_Parse is
 
       Database.Add_Client (ID => Client_1);
 
-      Node := Database.Get_Node (Owner => Client_3, Value => 16#100000000000001#);
+      Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
       Assert (not Node.Found, "Node already present");
       Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#);
       Database.Add_Handle (ID => Client_1, Node => Node);
@@ -764,6 +764,31 @@ package body Test_Parse is
       Assert (Input.all = Output, "Handle not resolved correctly");
    end Test_Embedded_Object;
 
+   procedure Test_Get_Node_From_Handle (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+      use type Parpen.Binder.Value;
+      Value    : constant Parpen.Binder.Value := 16#100000000000001#;
+      Database : Resolve.Database;
+      Node     : Resolve.Node_Option;
+      Result   : Resolve.Node_Option;
+   begin
+      Database.Initialize;
+
+      Node := Database.Get_Node (Owner_ID => Client_1, Value => Value);
+      Database.Add_Node (Cursor => Node, Owner => Client_1, Value => Value);
+
+      Database.Add_Client (ID => Client_1);
+      Database.Add_Handle (ID => Client_1, Node => Node);
+
+      --  The Handle_ID type starts at 18
+      Result := Database.Get_Node (Owner_ID => Client_1, Handle => 18);
+      Assert (Resolve.Found (Result), "Invalid node");
+      Assert (Resolve.Get_Owner (Result) = Client_1, "Invalid owner");
+      Assert (Resolve.Get_Value (Result) = Value, "Invalid value");
+   end Test_Get_Node_From_Handle;
+
+
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
    begin
@@ -789,6 +814,7 @@ package body Test_Parse is
       Register_Routine (T, Test_Resolve_Binder_To_Self'Access, "Resolve binder to self");
       Register_Routine (T, Test_Resolve_Handle_To_Self'Access, "Resolve handle to self");
       Register_Routine (T, Test_Embedded_Object'Access, "Embedded object");
+      Register_Routine (T, Test_Get_Node_From_Handle'Access, "Get node from handle");
    end Register_Tests;
 
 end Test_Parse;

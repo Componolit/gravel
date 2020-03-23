@@ -29,5 +29,6 @@ private
    procedure Test_Resolve_Binder_To_Self (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Resolve_Handle_To_Self (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Embedded_Object (T : in out AUnit.Test_Cases.Test_Case'Class);
+   procedure Test_Get_Node_From_Handle (T : in out AUnit.Test_Cases.Test_Case'Class);
 
 end Test_Parse;
