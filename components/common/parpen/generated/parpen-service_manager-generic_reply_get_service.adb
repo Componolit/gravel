@@ -1,4 +1,4 @@
-package body Parpen.Name_Service.Generic_Reply_Get_Service with
+package body Parpen.Service_Manager.Generic_Reply_Get_Service with
   SPARK_Mode
 is
 
@@ -1939,4 +1939,4 @@ is
       Ctx.Cursors (Successor (Ctx, F_Result_Index)) := (State => S_Invalid, Predecessor => F_Result_Index);
    end Set_Result_Index;
 
-end Parpen.Name_Service.Generic_Reply_Get_Service;
+end Parpen.Service_Manager.Generic_Reply_Get_Service;

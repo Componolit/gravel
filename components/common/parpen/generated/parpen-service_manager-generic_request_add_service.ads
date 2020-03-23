@@ -5,7 +5,7 @@ with Parpen.Generic_Types;
 
 generic
    with package Types is new Parpen.Generic_Types (<>);
-package Parpen.Name_Service.Generic_Request_Add_Service with
+package Parpen.Service_Manager.Generic_Request_Add_Service with
   SPARK_Mode
 is
 
@@ -33,7 +33,7 @@ is
             when F_Initial | F_Name | F_Final =>
                null;
             when F_Len =>
-               Len_Value : Name_Service.Len_Base;
+               Len_Value : Service_Manager.Len_Base;
             when F_Server_Kind =>
                Server_Kind_Value : Binder.Binder_Kind_Base;
             when F_Server_Arity =>
@@ -71,11 +71,11 @@ is
             when F_Server_Index =>
                Server_Index_Value : Binder.Index;
             when F_Padding =>
-               Padding_Value : Name_Service.MBZ_7_Base;
+               Padding_Value : Service_Manager.MBZ_7_Base;
             when F_Allow_Isolated =>
                Allow_Isolated_Value : Builtin_Types.Boolean_Base;
             when F_Dump_Flags =>
-               Dump_Flags_Value : Name_Service.Integer_Base;
+               Dump_Flags_Value : Service_Manager.Integer_Base;
          end case;
       end record;
 
@@ -243,7 +243,7 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   function Get_Len (Ctx : Context) return Name_Service.Len with
+   function Get_Len (Ctx : Context) return Service_Manager.Len with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Len);
@@ -338,7 +338,7 @@ is
        Valid_Context (Ctx)
           and Valid (Ctx, F_Server_Index);
 
-   function Get_Padding (Ctx : Context) return Name_Service.MBZ_7 with
+   function Get_Padding (Ctx : Context) return Service_Manager.MBZ_7 with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Padding);
@@ -348,7 +348,7 @@ is
        Valid_Context (Ctx)
           and Valid (Ctx, F_Allow_Isolated);
 
-   function Get_Dump_Flags (Ctx : Context) return Name_Service.Integer with
+   function Get_Dump_Flags (Ctx : Context) return Service_Manager.Integer with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Dump_Flags);
@@ -361,7 +361,7 @@ is
           and Has_Buffer (Ctx)
           and Present (Ctx, F_Name);
 
-   procedure Set_Len (Ctx : in out Context; Val : Name_Service.Len) with
+   procedure Set_Len (Ctx : in out Context; Val : Service_Manager.Len) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -1328,7 +1328,7 @@ is
           and Cursor (Ctx, F_Server_Length) = Cursor (Ctx, F_Server_Length)'Old
           and Cursor (Ctx, F_Server_Cookie) = Cursor (Ctx, F_Server_Cookie)'Old;
 
-   procedure Set_Padding (Ctx : in out Context; Val : Name_Service.MBZ_7) with
+   procedure Set_Padding (Ctx : in out Context; Val : Service_Manager.MBZ_7) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -1427,7 +1427,7 @@ is
           and Cursor (Ctx, F_Server_Index) = Cursor (Ctx, F_Server_Index)'Old
           and Cursor (Ctx, F_Padding) = Cursor (Ctx, F_Padding)'Old;
 
-   procedure Set_Dump_Flags (Ctx : in out Context; Val : Name_Service.Integer) with
+   procedure Set_Dump_Flags (Ctx : in out Context; Val : Service_Manager.Integer) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -1819,7 +1819,7 @@ private
         and then (if Invalid (Cursors (F_Allow_Isolated)) then
            Invalid (Cursors (F_Dump_Flags))))
       and then (if Structural_Valid (Cursors (F_Len)) then
-         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Name_Service.Len_Base'Size
+         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Service_Manager.Len_Base'Size
            and then Cursors (F_Len).Predecessor = F_Initial
            and then Cursors (F_Len).First = First
            and then (if Structural_Valid (Cursors (F_Name)) then
@@ -1856,7 +1856,7 @@ private
                                               and then Cursors (F_Server_Cookie).Predecessor = F_Server_FD
                                               and then Cursors (F_Server_Cookie).First = (Cursors (F_Server_FD).Last + 1)
                                               and then (if Structural_Valid (Cursors (F_Padding)) then
-                                                 (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                 (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Service_Manager.MBZ_7_Base'Size
                                                    and then Cursors (F_Padding).Predecessor = F_Server_Cookie
                                                    and then Cursors (F_Padding).First = (Cursors (F_Server_Cookie).Last + 1)
                                                    and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
@@ -1864,7 +1864,7 @@ private
                                                         and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
                                                         and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
                                                         and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                           (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                           (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Service_Manager.Integer_Base'Size
                                                              and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
                                                              and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))))
                                     and then (if Structural_Valid (Cursors (F_Server_Num_FDs))
@@ -1881,7 +1881,7 @@ private
                                                    and then Cursors (F_Server_Parent_Offset).Predecessor = F_Server_Parent
                                                    and then Cursors (F_Server_Parent_Offset).First = (Cursors (F_Server_Parent).Last + 1)
                                                    and then (if Structural_Valid (Cursors (F_Padding)) then
-                                                      (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                      (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Service_Manager.MBZ_7_Base'Size
                                                         and then Cursors (F_Padding).Predecessor = F_Server_Parent_Offset
                                                         and then Cursors (F_Padding).First = (Cursors (F_Server_Parent_Offset).Last + 1)
                                                         and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
@@ -1889,7 +1889,7 @@ private
                                                              and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
                                                              and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
                                                              and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                                (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                                (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Service_Manager.Integer_Base'Size
                                                                   and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
                                                                   and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))))))
                                and then (if Structural_Valid (Cursors (F_Server_Has_Parent))
@@ -1911,7 +1911,7 @@ private
                                                    and then Cursors (F_Server_Length).First = (Cursors (F_Server_Buffer).Last + 1)
                                                    and then (if Structural_Valid (Cursors (F_Padding))
                                                         and then Types.Bit_Length (Cursors (F_Server_Has_Parent).Value.Server_Has_Parent_Value) = Types.Bit_Length (Convert (False)) then
-                                                      (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                      (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Service_Manager.MBZ_7_Base'Size
                                                         and then Cursors (F_Padding).Predecessor = F_Server_Length
                                                         and then Cursors (F_Padding).First = (Cursors (F_Server_Length).Last + 1)
                                                         and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
@@ -1919,7 +1919,7 @@ private
                                                              and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
                                                              and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
                                                              and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                                (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                                (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Service_Manager.Integer_Base'Size
                                                                   and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
                                                                   and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))
                                                    and then (if Structural_Valid (Cursors (F_Server_Index))
@@ -1928,7 +1928,7 @@ private
                                                         and then Cursors (F_Server_Index).Predecessor = F_Server_Length
                                                         and then Cursors (F_Server_Index).First = (Cursors (F_Server_Length).Last + 1)
                                                         and then (if Structural_Valid (Cursors (F_Padding)) then
-                                                           (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                           (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Service_Manager.MBZ_7_Base'Size
                                                              and then Cursors (F_Padding).Predecessor = F_Server_Index
                                                              and then Cursors (F_Padding).First = (Cursors (F_Server_Index).Last + 1)
                                                              and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
@@ -1936,7 +1936,7 @@ private
                                                                   and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
                                                                   and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
                                                                   and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                                     (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                                     (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Service_Manager.Integer_Base'Size
                                                                        and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
                                                                        and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1)))))))))
                                and then (if Structural_Valid (Cursors (F_Server_Flags))
@@ -1956,7 +1956,7 @@ private
                                               and then Cursors (F_Server_Cookie).Predecessor = F_Server_Binder
                                               and then Cursors (F_Server_Cookie).First = (Cursors (F_Server_Binder).Last + 1)
                                               and then (if Structural_Valid (Cursors (F_Padding)) then
-                                                 (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                 (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Service_Manager.MBZ_7_Base'Size
                                                    and then Cursors (F_Padding).Predecessor = F_Server_Cookie
                                                    and then Cursors (F_Padding).First = (Cursors (F_Server_Cookie).Last + 1)
                                                    and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
@@ -1964,7 +1964,7 @@ private
                                                         and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
                                                         and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
                                                         and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                           (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                           (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Service_Manager.Integer_Base'Size
                                                              and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
                                                              and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))))
                                     and then (if Structural_Valid (Cursors (F_Server_Handle))
@@ -1982,7 +1982,7 @@ private
                                                    and then Cursors (F_Server_Cookie).Predecessor = F_Server_Unused_Padding
                                                    and then Cursors (F_Server_Cookie).First = (Cursors (F_Server_Unused_Padding).Last + 1)
                                                    and then (if Structural_Valid (Cursors (F_Padding)) then
-                                                      (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                      (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Service_Manager.MBZ_7_Base'Size
                                                         and then Cursors (F_Padding).Predecessor = F_Server_Cookie
                                                         and then Cursors (F_Padding).First = (Cursors (F_Server_Cookie).Last + 1)
                                                         and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
@@ -1990,7 +1990,7 @@ private
                                                              and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
                                                              and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
                                                              and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                                (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                                (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Service_Manager.Integer_Base'Size
                                                                   and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
                                                                   and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))))))))))));
 
@@ -2011,4 +2011,4 @@ private
    function Cursors (Ctx : Context) return Field_Cursors is
      (Ctx.Cursors);
 
-end Parpen.Name_Service.Generic_Request_Add_Service;
+end Parpen.Service_Manager.Generic_Request_Add_Service;

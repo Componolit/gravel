@@ -1,6 +1,6 @@
 with Binder;
 
-package Name_Service is
+package Service_Manager is
 
 	type MBZ_7 is range 0 .. 0 with Size => 7;
 	type Integer is range 0 .. 2**32-1 with Size => 32;
@@ -33,4 +33,4 @@ package Name_Service is
 			Dump_Flags	   : Integer;
 		end message;
 
-end Name_Service;
+end Service_Manager;

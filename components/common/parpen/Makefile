@@ -4,4 +4,4 @@ help:
 
 generate:
 	@rm -f generated/*
-	@rflx generate -d generated -p Parpen -r specs/binder.rflx specs/protocol.rflx specs/name_service.rflx
+	@rflx generate -d generated -p Parpen -r specs/binder.rflx specs/protocol.rflx specs/service_manager.rflx

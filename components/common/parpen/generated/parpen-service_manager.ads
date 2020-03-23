@@ -1,4 +1,4 @@
-package Parpen.Name_Service with
+package Parpen.Service_Manager with
   SPARK_Mode
 is
 
@@ -10,18 +10,18 @@ is
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Name_Service_Len return Name_Service.Len is
-     (Name_Service.Len'First)
+   function Unreachable_Service_Manager_Len return Service_Manager.Len is
+     (Service_Manager.Len'First)
     with
      Pre =>
        False;
 
    pragma Warnings (On, "precondition is statically false");
 
-   function Valid (Val : Name_Service.Len_Base) return Boolean is
+   function Valid (Val : Service_Manager.Len_Base) return Boolean is
      (Val >= 1);
 
-   function Convert (Val : Name_Service.Len_Base) return Name_Service.Len is
+   function Convert (Val : Service_Manager.Len_Base) return Service_Manager.Len is
      (Val)
     with
      Pre =>
@@ -435,18 +435,18 @@ is
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Name_Service_MBZ_7 return Name_Service.MBZ_7 is
-     (Name_Service.MBZ_7'First)
+   function Unreachable_Service_Manager_MBZ_7 return Service_Manager.MBZ_7 is
+     (Service_Manager.MBZ_7'First)
     with
      Pre =>
        False;
 
    pragma Warnings (On, "precondition is statically false");
 
-   function Valid (Val : Name_Service.MBZ_7_Base) return Boolean is
+   function Valid (Val : Service_Manager.MBZ_7_Base) return Boolean is
      (Val <= 0);
 
-   function Convert (Val : Name_Service.MBZ_7_Base) return Name_Service.MBZ_7 is
+   function Convert (Val : Service_Manager.MBZ_7_Base) return Service_Manager.MBZ_7 is
      (Val)
     with
      Pre =>
@@ -460,21 +460,21 @@ is
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Name_Service_Integer return Name_Service.Integer is
-     (Name_Service.Integer'First)
+   function Unreachable_Service_Manager_Integer return Service_Manager.Integer is
+     (Service_Manager.Integer'First)
     with
      Pre =>
        False;
 
    pragma Warnings (On, "precondition is statically false");
 
-   function Valid (Val : Name_Service.Integer_Base) return Boolean is
+   function Valid (Val : Service_Manager.Integer_Base) return Boolean is
      (True);
 
-   function Convert (Val : Name_Service.Integer_Base) return Name_Service.Integer is
+   function Convert (Val : Service_Manager.Integer_Base) return Service_Manager.Integer is
      (Val)
     with
      Pre =>
        Valid (Val);
 
-end Parpen.Name_Service;
+end Parpen.Service_Manager;

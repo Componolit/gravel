@@ -2,7 +2,7 @@ with Parpen.Generic_Types;
 
 generic
    with package Types is new Parpen.Generic_Types (<>);
-package Parpen.Name_Service.Generic_Request_Get_Service with
+package Parpen.Service_Manager.Generic_Request_Get_Service with
   SPARK_Mode
 is
 
@@ -30,7 +30,7 @@ is
             when F_Initial | F_Name | F_Final =>
                null;
             when F_Len =>
-               Len_Value : Name_Service.Len_Base;
+               Len_Value : Service_Manager.Len_Base;
          end case;
       end record;
 
@@ -198,7 +198,7 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   function Get_Len (Ctx : Context) return Name_Service.Len with
+   function Get_Len (Ctx : Context) return Service_Manager.Len with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Len);
@@ -211,7 +211,7 @@ is
           and Has_Buffer (Ctx)
           and Present (Ctx, F_Name);
 
-   procedure Set_Len (Ctx : in out Context; Val : Name_Service.Len) with
+   procedure Set_Len (Ctx : in out Context; Val : Service_Manager.Len) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -355,7 +355,7 @@ private
       and then ((if Invalid (Cursors (F_Len)) then
            Invalid (Cursors (F_Name))))
       and then (if Structural_Valid (Cursors (F_Len)) then
-         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Name_Service.Len_Base'Size
+         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Service_Manager.Len_Base'Size
            and then Cursors (F_Len).Predecessor = F_Initial
            and then Cursors (F_Len).First = First
            and then (if Structural_Valid (Cursors (F_Name)) then
@@ -380,4 +380,4 @@ private
    function Cursors (Ctx : Context) return Field_Cursors is
      (Ctx.Cursors);
 
-end Parpen.Name_Service.Generic_Request_Get_Service;
+end Parpen.Service_Manager.Generic_Request_Get_Service;

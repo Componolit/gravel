@@ -5,7 +5,7 @@ with Parpen.Generic_Types;
 
 generic
    with package Types is new Parpen.Generic_Types (<>);
-package Parpen.Name_Service.Generic_Reply_Get_Service with
+package Parpen.Service_Manager.Generic_Reply_Get_Service with
   SPARK_Mode
 is
 
@@ -1451,4 +1451,4 @@ private
    function Cursors (Ctx : Context) return Field_Cursors is
      (Ctx.Cursors);
 
-end Parpen.Name_Service.Generic_Reply_Get_Service;
+end Parpen.Service_Manager.Generic_Reply_Get_Service;
