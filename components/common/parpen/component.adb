@@ -9,8 +9,7 @@ with Parpen.Generic_Types;
 with Parpen.Protocol.Generic_Label;
 with Parpen.Protocol.Generic_Reply;
 with Parpen.Protocol.Generic_Request;
-
-with RFLX_Container;
+with Parpen.Container;
 
 package body Component with
    SPARK_Mode
@@ -161,8 +160,8 @@ is
    procedure Handle_Message (Session : in out Message.Server_Session;
                              Data    :        Message_Buffer)
    is
-      package Request is new RFLX_Container (Positive, Character, String, String_ptr, Message_Buffer'Length);
-      package Reply is new RFLX_Container (Positive, Character, String, String_ptr, Message_Buffer'Length);
+      package Request is new Parpen.Container (Types, Message_Buffer'Length);
+      package Reply is new Parpen.Container (Types, Message_Buffer'Length);
       Request_Context : Request_Package.Context := Request_Package.Create;
       Reply_Context   : Reply_Package.Context := Reply_Package.Create;
    begin
@@ -188,7 +187,7 @@ is
                    Data    :        Message_Buffer)
    is
       Idx   : constant Gneiss.Session_Index := Message.Index (Session).Value;
-      package Reply is new RFLX_Container (Positive, Character, String, String_ptr, Message_Buffer'Length);
+      package Reply is new Parpen.Container (Types, Message_Buffer'Length);
       Context : Reply_Package.Context := Reply_Package.Create;
       use type Gneiss.Session_Status;
    begin
@@ -254,7 +253,7 @@ is
                        Label    :        String)
    is
       Context : Label_Package.Context := Label_Package.Create;
-      package L is new RFLX_Container (Positive, Character, String, String_ptr, Label_Length);
+      package L is new Parpen.Container (Types, Label_Length);
    begin
       if L.Ptr.all'Length < Label'Length then
          return;
@@ -297,7 +296,7 @@ is
    is
       Done : Boolean := False;
       Context : Label_Package.Context := Label_Package.Create;
-      package L is new RFLX_Container (Positive, Character, String, String_ptr, Label_Length);
+      package L is new Parpen.Container (Types, Label_Length);
       use type Parpen.Protocol.Connection_ID_Base;
   begin
       if L.Ptr.all'Length < Label'Length then
