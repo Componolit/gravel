@@ -13,7 +13,7 @@ is
 
    use type Types.Bytes, Types.Bytes_Ptr, Types.Index, Types.Length, Types.Bit_Index, Types.Bit_Length;
 
-   type Virtual_Field is (F_Initial, F_Len, F_Name, F_Server_Kind, F_Server_Arity, F_Server_Tag, F_Server_Legacy_Flags, F_Server_Has_Parent, F_Server_Flags, F_Server_FD, F_Server_Num_FDs, F_Server_Padding, F_Server_Binder, F_Server_Handle, F_Server_Parent, F_Server_Buffer, F_Server_Unused_Padding, F_Server_Parent_Offset, F_Server_Length, F_Server_Cookie, F_Server_Index, F_Allow_Isolated, F_Dump_Flags, F_Final);
+   type Virtual_Field is (F_Initial, F_Len, F_Name, F_Server_Kind, F_Server_Arity, F_Server_Tag, F_Server_Legacy_Flags, F_Server_Has_Parent, F_Server_Flags, F_Server_FD, F_Server_Num_FDs, F_Server_Padding, F_Server_Binder, F_Server_Handle, F_Server_Parent, F_Server_Buffer, F_Server_Unused_Padding, F_Server_Parent_Offset, F_Server_Length, F_Server_Cookie, F_Server_Index, F_Padding, F_Allow_Isolated, F_Dump_Flags, F_Final);
 
    subtype Field is Virtual_Field range F_Len .. F_Dump_Flags;
 
@@ -70,6 +70,8 @@ is
                Server_Cookie_Value : Binder.Cookie;
             when F_Server_Index =>
                Server_Index_Value : Binder.Index;
+            when F_Padding =>
+               Padding_Value : Name_Service.MBZ_7_Base;
             when F_Allow_Isolated =>
                Allow_Isolated_Value : Builtin_Types.Boolean_Base;
             when F_Dump_Flags =>
@@ -336,6 +338,11 @@ is
        Valid_Context (Ctx)
           and Valid (Ctx, F_Server_Index);
 
+   function Get_Padding (Ctx : Context) return Name_Service.MBZ_7 with
+     Pre =>
+       Valid_Context (Ctx)
+          and Valid (Ctx, F_Padding);
+
    function Get_Allow_Isolated (Ctx : Context) return Boolean with
      Pre =>
        Valid_Context (Ctx)
@@ -388,6 +395,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Name) = F_Len
@@ -430,6 +438,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Arity) = F_Server_Kind
@@ -474,6 +483,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (if Types.Bit_Length (Convert (Get_Server_Arity (Ctx))) = Types.Bit_Length (Convert (BA_SINGLE))
@@ -522,6 +532,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (if Types.Bit_Length (Convert (Get_Server_Kind (Ctx))) = Types.Bit_Length (Convert (BK_FD)) then
@@ -576,6 +587,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (if Types.Bit_Length (Convert (Get_Server_Arity (Ctx))) = Types.Bit_Length (Convert (BA_SINGLE)) then
@@ -627,6 +639,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Padding) = F_Server_Has_Parent
@@ -674,6 +687,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (if Types.Bit_Length (Convert (Get_Server_Kind (Ctx))) = Types.Bit_Length (Convert (BK_STRONG_BINDER))
@@ -727,6 +741,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Cookie) = F_Server_FD
@@ -775,6 +790,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Parent) = F_Server_Num_FDs
@@ -823,6 +839,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Buffer) = F_Server_Padding
@@ -871,6 +888,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Cookie) = F_Server_Binder
@@ -919,6 +937,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Unused_Padding) = F_Server_Handle
@@ -967,6 +986,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Parent_Offset) = F_Server_Parent
@@ -1016,6 +1036,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Length) = F_Server_Buffer
@@ -1065,6 +1086,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Cookie) = F_Server_Unused_Padding
@@ -1114,10 +1136,11 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
-          and (Predecessor (Ctx, F_Allow_Isolated) = F_Server_Parent_Offset
-            and Valid_Next (Ctx, F_Allow_Isolated))
+          and (Predecessor (Ctx, F_Padding) = F_Server_Parent_Offset
+            and Valid_Next (Ctx, F_Padding))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
@@ -1164,11 +1187,12 @@ is
           and Get_Server_Length (Ctx) = Val
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (if Types.Bit_Length (Convert (Get_Server_Has_Parent (Ctx))) = Types.Bit_Length (Convert (False)) then
-             Predecessor (Ctx, F_Allow_Isolated) = F_Server_Length
-               and Valid_Next (Ctx, F_Allow_Isolated))
+             Predecessor (Ctx, F_Padding) = F_Server_Length
+               and Valid_Next (Ctx, F_Padding))
           and (if Types.Bit_Length (Convert (Get_Server_Has_Parent (Ctx))) = Types.Bit_Length (Convert (True)) then
              Predecessor (Ctx, F_Server_Index) = F_Server_Length
                and Valid_Next (Ctx, F_Server_Index))
@@ -1218,10 +1242,11 @@ is
           and Valid (Ctx, F_Server_Cookie)
           and Get_Server_Cookie (Ctx) = Val
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
-          and (Predecessor (Ctx, F_Allow_Isolated) = F_Server_Cookie
-            and Valid_Next (Ctx, F_Allow_Isolated))
+          and (Predecessor (Ctx, F_Padding) = F_Server_Cookie
+            and Valid_Next (Ctx, F_Padding))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
@@ -1265,10 +1290,11 @@ is
           and Has_Buffer (Ctx)
           and Valid (Ctx, F_Server_Index)
           and Get_Server_Index (Ctx) = Val
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
-          and (Predecessor (Ctx, F_Allow_Isolated) = F_Server_Index
-            and Valid_Next (Ctx, F_Allow_Isolated))
+          and (Predecessor (Ctx, F_Padding) = F_Server_Index
+            and Valid_Next (Ctx, F_Padding))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
@@ -1302,6 +1328,55 @@ is
           and Cursor (Ctx, F_Server_Length) = Cursor (Ctx, F_Server_Length)'Old
           and Cursor (Ctx, F_Server_Cookie) = Cursor (Ctx, F_Server_Cookie)'Old;
 
+   procedure Set_Padding (Ctx : in out Context; Val : Name_Service.MBZ_7) with
+     Pre =>
+       Valid_Context (Ctx)
+          and then not Ctx'Constrained
+          and then Has_Buffer (Ctx)
+          and then Valid_Next (Ctx, F_Padding)
+          and then Field_Last (Ctx, F_Padding) <= Types.Bit_Index'Last / 2
+          and then Field_Condition (Ctx, (F_Padding, Val))
+          and then Valid (Val)
+          and then Available_Space (Ctx, F_Padding) >= Field_Length (Ctx, F_Padding),
+     Post =>
+       Valid_Context (Ctx)
+          and Has_Buffer (Ctx)
+          and Valid (Ctx, F_Padding)
+          and Get_Padding (Ctx) = Val
+          and Invalid (Ctx, F_Allow_Isolated)
+          and Invalid (Ctx, F_Dump_Flags)
+          and (Predecessor (Ctx, F_Allow_Isolated) = F_Padding
+            and Valid_Next (Ctx, F_Allow_Isolated))
+          and Ctx.Buffer_First = Ctx.Buffer_First'Old
+          and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
+          and Ctx.First = Ctx.First'Old
+          and Predecessor (Ctx, F_Padding) = Predecessor (Ctx, F_Padding)'Old
+          and Valid_Next (Ctx, F_Padding) = Valid_Next (Ctx, F_Padding)'Old
+          and Get_Len (Ctx) = Get_Len (Ctx)'Old
+          and Get_Server_Kind (Ctx) = Get_Server_Kind (Ctx)'Old
+          and Get_Server_Arity (Ctx) = Get_Server_Arity (Ctx)'Old
+          and Get_Server_Tag (Ctx) = Get_Server_Tag (Ctx)'Old
+          and Cursor (Ctx, F_Len) = Cursor (Ctx, F_Len)'Old
+          and Cursor (Ctx, F_Name) = Cursor (Ctx, F_Name)'Old
+          and Cursor (Ctx, F_Server_Kind) = Cursor (Ctx, F_Server_Kind)'Old
+          and Cursor (Ctx, F_Server_Arity) = Cursor (Ctx, F_Server_Arity)'Old
+          and Cursor (Ctx, F_Server_Tag) = Cursor (Ctx, F_Server_Tag)'Old
+          and Cursor (Ctx, F_Server_Legacy_Flags) = Cursor (Ctx, F_Server_Legacy_Flags)'Old
+          and Cursor (Ctx, F_Server_Has_Parent) = Cursor (Ctx, F_Server_Has_Parent)'Old
+          and Cursor (Ctx, F_Server_Flags) = Cursor (Ctx, F_Server_Flags)'Old
+          and Cursor (Ctx, F_Server_FD) = Cursor (Ctx, F_Server_FD)'Old
+          and Cursor (Ctx, F_Server_Num_FDs) = Cursor (Ctx, F_Server_Num_FDs)'Old
+          and Cursor (Ctx, F_Server_Padding) = Cursor (Ctx, F_Server_Padding)'Old
+          and Cursor (Ctx, F_Server_Binder) = Cursor (Ctx, F_Server_Binder)'Old
+          and Cursor (Ctx, F_Server_Handle) = Cursor (Ctx, F_Server_Handle)'Old
+          and Cursor (Ctx, F_Server_Parent) = Cursor (Ctx, F_Server_Parent)'Old
+          and Cursor (Ctx, F_Server_Buffer) = Cursor (Ctx, F_Server_Buffer)'Old
+          and Cursor (Ctx, F_Server_Unused_Padding) = Cursor (Ctx, F_Server_Unused_Padding)'Old
+          and Cursor (Ctx, F_Server_Parent_Offset) = Cursor (Ctx, F_Server_Parent_Offset)'Old
+          and Cursor (Ctx, F_Server_Length) = Cursor (Ctx, F_Server_Length)'Old
+          and Cursor (Ctx, F_Server_Cookie) = Cursor (Ctx, F_Server_Cookie)'Old
+          and Cursor (Ctx, F_Server_Index) = Cursor (Ctx, F_Server_Index)'Old;
+
    procedure Set_Allow_Isolated (Ctx : in out Context; Val : Boolean) with
      Pre =>
        Valid_Context (Ctx)
@@ -1329,6 +1404,7 @@ is
           and Get_Server_Kind (Ctx) = Get_Server_Kind (Ctx)'Old
           and Get_Server_Arity (Ctx) = Get_Server_Arity (Ctx)'Old
           and Get_Server_Tag (Ctx) = Get_Server_Tag (Ctx)'Old
+          and Get_Padding (Ctx) = Get_Padding (Ctx)'Old
           and Cursor (Ctx, F_Len) = Cursor (Ctx, F_Len)'Old
           and Cursor (Ctx, F_Name) = Cursor (Ctx, F_Name)'Old
           and Cursor (Ctx, F_Server_Kind) = Cursor (Ctx, F_Server_Kind)'Old
@@ -1348,7 +1424,8 @@ is
           and Cursor (Ctx, F_Server_Parent_Offset) = Cursor (Ctx, F_Server_Parent_Offset)'Old
           and Cursor (Ctx, F_Server_Length) = Cursor (Ctx, F_Server_Length)'Old
           and Cursor (Ctx, F_Server_Cookie) = Cursor (Ctx, F_Server_Cookie)'Old
-          and Cursor (Ctx, F_Server_Index) = Cursor (Ctx, F_Server_Index)'Old;
+          and Cursor (Ctx, F_Server_Index) = Cursor (Ctx, F_Server_Index)'Old
+          and Cursor (Ctx, F_Padding) = Cursor (Ctx, F_Padding)'Old;
 
    procedure Set_Dump_Flags (Ctx : in out Context; Val : Name_Service.Integer) with
      Pre =>
@@ -1374,6 +1451,7 @@ is
           and Get_Server_Kind (Ctx) = Get_Server_Kind (Ctx)'Old
           and Get_Server_Arity (Ctx) = Get_Server_Arity (Ctx)'Old
           and Get_Server_Tag (Ctx) = Get_Server_Tag (Ctx)'Old
+          and Get_Padding (Ctx) = Get_Padding (Ctx)'Old
           and Get_Allow_Isolated (Ctx) = Get_Allow_Isolated (Ctx)'Old
           and Cursor (Ctx, F_Len) = Cursor (Ctx, F_Len)'Old
           and Cursor (Ctx, F_Name) = Cursor (Ctx, F_Name)'Old
@@ -1395,6 +1473,7 @@ is
           and Cursor (Ctx, F_Server_Length) = Cursor (Ctx, F_Server_Length)'Old
           and Cursor (Ctx, F_Server_Cookie) = Cursor (Ctx, F_Server_Cookie)'Old
           and Cursor (Ctx, F_Server_Index) = Cursor (Ctx, F_Server_Index)'Old
+          and Cursor (Ctx, F_Padding) = Cursor (Ctx, F_Padding)'Old
           and Cursor (Ctx, F_Allow_Isolated) = Cursor (Ctx, F_Allow_Isolated)'Old;
 
    generic
@@ -1429,6 +1508,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Kind) = F_Name
@@ -1471,6 +1551,7 @@ is
           and Invalid (Ctx, F_Server_Length)
           and Invalid (Ctx, F_Server_Cookie)
           and Invalid (Ctx, F_Server_Index)
+          and Invalid (Ctx, F_Padding)
           and Invalid (Ctx, F_Allow_Isolated)
           and Invalid (Ctx, F_Dump_Flags)
           and (Predecessor (Ctx, F_Server_Kind) = F_Name
@@ -1544,6 +1625,8 @@ private
             Valid (Val.Server_Cookie_Value),
          when F_Server_Index =>
             Valid (Val.Server_Index_Value),
+         when F_Padding =>
+            Valid (Val.Padding_Value),
          when F_Allow_Isolated =>
             Valid (Val.Allow_Isolated_Value),
          when F_Dump_Flags =>
@@ -1670,16 +1753,19 @@ private
            (Valid (Cursors (F_Server_Length))
                and then Cursors (F_Server_Index).Predecessor = F_Server_Length
                and then Types.Bit_Length (Cursors (F_Server_Has_Parent).Value.Server_Has_Parent_Value) = Types.Bit_Length (Convert (True))))
-        and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
+        and then (if Structural_Valid (Cursors (F_Padding)) then
            (Valid (Cursors (F_Server_Length))
-               and then Cursors (F_Allow_Isolated).Predecessor = F_Server_Length
+               and then Cursors (F_Padding).Predecessor = F_Server_Length
                and then Types.Bit_Length (Cursors (F_Server_Has_Parent).Value.Server_Has_Parent_Value) = Types.Bit_Length (Convert (False)))
              or (Valid (Cursors (F_Server_Index))
-               and then Cursors (F_Allow_Isolated).Predecessor = F_Server_Index)
+               and then Cursors (F_Padding).Predecessor = F_Server_Index)
              or (Valid (Cursors (F_Server_Parent_Offset))
-               and then Cursors (F_Allow_Isolated).Predecessor = F_Server_Parent_Offset)
+               and then Cursors (F_Padding).Predecessor = F_Server_Parent_Offset)
              or (Valid (Cursors (F_Server_Cookie))
-               and then Cursors (F_Allow_Isolated).Predecessor = F_Server_Cookie))
+               and then Cursors (F_Padding).Predecessor = F_Server_Cookie))
+        and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
+           (Valid (Cursors (F_Padding))
+               and then Cursors (F_Allow_Isolated).Predecessor = F_Padding))
         and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
            (Valid (Cursors (F_Allow_Isolated))
                and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated)))
@@ -1727,6 +1813,8 @@ private
              and then Invalid (Cursors (F_Server_Index))
              and then Invalid (Cursors (F_Server_Parent_Offset))
              and then Invalid (Cursors (F_Server_Cookie)) then
+           Invalid (Cursors (F_Padding)))
+        and then (if Invalid (Cursors (F_Padding)) then
            Invalid (Cursors (F_Allow_Isolated)))
         and then (if Invalid (Cursors (F_Allow_Isolated)) then
            Invalid (Cursors (F_Dump_Flags))))
@@ -1767,14 +1855,18 @@ private
                                             (Cursors (F_Server_Cookie).Last - Cursors (F_Server_Cookie).First + 1) = Binder.Cookie'Size
                                               and then Cursors (F_Server_Cookie).Predecessor = F_Server_FD
                                               and then Cursors (F_Server_Cookie).First = (Cursors (F_Server_FD).Last + 1)
-                                              and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
-                                                 (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
-                                                   and then Cursors (F_Allow_Isolated).Predecessor = F_Server_Cookie
-                                                   and then Cursors (F_Allow_Isolated).First = (Cursors (F_Server_Cookie).Last + 1)
-                                                   and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                      (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
-                                                        and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
-                                                        and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1)))))
+                                              and then (if Structural_Valid (Cursors (F_Padding)) then
+                                                 (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                   and then Cursors (F_Padding).Predecessor = F_Server_Cookie
+                                                   and then Cursors (F_Padding).First = (Cursors (F_Server_Cookie).Last + 1)
+                                                   and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
+                                                      (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
+                                                        and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
+                                                        and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
+                                                        and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
+                                                           (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                             and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
+                                                             and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))))
                                     and then (if Structural_Valid (Cursors (F_Server_Num_FDs))
                                          and then Types.Bit_Length (Cursors (F_Server_Arity).Value.Server_Arity_Value) = Types.Bit_Length (Convert (BA_ARRAY)) then
                                        (Cursors (F_Server_Num_FDs).Last - Cursors (F_Server_Num_FDs).First + 1) = Binder.Count'Size
@@ -1788,14 +1880,18 @@ private
                                                  (Cursors (F_Server_Parent_Offset).Last - Cursors (F_Server_Parent_Offset).First + 1) = Binder.Offset'Size
                                                    and then Cursors (F_Server_Parent_Offset).Predecessor = F_Server_Parent
                                                    and then Cursors (F_Server_Parent_Offset).First = (Cursors (F_Server_Parent).Last + 1)
-                                                   and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
-                                                      (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
-                                                        and then Cursors (F_Allow_Isolated).Predecessor = F_Server_Parent_Offset
-                                                        and then Cursors (F_Allow_Isolated).First = (Cursors (F_Server_Parent_Offset).Last + 1)
-                                                        and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                           (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
-                                                             and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
-                                                             and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1)))))))
+                                                   and then (if Structural_Valid (Cursors (F_Padding)) then
+                                                      (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                        and then Cursors (F_Padding).Predecessor = F_Server_Parent_Offset
+                                                        and then Cursors (F_Padding).First = (Cursors (F_Server_Parent_Offset).Last + 1)
+                                                        and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
+                                                           (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
+                                                             and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
+                                                             and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
+                                                             and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
+                                                                (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                                  and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
+                                                                  and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))))))
                                and then (if Structural_Valid (Cursors (F_Server_Has_Parent))
                                     and then Types.Bit_Length (Cursors (F_Server_Kind).Value.Server_Kind_Value) = Types.Bit_Length (Convert (BK_POINTER)) then
                                   (Cursors (F_Server_Has_Parent).Last - Cursors (F_Server_Has_Parent).First + 1) = Builtin_Types.Boolean_Base'Size
@@ -1813,28 +1909,36 @@ private
                                                  (Cursors (F_Server_Length).Last - Cursors (F_Server_Length).First + 1) = Binder.Length_Base'Size
                                                    and then Cursors (F_Server_Length).Predecessor = F_Server_Buffer
                                                    and then Cursors (F_Server_Length).First = (Cursors (F_Server_Buffer).Last + 1)
-                                                   and then (if Structural_Valid (Cursors (F_Allow_Isolated))
+                                                   and then (if Structural_Valid (Cursors (F_Padding))
                                                         and then Types.Bit_Length (Cursors (F_Server_Has_Parent).Value.Server_Has_Parent_Value) = Types.Bit_Length (Convert (False)) then
-                                                      (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
-                                                        and then Cursors (F_Allow_Isolated).Predecessor = F_Server_Length
-                                                        and then Cursors (F_Allow_Isolated).First = (Cursors (F_Server_Length).Last + 1)
-                                                        and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                           (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
-                                                             and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
-                                                             and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1)))
+                                                      (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                        and then Cursors (F_Padding).Predecessor = F_Server_Length
+                                                        and then Cursors (F_Padding).First = (Cursors (F_Server_Length).Last + 1)
+                                                        and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
+                                                           (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
+                                                             and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
+                                                             and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
+                                                             and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
+                                                                (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                                  and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
+                                                                  and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))
                                                    and then (if Structural_Valid (Cursors (F_Server_Index))
                                                         and then Types.Bit_Length (Cursors (F_Server_Has_Parent).Value.Server_Has_Parent_Value) = Types.Bit_Length (Convert (True)) then
                                                       (Cursors (F_Server_Index).Last - Cursors (F_Server_Index).First + 1) = Binder.Index'Size
                                                         and then Cursors (F_Server_Index).Predecessor = F_Server_Length
                                                         and then Cursors (F_Server_Index).First = (Cursors (F_Server_Length).Last + 1)
-                                                        and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
-                                                           (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
-                                                             and then Cursors (F_Allow_Isolated).Predecessor = F_Server_Index
-                                                             and then Cursors (F_Allow_Isolated).First = (Cursors (F_Server_Index).Last + 1)
-                                                             and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                                (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
-                                                                  and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
-                                                                  and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))))))
+                                                        and then (if Structural_Valid (Cursors (F_Padding)) then
+                                                           (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                             and then Cursors (F_Padding).Predecessor = F_Server_Index
+                                                             and then Cursors (F_Padding).First = (Cursors (F_Server_Index).Last + 1)
+                                                             and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
+                                                                (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
+                                                                  and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
+                                                                  and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
+                                                                  and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
+                                                                     (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                                       and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
+                                                                       and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1)))))))))
                                and then (if Structural_Valid (Cursors (F_Server_Flags))
                                     and then (Types.Bit_Length (Cursors (F_Server_Kind).Value.Server_Kind_Value) /= Types.Bit_Length (Convert (BK_POINTER))
                                       and Types.Bit_Length (Cursors (F_Server_Kind).Value.Server_Kind_Value) /= Types.Bit_Length (Convert (BK_FD))) then
@@ -1851,14 +1955,18 @@ private
                                             (Cursors (F_Server_Cookie).Last - Cursors (F_Server_Cookie).First + 1) = Binder.Cookie'Size
                                               and then Cursors (F_Server_Cookie).Predecessor = F_Server_Binder
                                               and then Cursors (F_Server_Cookie).First = (Cursors (F_Server_Binder).Last + 1)
-                                              and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
-                                                 (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
-                                                   and then Cursors (F_Allow_Isolated).Predecessor = F_Server_Cookie
-                                                   and then Cursors (F_Allow_Isolated).First = (Cursors (F_Server_Cookie).Last + 1)
-                                                   and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                      (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
-                                                        and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
-                                                        and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1)))))
+                                              and then (if Structural_Valid (Cursors (F_Padding)) then
+                                                 (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                   and then Cursors (F_Padding).Predecessor = F_Server_Cookie
+                                                   and then Cursors (F_Padding).First = (Cursors (F_Server_Cookie).Last + 1)
+                                                   and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
+                                                      (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
+                                                        and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
+                                                        and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
+                                                        and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
+                                                           (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                             and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
+                                                             and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))))
                                     and then (if Structural_Valid (Cursors (F_Server_Handle))
                                          and then (Types.Bit_Length (Cursors (F_Server_Kind).Value.Server_Kind_Value) = Types.Bit_Length (Convert (BK_STRONG_HANDLE))
                                            or Types.Bit_Length (Cursors (F_Server_Kind).Value.Server_Kind_Value) = Types.Bit_Length (Convert (BK_WEAK_HANDLE))) then
@@ -1873,14 +1981,18 @@ private
                                                  (Cursors (F_Server_Cookie).Last - Cursors (F_Server_Cookie).First + 1) = Binder.Cookie'Size
                                                    and then Cursors (F_Server_Cookie).Predecessor = F_Server_Unused_Padding
                                                    and then Cursors (F_Server_Cookie).First = (Cursors (F_Server_Unused_Padding).Last + 1)
-                                                   and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
-                                                      (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
-                                                        and then Cursors (F_Allow_Isolated).Predecessor = F_Server_Cookie
-                                                        and then Cursors (F_Allow_Isolated).First = (Cursors (F_Server_Cookie).Last + 1)
-                                                        and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                                           (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
-                                                             and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
-                                                             and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1)))))))))))));
+                                                   and then (if Structural_Valid (Cursors (F_Padding)) then
+                                                      (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Name_Service.MBZ_7_Base'Size
+                                                        and then Cursors (F_Padding).Predecessor = F_Server_Cookie
+                                                        and then Cursors (F_Padding).First = (Cursors (F_Server_Cookie).Last + 1)
+                                                        and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
+                                                           (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
+                                                             and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
+                                                             and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
+                                                             and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
+                                                                (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Name_Service.Integer_Base'Size
+                                                                  and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
+                                                                  and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))))))))))));
 
    type Context (Buffer_First, Buffer_Last : Types.Index := Types.Index'First; First, Last : Types.Bit_Index := Types.Bit_Index'First) is
       record

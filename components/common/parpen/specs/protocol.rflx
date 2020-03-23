@@ -4,8 +4,10 @@ package Protocol is
 	type Connection_ID is range 1 .. 2**32-1 with Size => 32;
 	type Offset is mod 2**64;
 
+	type MBZ30  is range 0 .. 0 with Size => 30;
 	type Method is range 0 .. 2**32-1 with Size => 32;
 	type Length is range 0 .. 2**32-1 with Size => 32;
+	type Cookie is mod 2**64;
 
 	--  We should reuse Binder.Handle, but this does not work right now
 	--  Ref. Componolit/RecordFlux#186
@@ -21,6 +23,8 @@ package Protocol is
 		message
 			Handle         : Handle;
 			Method         : Method;
+			Cookie         : Cookie;
+			Padding        : MBZ30;
 			Oneway         : Boolean;
 			Accept_FDs     : Boolean;
 			Send_Offset    : Offset;
@@ -33,7 +37,7 @@ package Protocol is
 			Receive_Length : Length;
 		end message;
 
-	type Request_Tag is (REQUEST_TRANSACTION) with Size => 8;
+	type Request_Tag is (REQUEST_TRANSACTION => 1) with Size => 8;
 
 	type Request is
 		message
@@ -45,7 +49,7 @@ package Protocol is
 
 	for Request use (Data => Transaction) if Tag = REQUEST_TRANSACTION;
 
-	type Reply_Tag is (REPLY_ERROR) with Size => 8;
+	type Reply_Tag is (REPLY_ERROR => 1) with Size => 8;
 
 	type Reply is
 		message

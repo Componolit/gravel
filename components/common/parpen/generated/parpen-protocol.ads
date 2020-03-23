@@ -103,6 +103,56 @@ is
      Pre =>
        Valid (Val);
 
+   type Cookie is mod 2**64;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Cookie return Protocol.Cookie is
+     (Protocol.Cookie'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   pragma Warnings (Off, "unused variable ""Val""");
+
+   function Valid (Val : Protocol.Cookie) return Boolean is
+     (True);
+
+   pragma Warnings (On, "unused variable ""Val""");
+
+   function Convert (Val : Protocol.Cookie) return Protocol.Cookie is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
+   type MBZ30_Base is range 0 .. 2**30 - 1 with
+     Size =>
+       30;
+
+   subtype MBZ30 is MBZ30_Base range 0 .. 0;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_MBZ30 return Protocol.MBZ30 is
+     (Protocol.MBZ30'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   function Valid (Val : Protocol.MBZ30_Base) return Boolean is
+     (Val <= 0);
+
+   function Convert (Val : Protocol.MBZ30_Base) return Protocol.MBZ30 is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
    type Offset is mod 2**64;
 
    pragma Warnings (Off, "precondition is statically false");
@@ -158,7 +208,7 @@ is
    type Request_Tag is (REQUEST_TRANSACTION) with
      Size =>
        8;
-   for Request_Tag use (REQUEST_TRANSACTION => 0);
+   for Request_Tag use (REQUEST_TRANSACTION => 1);
 
    pragma Warnings (Off, "precondition is statically false");
 
@@ -172,7 +222,7 @@ is
 
    function Valid (Val : Protocol.Request_Tag_Base) return Boolean is
      ((case Val is
-         when 0 =>
+         when 1 =>
             True,
          when others =>
             False));
@@ -180,11 +230,11 @@ is
    function Convert (Enum : Protocol.Request_Tag) return Protocol.Request_Tag_Base is
      ((case Enum is
          when REQUEST_TRANSACTION =>
-            0));
+            1));
 
    function Convert (Val : Protocol.Request_Tag_Base) return Protocol.Request_Tag is
      ((case Val is
-         when 0 =>
+         when 1 =>
             REQUEST_TRANSACTION,
          when others =>
             Unreachable_Protocol_Request_Tag))
@@ -197,7 +247,7 @@ is
    type Reply_Tag is (REPLY_ERROR) with
      Size =>
        8;
-   for Reply_Tag use (REPLY_ERROR => 0);
+   for Reply_Tag use (REPLY_ERROR => 1);
 
    pragma Warnings (Off, "precondition is statically false");
 
@@ -211,7 +261,7 @@ is
 
    function Valid (Val : Protocol.Reply_Tag_Base) return Boolean is
      ((case Val is
-         when 0 =>
+         when 1 =>
             True,
          when others =>
             False));
@@ -219,11 +269,11 @@ is
    function Convert (Enum : Protocol.Reply_Tag) return Protocol.Reply_Tag_Base is
      ((case Enum is
          when REPLY_ERROR =>
-            0));
+            1));
 
    function Convert (Val : Protocol.Reply_Tag_Base) return Protocol.Reply_Tag is
      ((case Val is
-         when 0 =>
+         when 1 =>
             REPLY_ERROR,
          when others =>
             Unreachable_Protocol_Reply_Tag))

@@ -427,6 +427,31 @@ is
      Pre =>
        Valid (Val);
 
+   type MBZ_7_Base is range 0 .. 2**7 - 1 with
+     Size =>
+       7;
+
+   subtype MBZ_7 is MBZ_7_Base range 0 .. 0;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Name_Service_MBZ_7 return Name_Service.MBZ_7 is
+     (Name_Service.MBZ_7'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   function Valid (Val : Name_Service.MBZ_7_Base) return Boolean is
+     (Val <= 0);
+
+   function Convert (Val : Name_Service.MBZ_7_Base) return Name_Service.MBZ_7 is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
    type Integer_Base is range 0 .. 2**32 - 1 with
      Size =>
        32;

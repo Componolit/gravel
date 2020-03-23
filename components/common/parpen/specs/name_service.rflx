@@ -2,6 +2,7 @@ with Binder;
 
 package Name_Service is
 
+	type MBZ_7 is range 0 .. 0 with Size => 7;
 	type Integer is range 0 .. 2**32-1 with Size => 32;
 	type Len is range 1 .. 2**32-1 with Size => 32;
 
@@ -19,7 +20,7 @@ package Name_Service is
 			Result : Binder.IBinder;
 		end message;
 
-	--  Code: 2
+	--  Code: 3
 	type Request_Add_Service is
 		message
 			Len    		   : Len
@@ -27,6 +28,7 @@ package Name_Service is
 				with Length => Len;
 			Name   		   : Opaque;
 			Server 		   : Binder.IBinder;
+			Padding        : MBZ_7;
 			Allow_Isolated : Boolean;
 			Dump_Flags	   : Integer;
 		end message;
