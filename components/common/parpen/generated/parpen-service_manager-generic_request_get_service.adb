@@ -74,7 +74,7 @@ is
          when F_Len =>
             (case Fld is
                   when F_Name =>
-                     Types.Bit_Length (Ctx.Cursors (F_Len).Value.Len_Value),
+                     Types.Bit_Length (Ctx.Cursors (F_Len).Value.Len_Value) * 8,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Name | F_Final =>
@@ -248,7 +248,7 @@ is
                      and then Ctx.Cursors (F_Len).Predecessor = F_Initial
                      and then Ctx.Cursors (F_Len).First = Ctx.First
                      and then (if Structural_Valid (Ctx.Cursors (F_Name)) then
-                        (Ctx.Cursors (F_Name).Last - Ctx.Cursors (F_Name).First + 1) = Types.Bit_Length (Ctx.Cursors (F_Len).Value.Len_Value)
+                        (Ctx.Cursors (F_Name).Last - Ctx.Cursors (F_Name).First + 1) = Types.Bit_Length (Ctx.Cursors (F_Len).Value.Len_Value) * 8
                           and then Ctx.Cursors (F_Name).Predecessor = F_Len
                           and then Ctx.Cursors (F_Name).First = (Ctx.Cursors (F_Len).Last + 1))));
                if Fld = F_Len then
@@ -393,7 +393,7 @@ is
             and then Ctx.Cursors (F_Len).Predecessor = F_Initial
             and then Ctx.Cursors (F_Len).First = Ctx.First
             and then (if Structural_Valid (Ctx.Cursors (F_Name)) then
-               (Ctx.Cursors (F_Name).Last - Ctx.Cursors (F_Name).First + 1) = Types.Bit_Length (Ctx.Cursors (F_Len).Value.Len_Value)
+               (Ctx.Cursors (F_Name).Last - Ctx.Cursors (F_Name).First + 1) = Types.Bit_Length (Ctx.Cursors (F_Len).Value.Len_Value) * 8
                  and then Ctx.Cursors (F_Name).Predecessor = F_Len
                  and then Ctx.Cursors (F_Name).First = (Ctx.Cursors (F_Len).Last + 1))));
       Ctx.Cursors (F_Name) := (State => S_Structural_Valid, First => First, Last => Last, Value => (Fld => F_Name), Predecessor => Ctx.Cursors (F_Name).Predecessor);

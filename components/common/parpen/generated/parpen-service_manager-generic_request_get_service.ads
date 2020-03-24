@@ -359,7 +359,7 @@ private
            and then Cursors (F_Len).Predecessor = F_Initial
            and then Cursors (F_Len).First = First
            and then (if Structural_Valid (Cursors (F_Name)) then
-              (Cursors (F_Name).Last - Cursors (F_Name).First + 1) = Types.Bit_Length (Cursors (F_Len).Value.Len_Value)
+              (Cursors (F_Name).Last - Cursors (F_Name).First + 1) = Types.Bit_Length (Cursors (F_Len).Value.Len_Value) * 8
                 and then Cursors (F_Name).Predecessor = F_Len
                 and then Cursors (F_Name).First = (Cursors (F_Len).Last + 1))));
 

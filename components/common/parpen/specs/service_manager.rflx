@@ -11,13 +11,16 @@ package Service_Manager is
 		message
 			Len  : Len
 				then Name
-				with Length => Len;
+				with Length => 8 * Len;
 			Name : Opaque;
 		end message;
 
 	type Reply_Get_Service is
 		message
-			Result : Binder.IBinder;
+			null
+				then Result
+				with Length => 8 * 24;
+			Result : Opaque;
 		end message;
 
 	--  Code: 3
@@ -25,9 +28,11 @@ package Service_Manager is
 		message
 			Len    		   : Len
 				then Name
-				with Length => Len;
-			Name   		   : Opaque;
-			Server 		   : Binder.IBinder;
+				with Length => 8 * Len;
+			Name   		   : Opaque
+				then Server
+				with Length => 8 * 24;
+			Server 		   : Opaque;
 			Padding        : MBZ_7;
 			Allow_Isolated : Boolean;
 			Dump_Flags	   : Integer;
