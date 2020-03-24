@@ -9,6 +9,7 @@ package Parpen.Name_Service is
 
    type Result_Type is
       (Result_Valid,
+       Result_Invalid_Method,
        Result_Invalid);
 
    procedure Process (Data           : in out Types.Bytes_Ptr;

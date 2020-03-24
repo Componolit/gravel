@@ -51,6 +51,7 @@ package body Parpen.Name_Service is
                Handle_Valid := True;
             end if;
          end if;
+         IBinder_Package.Take_Buffer (Binder_Context, Binder_Buffer.Ptr);
       end Parse_Binder;
 
       procedure Parse_Binder is new Req_AS_Package.Get_Server (Parse_Binder);
@@ -74,6 +75,8 @@ package body Parpen.Name_Service is
    begin
       Result := Result_Invalid;
 
+      Put_Line ("Handling NS: Method:" & Method'Img);
+
       --  Add service
       if Method = 3 then
          Req_AS_Package.Initialize (Ctx    => Context,
@@ -82,20 +85,24 @@ package body Parpen.Name_Service is
                                     Last   => Types.Last_Bit_Index (Data'First) + Data_Length);
          Req_AS_Package.Verify_Message (Context);
          if not Req_AS_Package.Structural_Valid_Message (Context) then
+            Req_AS_Package.Take_Buffer (Context, Data);
             return;
          end if;
          Parse_Binder (Context);
          if not Handle_Valid then
+            Req_AS_Package.Take_Buffer (Context, Data);
             return;
          end if;
 
          Insert_Name (Context);
-         return;
+         Req_AS_Package.Take_Buffer (Context, Data);
+         Result := Result_Valid;
+      else
+         Result := Result_Invalid_Method;
       end if;
 
-      Data_Offset := 0;
       Data_Length := 0;
-      Result := Result_Invalid;
+      Data_Offset := 0;
    end Process;
 
 begin

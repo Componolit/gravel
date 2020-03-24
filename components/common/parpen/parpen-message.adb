@@ -160,8 +160,11 @@ package body Parpen.Message is
                                Source_ID      => Sender,
                                Method         => Method,
                                Result         => Name_Service_Result);
-         if Name_Service_Result /= Name_Service.Result_Valid then
-            Result := Result_Invalid;
+         Result := (case Name_Service_Result is
+                    when Name_Service.Result_Valid          => Result_Valid,
+                    when Name_Service.Result_Invalid        => Result_Invalid,
+                    when Name_Service.Result_Invalid_Method => Result_Invalid_Method);
+         if Result /= Result_Valid then
             return;
          end if;
 
@@ -174,7 +177,13 @@ package body Parpen.Message is
       Result := Result_Invalid;
    end Dispatch;
 
+   procedure Initialize
+   is
+   begin
+      Clients.Inner.Initialize;
+      Add_Client (Name_Service_ID);
+   end Initialize;
+
 begin
-   Clients.Inner.Initialize;
-   Add_Client (Name_Service_ID);
+   Initialize;
 end Parpen.Message;

@@ -14,6 +14,7 @@ is
       (Result_Valid,
        Result_Invalid,
        Result_Invalid_Handle,
+       Result_Invalid_Method,
        Result_Offset_Out_Of_Range,
        Result_Overflow);
 
@@ -63,6 +64,8 @@ is
                       Offsets_Offset :        Types.Bit_Length;
                       Offsets_Length :        Types.Bit_Length;
                       Result         :    out Result_Type);
+
+   procedure Initialize;
 
 private
 
