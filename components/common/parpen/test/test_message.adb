@@ -145,7 +145,15 @@ package body Test_Message is
          ""
          & 16#00# & 16#00# & 16#00# & 16#04# -- Len
          & "Test"                            -- Name
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
       );
+      Reply_Checked : Boolean := False;
 
       procedure Check_Reply (ID         : Client_ID;
                              Handle     : Parpen.Protocol.Handle;
@@ -154,7 +162,7 @@ package body Test_Message is
                              Oneway     : Boolean;
                              Accept_FDs : Boolean;
                              Data       : String;
-                             Length     : Natural);
+                             Last       : Natural);
 
       procedure Check_Reply (ID         : Client_ID;
                              Handle     : Parpen.Protocol.Handle;
@@ -163,13 +171,32 @@ package body Test_Message is
                              Oneway     : Boolean;
                              Accept_FDs : Boolean;
                              Data       : String;
-                             Length     : Natural)
+                             Last       : Natural)
       is
-         pragma Unreferenced (ID, Handle, Method, Cookie, Oneway, Accept_FDs, Data, Length);
+         Expected : constant String_Ptr := new String'(
+            ""
+            & 16#00# & 16#00# & 16#00# & 16#00#
+            & 16#00# & 16#00# & 16#00# & 16#00# -- Offset list with single entry (0 bit offset within data)
+            & "wh*" & 16#85#                    -- Weak handle
+            & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+            & 16#00# & 16#00# & 16#00# & 16#01# -- handle (value: 16#1#)
+            & 16#00# & 16#00# & 16#00# & 16#00# -- padding
+            & 16#00# & 16#00# & 16#BE# & 16#EF# -- cookie (part 1)
+            & 16#DE# & 16#AD# & 16#C0# & 16#DE# -- cookie (part 2)
+         );
+         use type Parpen.Protocol.Handle;
+         use type Parpen.Protocol.Method;
+         use type Parpen.Protocol.Cookie;
       begin
-         Assert (False, "Not implemented");
+         Assert (ID = Client_2, "Invalid client");
+         Assert (Handle = 0, "Invalid handle");
+         Assert (Method = 1, "Invalid method");
+         Assert (Cookie = 16#beef_dead_c0de#, "Invalid cookie");
+         Assert (Oneway = False, "Invalid oneway flag");
+         Assert (Accept_FDs = False, "Invalid accept_fds flag");
+         Assert (Data (Data'First .. Last) = Expected.all, "Invalid reply");
+         Reply_Checked := True;
       end Check_Reply;
-
 
       procedure Dispatch_Add is new Message.Dispatch (No_Reply);
       procedure Dispatch_Get is new Message.Dispatch (Check_Reply);
@@ -195,7 +222,7 @@ package body Test_Message is
       Dispatch_Get (Sender         => Client_2,
                     Handle         => 0,
                     Method         => 1,
-                    Cookie         => 16#dead_beef#,
+                    Cookie         => 16#beef_dead_c0de#,
                     Oneway         => False,
                     Accept_FDs     => False,
                     Data           => Get_Service,
@@ -205,7 +232,7 @@ package body Test_Message is
                     Offsets_Length => 0,
                     Result         => Result);
       Assert (Result = Message.Result_Valid, "Quering service failed: " & Result'Img);
-
+      Assert (Reply_Checked, "Reply not checked");
    end Test_Query_Service;
 
    function Name (T : Test) return AUnit.Message_String is

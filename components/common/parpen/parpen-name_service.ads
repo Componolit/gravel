@@ -12,6 +12,8 @@ package Parpen.Name_Service is
        Result_Invalid_Method,
        Result_Invalid);
 
+   procedure Initialize;
+
    procedure Process (Data           : in out Types.Bytes_Ptr;
                       Data_Offset    : in out Types.Bit_Length;
                       Data_Length    : in out Types.Bit_Length;
@@ -19,5 +21,6 @@ package Parpen.Name_Service is
                       Offsets_Length :    out Types.Bit_Length;
                       Source_ID      :        Client_ID;
                       Method         :        Parpen.Protocol.Method;
+                      Cookie         :        Parpen.Protocol.Cookie;
                       Result         :    out Result_Type);
 end Parpen.Name_Service;

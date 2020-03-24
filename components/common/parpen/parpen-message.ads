@@ -31,7 +31,6 @@ is
                            Accept_FDs : Boolean;
                            Data       : Types.Bytes;
                            Last       : Types.Index);
-      pragma Unreferenced (Send);
    procedure Dispatch (Sender         :        Client_ID;
                        Handle         :        Parpen.Protocol.Handle;
                        Method         :        Parpen.Protocol.Method;

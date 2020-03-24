@@ -1,9 +1,8 @@
 with Parpen.Service_Manager.Generic_Request_Add_Service;
+with Parpen.Service_Manager.Generic_Request_Get_Service;
 with Parpen.Binder.Generic_IBinder;
 with Parpen.Container;
 with Parpen.NameDB;
-
-with Ada.Text_IO; use Ada.Text_IO;
 
 package body Parpen.Name_Service is
 
@@ -15,6 +14,7 @@ package body Parpen.Name_Service is
    Name_DB : DB.Database (Num_Entries);
 
    package Req_AS_Package is new Parpen.Service_Manager.Generic_Request_Add_Service (Types);
+   package Req_GS_Package is new Parpen.Service_Manager.Generic_Request_Get_Service (Types);
    package Binder_Buffer is new Parpen.Container (Types, 24);
    package IBinder_Package is new Parpen.Binder.Generic_IBinder (Types);
 
@@ -25,21 +25,26 @@ package body Parpen.Name_Service is
                       Offsets_Length :    out Types.Bit_Length;
                       Source_ID      :        Client_ID;
                       Method         :        Parpen.Protocol.Method;
+                      Cookie         :        Parpen.Protocol.Cookie;
                       Result         :    out Result_Type)
    is
       pragma Unreferenced (Offsets_Offset, Offsets_Length, Source_ID);
       use type Parpen.Protocol.Method;
       use type Parpen.Binder.Binder_Kind;
       use type Types.Bit_Length;
-      Context      : Req_AS_Package.Context := Req_AS_Package.Create;
-      Handle       : Parpen.Binder.Handle;
-      Handle_Valid : Boolean := True;
+      use type Types.Index;
+
+      AS_Context : Req_AS_Package.Context := Req_AS_Package.Create;
+      GS_Context : Req_GS_Package.Context := Req_GS_Package.Create;
+      B_Context  : IBinder_Package.Context := IBinder_Package.Create;
+      Handle     : Parpen.Binder.Handle;
 
       procedure Parse_Binder (Server : Types.Bytes);
       procedure Parse_Binder (Server : Types.Bytes)
       is
          Binder_Context : IBinder_Package.Context := IBinder_Package.Create;
       begin
+         Binder_Buffer.Ptr.all := (others => Types.Byte'Val (0));
          Binder_Buffer.Ptr.all := Server;
          IBinder_Package.Initialize (Binder_Context, Binder_Buffer.Ptr);
          IBinder_Package.Verify_Message (Binder_Context);
@@ -48,7 +53,7 @@ package body Parpen.Name_Service is
                or IBinder_Package.Get_Kind (Binder_Context) = Parpen.Binder.BK_STRONG_HANDLE
             then
                Handle := IBinder_Package.Get_Handle (Binder_Context);
-               Handle_Valid := True;
+               Result := Result_Valid;
             end if;
          end if;
          IBinder_Package.Take_Buffer (Binder_Context, Binder_Buffer.Ptr);
@@ -56,15 +61,12 @@ package body Parpen.Name_Service is
 
       procedure Parse_Binder is new Req_AS_Package.Get_Server (Parse_Binder);
 
-      procedure Insert_Name (Name : Types.Bytes) with
-         Pre => Handle_Valid;
-
+      procedure Insert_Name (Name : Types.Bytes);
       procedure Insert_Name (Name : Types.Bytes)
       is
          Status : DB.Status;
          use type DB.Status;
       begin
-         Put_Line ("Insert_Name called");
          Name_DB.Add (Elem   => Handle,
                       Query  => Name,
                       Result => Status);
@@ -72,30 +74,84 @@ package body Parpen.Name_Service is
       end Insert_Name;
 
       procedure Insert_Name is new Req_AS_Package.Get_Name (Insert_Name);
-   begin
-      Result := Result_Invalid;
 
-      Put_Line ("Handling NS: Method:" & Method'Img);
+      procedure Query_Name (Name : Types.Bytes);
+      procedure Query_Name (Name : Types.Bytes)
+      is
+         DB_Result : DB.Result;
+      begin
+         Name_DB.Get (Query => Name,
+                      Res   => DB_Result);
+         if DB_Result.Valid then
+            Handle := DB_Result.Elem;
+            Result := Result_Valid;
+         else
+            Result := Result_Invalid;
+         end if;
+      end Query_Name;
+
+      procedure Query_Name is new Req_GS_Package.Get_Name (Query_Name);
+   begin
+      Result      := Result_Invalid;
+
+      --  Get service
+      if Method = 1 then
+         Req_GS_Package.Initialize (Ctx    => GS_Context,
+                                    Buffer => Data,
+                                    First  => Types.First_Bit_Index (Data'First) + Data_Offset,
+                                    Last   => Types.Last_Bit_Index (Data'First) + Data_Offset + Data_Length);
+         Req_GS_Package.Verify_Message (GS_Context);
+         if not Req_GS_Package.Structural_Valid_Message (GS_Context) then
+            Req_GS_Package.Take_Buffer (GS_Context, Data);
+            return;
+         end if;
+         Query_Name (GS_Context);
+         Req_GS_Package.Take_Buffer (GS_Context, Data);
+
+         if Result = Result_Invalid then
+            return;
+         end if;
+
+         --  Set offsets to 0
+         Data.all (Data'First .. Data'First + 7) := (others => Types.Byte'Val (0));
+
+         IBinder_Package.Initialize (Ctx    => B_Context,
+                                     Buffer => Data,
+                                     First  => Types.First_Bit_Index (Data'First) + 64,
+                                     Last   => Types.Last_Bit_Index (Data'Last));
+
+         IBinder_Package.Set_Kind (B_Context, Parpen.Binder.BK_WEAK_HANDLE);
+         IBinder_Package.Set_Arity (B_Context, Parpen.Binder.BA_SINGLE);
+         IBinder_Package.Set_Tag (B_Context, 16#85#);
+         IBinder_Package.Set_Flags (B_Context, Parpen.Binder.FBF_NONE);
+         IBinder_Package.Set_Handle (B_Context, Handle);
+         IBinder_Package.Set_Unused_Padding (B_Context, 0);
+         IBinder_Package.Set_Cookie (B_Context, Parpen.Binder.Cookie'Val (Parpen.Protocol.Cookie'Pos (Cookie)));
+         IBinder_Package.Take_Buffer (B_Context, Data);
+
+         Data_Length := 32 * 8;
+         Result := Result_Valid;
+         return;
 
       --  Add service
-      if Method = 3 then
-         Req_AS_Package.Initialize (Ctx    => Context,
+      elsif Method = 3 then
+         Req_AS_Package.Initialize (Ctx    => AS_Context,
                                     Buffer => Data,
-                                    First  => Types.First_Bit_Index (Data'First),
-                                    Last   => Types.Last_Bit_Index (Data'First) + Data_Length);
-         Req_AS_Package.Verify_Message (Context);
-         if not Req_AS_Package.Structural_Valid_Message (Context) then
-            Req_AS_Package.Take_Buffer (Context, Data);
+                                    First  => Types.First_Bit_Index (Data'First) + Data_Offset,
+                                    Last   => Types.Last_Bit_Index (Data'First) + Data_Offset + Data_Length);
+         Req_AS_Package.Verify_Message (AS_Context);
+         if not Req_AS_Package.Structural_Valid_Message (AS_Context) then
+            Req_AS_Package.Take_Buffer (AS_Context, Data);
             return;
          end if;
-         Parse_Binder (Context);
-         if not Handle_Valid then
-            Req_AS_Package.Take_Buffer (Context, Data);
+         Parse_Binder (AS_Context);
+         if Result /= Result_Valid then
+            Req_AS_Package.Take_Buffer (AS_Context, Data);
             return;
          end if;
 
-         Insert_Name (Context);
-         Req_AS_Package.Take_Buffer (Context, Data);
+         Insert_Name (AS_Context);
+         Req_AS_Package.Take_Buffer (AS_Context, Data);
          Result := Result_Valid;
       else
          Result := Result_Invalid_Method;
@@ -105,6 +161,12 @@ package body Parpen.Name_Service is
       Data_Offset := 0;
    end Process;
 
+   procedure Initialize
+   is
+   begin
+      DB.Init (Name_DB);
+   end Initialize;
+
 begin
-   DB.Init (Name_DB);
+   Initialize;
 end Parpen.Name_Service;

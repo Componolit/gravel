@@ -115,7 +115,6 @@ package body Parpen.Message is
                        Offsets_Length :        Types.Bit_Length;
                        Result         :    out Result_Type)
    is
-      pragma Unreferenced (Cookie, Accept_FDs);
       Receiver            : Client_ID;
       Node                : Resolve.Node_Option;
       Name_Service_Result : Name_Service.Result_Type;
@@ -125,6 +124,8 @@ package body Parpen.Message is
       Offsets_Len         : Types.Bit_Length := Offsets_Length;
       use type Parpen.Protocol.Handle;
       use type Name_Service.Result_Type;
+      use type Types.Bit_Length;
+      use type Types.Index;
    begin
       if Handle = 0 then
          Receiver := Name_Service_ID;
@@ -159,6 +160,7 @@ package body Parpen.Message is
                                Offsets_Length => Offsets_Len,
                                Source_ID      => Sender,
                                Method         => Method,
+                               Cookie         => Cookie,
                                Result         => Name_Service_Result);
          Result := (case Name_Service_Result is
                     when Name_Service.Result_Valid          => Result_Valid,
@@ -168,10 +170,22 @@ package body Parpen.Message is
             return;
          end if;
 
-         if Oneway then
+         if Oneway or Data_Len = 0 then
             Result := Result_Valid;
             return;
          end if;
+
+         Send (ID         => Sender,
+               Handle     => Handle,
+               Method     => Method,
+               Cookie     => Cookie,
+               Oneway     => Oneway,
+               Accept_FDs => Accept_FDs,
+               Data       => Data.all,
+               Last       => Data'First + Types.Index (Data_Len / 8) - 1);
+
+         Result := Result_Valid;
+         return;
       end if;
 
       Result := Result_Invalid;
@@ -180,6 +194,7 @@ package body Parpen.Message is
    procedure Initialize
    is
    begin
+      Name_Service.Initialize;
       Clients.Inner.Initialize;
       Add_Client (Name_Service_ID);
    end Initialize;
