@@ -33,7 +33,7 @@ is
             when F_Initial | F_Name | F_Server | F_Final =>
                null;
             when F_Len =>
-               Len_Value : Service_Manager.Len_Base;
+               Len_Value : Service_Manager.Len;
             when F_Padding =>
                Padding_Value : Service_Manager.MBZ_7_Base;
             when F_Allow_Isolated =>
@@ -569,7 +569,7 @@ private
         and then (if Invalid (Cursors (F_Allow_Isolated)) then
            Invalid (Cursors (F_Dump_Flags))))
       and then (if Structural_Valid (Cursors (F_Len)) then
-         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Service_Manager.Len_Base'Size
+         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Service_Manager.Len'Size
            and then Cursors (F_Len).Predecessor = F_Initial
            and then Cursors (F_Len).First = First
            and then (if Structural_Valid (Cursors (F_Name)) then

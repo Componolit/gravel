@@ -21,10 +21,11 @@ package body Test_Message is
    type Client_ID is new Natural range 11 .. 21;
    Client_1 : constant Client_ID := Client_ID'First + 1;
 
-   package Message is new Parpen.Message (Client_ID   => Client_ID,
-                                          Types       => Types,
-                                          Num_Nodes   => 100,
-                                          Num_Handles => 20);
+   package Message is new Parpen.Message (Client_ID           => Client_ID,
+                                          Types               => Types,
+                                          Num_Nodes           => 100,
+                                          Num_Handles         => 20,
+                                          Num_Name_DB_Entries => 200);
 
    function "&" (Left : String; Right : Natural) return String is
       (Left & (1 => Character'Val (Right)));

@@ -1,8 +1,18 @@
 with Parpen.Service_Manager.Generic_Request_Add_Service;
 with Parpen.Binder.Generic_IBinder;
 with Parpen.Container;
+with Parpen.NameDB;
+
+with Ada.Text_IO; use Ada.Text_IO;
 
 package body Parpen.Name_Service is
+
+   package DB is new Parpen.NameDB (Element       => Parpen.Binder.Handle,
+                                    Query_Index   => Types.Index,
+                                    Query_Element => Types.Byte,
+                                    Query_String  => Types.Bytes);
+
+   Name_DB : DB.Database (Num_Entries);
 
    package Req_AS_Package is new Parpen.Service_Manager.Generic_Request_Add_Service (Types);
    package Binder_Buffer is new Parpen.Container (Types, 24);
@@ -44,8 +54,26 @@ package body Parpen.Name_Service is
       end Parse_Binder;
 
       procedure Parse_Binder is new Req_AS_Package.Get_Server (Parse_Binder);
+
+      procedure Insert_Name (Name : Types.Bytes) with
+         Pre => Handle_Valid;
+
+      procedure Insert_Name (Name : Types.Bytes)
+      is
+         Status : DB.Status;
+         use type DB.Status;
+      begin
+         Put_Line ("Insert_Name called");
+         Name_DB.Add (Elem   => Handle,
+                      Query  => Name,
+                      Result => Status);
+         Result := (if Status = DB.Status_OK then Result_Valid else Result_Invalid);
+      end Insert_Name;
+
+      procedure Insert_Name is new Req_AS_Package.Get_Name (Insert_Name);
    begin
-      pragma Unreferenced (Handle);
+      Result := Result_Invalid;
+
       --  Add service
       if Method = 3 then
          Req_AS_Package.Initialize (Ctx    => Context,
@@ -54,15 +82,14 @@ package body Parpen.Name_Service is
                                     Last   => Types.Last_Bit_Index (Data'First) + Data_Length);
          Req_AS_Package.Verify_Message (Context);
          if not Req_AS_Package.Structural_Valid_Message (Context) then
-            Result := Result_Invalid;
             return;
          end if;
          Parse_Binder (Context);
          if not Handle_Valid then
-            Result := Result_Invalid;
             return;
          end if;
-         Result := Result_Invalid;
+
+         Insert_Name (Context);
          return;
       end if;
 
@@ -71,5 +98,6 @@ package body Parpen.Name_Service is
       Result := Result_Invalid;
    end Process;
 
+begin
+   DB.Init (Name_DB);
 end Parpen.Name_Service;
-

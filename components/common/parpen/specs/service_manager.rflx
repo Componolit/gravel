@@ -4,7 +4,7 @@ package Service_Manager is
 
 	type MBZ_7 is range 0 .. 0 with Size => 7;
 	type Integer is range 0 .. 2**32-1 with Size => 32;
-	type Len is range 1 .. 2**32-1 with Size => 32;
+	type Len is mod 2**32;
 
 	--  Code: 1
 	type Request_Get_Service is

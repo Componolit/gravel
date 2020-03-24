@@ -30,7 +30,7 @@ is
             when F_Initial | F_Name | F_Final =>
                null;
             when F_Len =>
-               Len_Value : Service_Manager.Len_Base;
+               Len_Value : Service_Manager.Len;
          end case;
       end record;
 
@@ -355,7 +355,7 @@ private
       and then ((if Invalid (Cursors (F_Len)) then
            Invalid (Cursors (F_Name))))
       and then (if Structural_Valid (Cursors (F_Len)) then
-         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Service_Manager.Len_Base'Size
+         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Service_Manager.Len'Size
            and then Cursors (F_Len).Predecessor = F_Initial
            and then Cursors (F_Len).First = First
            and then (if Structural_Valid (Cursors (F_Name)) then

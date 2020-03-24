@@ -5,8 +5,9 @@ with Parpen.Protocol;
 generic
    with package Types is new Parpen.Generic_Types (<>);
    type Client_ID is (<>);
-   Num_Nodes   : Natural;
-   Num_Handles : Natural;
+   Num_Nodes           : Natural;
+   Num_Handles         : Natural;
+   Num_Name_DB_Entries : Natural;
 package Parpen.Message
 is
    type Result_Type is

@@ -5,7 +5,9 @@ with Parpen.Protocol.Generic_Offsets;
 package body Parpen.Message is
 
    package Offsets_Package is new Parpen.Protocol.Generic_Offsets (Types);
-   package Name_Service is new Parpen.Name_Service (Types, Client_ID);
+   package Name_Service is new Parpen.Name_Service (Types       => Types,
+                                                    Client_ID   => Client_ID,
+                                                    Num_Entries => Num_Name_DB_Entries);
 
    Name_Service_ID : constant Client_ID := Client_ID'First;
 

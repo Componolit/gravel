@@ -4,6 +4,7 @@ with Parpen.Protocol;
 generic
    with package Types is new Parpen.Generic_Types (<>);
    type Client_ID is (<>);
+   Num_Entries : Natural;
 package Parpen.Name_Service is
 
    type Result_Type is

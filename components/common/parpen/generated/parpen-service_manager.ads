@@ -2,11 +2,7 @@ package Parpen.Service_Manager with
   SPARK_Mode
 is
 
-   type Len_Base is range 0 .. 2**32 - 1 with
-     Size =>
-       32;
-
-   subtype Len is Len_Base range 1 .. 2**32 - 1;
+   type Len is mod 2**32;
 
    pragma Warnings (Off, "precondition is statically false");
 
@@ -18,10 +14,14 @@ is
 
    pragma Warnings (On, "precondition is statically false");
 
-   function Valid (Val : Service_Manager.Len_Base) return Boolean is
-     (Val >= 1);
+   pragma Warnings (Off, "unused variable ""Val""");
 
-   function Convert (Val : Service_Manager.Len_Base) return Service_Manager.Len is
+   function Valid (Val : Service_Manager.Len) return Boolean is
+     (True);
+
+   pragma Warnings (On, "unused variable ""Val""");
+
+   function Convert (Val : Service_Manager.Len) return Service_Manager.Len is
      (Val)
     with
      Pre =>
