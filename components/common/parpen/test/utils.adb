@@ -19,10 +19,10 @@ package body Utils is
       return '*';
    end Digit;
 
-   function Hex (Value : Character) return String;
-   function Hex (Value : Character) return String
+   function Hex (Value : Types.Byte) return String;
+   function Hex (Value : Types.Byte) return String
    is
-      Val : constant Natural := Natural (Character'Pos (Value));
+      Val : constant Natural := Natural (Types.Byte'Pos (Value));
    begin
       return Digit (Val / 16) & Digit (Val mod 16);
    end Hex;
@@ -31,13 +31,13 @@ package body Utils is
    -- Printable --
    ---------------
 
-   function Printable (Value : Character) return Character;
-   function Printable (Value : Character) return Character
+   function Printable (Value : Types.Byte) return Character;
+   function Printable (Value : Types.Byte) return Character
    is
-      P : constant Natural := Character'Pos (Value);
+      P : constant Natural := Types.Byte'Pos (Value);
    begin
       if P > 31 and P < 127 then
-         return Value;
+         return Character'Val (Types.Byte'Pos (Value));
       else
          return '.';
       end if;
@@ -48,7 +48,7 @@ package body Utils is
    -------------
 
    procedure Hexdump (Label : String;
-                      Data  : String)
+                      Data  : Types.Bytes)
    is
       use Ada.Text_IO;
       First : Boolean := True;
