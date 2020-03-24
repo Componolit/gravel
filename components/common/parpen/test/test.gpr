@@ -9,7 +9,7 @@ project Test is
    for Main use ("main.adb");
 
    package Builder is
-      for Default_Switches ("Ada") use ( 
+      for Default_Switches ("Ada") use (
          "-gnatVa",
          "-gnatwa",
          "-gnatwl",
@@ -19,18 +19,22 @@ project Test is
    end Builder;
 
    package Compiler is
-      for Switches ("*-builtin_types-*") use ( 
+      for Switches ("*-builtin_types-*") use (
          "-gnatwR"
       );
-      for Switches ("*-generic_types.adb") use ( 
+      for Switches ("*-generic_types.adb") use (
          "-gnatwRU",
          "-gnaty-sM120"
       );
-      for Switches ("parpen-protocol*.ad*") use ( 
+      for Switches ("parpen-protocol*.ad*") use (
          "-gnatwRUC",
          "-gnaty-sM120i"
       );
-      for Switches ("parpen-binder*.ad*") use ( 
+      for Switches ("parpen-binder*.ad*") use (
+         "-gnatwRUC",
+         "-gnaty-sM120i"
+      );
+      for Switches ("parpen-service_manager*.ad*") use (
          "-gnatwRUC",
          "-gnaty-sM120i"
       );

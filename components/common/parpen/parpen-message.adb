@@ -1,8 +1,13 @@
+with Parpen.Binder;
+with Parpen.Name_Service;
 with Parpen.Protocol.Generic_Offsets;
 
 package body Parpen.Message is
 
    package Offsets_Package is new Parpen.Protocol.Generic_Offsets (Types);
+   package Name_Service is new Parpen.Name_Service (Types, Client_ID);
+
+   Name_Service_ID : constant Client_ID := Client_ID'First;
 
    ---------------
    -- Translate --
@@ -91,6 +96,83 @@ package body Parpen.Message is
       Result := Result_Valid;
    end Offsets;
 
+   --------------
+   -- Dispatch --
+   --------------
+
+   procedure Dispatch (Sender         :        Client_ID;
+                       Handle         :        Parpen.Protocol.Handle;
+                       Method         :        Parpen.Protocol.Method;
+                       Cookie         :        Parpen.Protocol.Cookie;
+                       Oneway         :        Boolean;
+                       Accept_FDs     :        Boolean;
+                       Data           : in out Types.Bytes_Ptr;
+                       Data_Offset    :        Types.Bit_Length;
+                       Data_Length    :        Types.Bit_Length;
+                       Offsets_Offset :        Types.Bit_Length;
+                       Offsets_Length :        Types.Bit_Length;
+                       Result         :    out Result_Type)
+   is
+      pragma Unreferenced (Cookie, Accept_FDs);
+      Receiver            : Client_ID;
+      Node                : Resolve.Node_Option;
+      Name_Service_Result : Name_Service.Result_Type;
+      Data_Off            : Types.Bit_Length := Data_Offset;
+      Data_Len            : Types.Bit_Length := Data_Length;
+      Offsets_Off         : Types.Bit_Length := Offsets_Offset;
+      Offsets_Len         : Types.Bit_Length := Offsets_Length;
+      use type Parpen.Protocol.Handle;
+      use type Name_Service.Result_Type;
+   begin
+      if Handle = 0 then
+         Receiver := Name_Service_ID;
+      else
+         Node := Clients.Inner.Get_Node (Owner_ID => Sender,
+                                         Handle   => Parpen.Binder.Handle'Val (Parpen.Protocol.Handle'Pos (Handle)));
+         if not Resolve.Found (Node) then
+            Result := Result_Invalid_Handle;
+            return;
+         end if;
+         Receiver := Resolve.Get_Owner (Node);
+      end if;
+
+      --  Translate message
+      Translate (Data           => Data,
+                 Data_Offset    => Data_Offset,
+                 Data_Length    => Data_Length,
+                 Offsets_Offset => Offsets_Offset,
+                 Offsets_Length => Offsets_Length,
+                 Source_ID      => Sender,
+                 Dest_ID        => Receiver,
+                 Result         => Result);
+      if Result /= Result_Valid then
+         return;
+      end if;
+
+      if Handle = 0 then
+         Name_Service.Process (Data           => Data,
+                               Data_Offset    => Data_Off,
+                               Data_Length    => Data_Len,
+                               Offsets_Offset => Offsets_Off,
+                               Offsets_Length => Offsets_Len,
+                               Source_ID      => Sender,
+                               Method         => Method,
+                               Result         => Name_Service_Result);
+         if Name_Service_Result /= Name_Service.Result_Valid then
+            Result := Result_Invalid;
+            return;
+         end if;
+
+         if Oneway then
+            Result := Result_Valid;
+            return;
+         end if;
+      end if;
+
+      Result := Result_Invalid;
+   end Dispatch;
+
 begin
    Clients.Inner.Initialize;
+   Add_Client (Name_Service_ID);
 end Parpen.Message;

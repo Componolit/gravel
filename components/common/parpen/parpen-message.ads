@@ -3,21 +3,47 @@ with Parpen.Resolve;
 with Parpen.Protocol;
 
 generic
+   with package Types is new Parpen.Generic_Types (<>);
    type Client_ID is (<>);
    Num_Nodes   : Natural;
    Num_Handles : Natural;
-   with package Types is new Parpen.Generic_Types (<>);
 package Parpen.Message
 is
    type Result_Type is
       (Result_Valid,
        Result_Invalid,
-       Result_Offset_Out_Of_Range);
+       Result_Invalid_Handle,
+       Result_Offset_Out_Of_Range,
+       Result_Overflow);
 
    type Database is private;
 
    procedure Add_Client (ID : Client_ID);
 
+   generic
+      with procedure Send (ID         : Client_ID;
+                           Handle     : Parpen.Protocol.Handle;
+                           Method     : Parpen.Protocol.Method;
+                           Cookie     : Parpen.Protocol.Cookie;
+                           Oneway     : Boolean;
+                           Accept_FDs : Boolean;
+                           Data       : Types.Bytes;
+                           Last       : Types.Index);
+      pragma Unreferenced (Send);
+   procedure Dispatch (Sender         :        Client_ID;
+                       Handle         :        Parpen.Protocol.Handle;
+                       Method         :        Parpen.Protocol.Method;
+                       Cookie         :        Parpen.Protocol.Cookie;
+                       Oneway         :        Boolean;
+                       Accept_FDs     :        Boolean;
+                       Data           : in out Types.Bytes_Ptr;
+                       Data_Offset    :        Types.Bit_Length;
+                       Data_Length    :        Types.Bit_Length;
+                       Offsets_Offset :        Types.Bit_Length;
+                       Offsets_Length :        Types.Bit_Length;
+                       Result         :    out Result_Type);
+
+   --  FIXME: Make private
    procedure Translate (Data           : in out Types.Bytes_Ptr;
                         Data_Offset    :        Types.Bit_Length;
                         Data_Length    :        Types.Bit_Length;
@@ -27,6 +53,8 @@ is
                         Dest_ID        :        Client_ID;
                         Result         :    out Result_Type);
 
+
+   --  Apply Operation to every offset encoded in Data
    generic
       with procedure Operation (Offset   :        Parpen.Protocol.Offset;
                                 Result   :    out Result_Type);

@@ -43,6 +43,12 @@ is
                       Handle   : Parpen.Binder.Handle) return Node_Option with
       Pre => Initialized (DB);
 
+   function Get_Owner (Node : Node_Option) return Client_ID with
+      Pre => Found (Node);
+
+   function Get_Value (Node : Node_Option) return Parpen.Binder.Value with
+      Pre => Found (Node);
+
    procedure Add_Node (DB     : in out Database'Class;
                        Cursor : in out Node_Option;
                        Owner  :        Client_ID;
@@ -121,5 +127,11 @@ private
                       Owner_ID : Client_ID;
                       Value    : Parpen.Binder.Value) return Node_Option is
       (Inner => DB.Nodes.Find ((Owner => Owner_ID, Value => Value)));
+
+   function Get_Owner (Node : Node_Option) return Client_ID is
+      (Node.Inner.Data.Owner);
+
+   function Get_Value (Node : Node_Option) return Parpen.Binder.Value is
+      (Node.Inner.Data.Value);
 
 end Parpen.Resolve;
