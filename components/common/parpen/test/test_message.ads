@@ -14,5 +14,6 @@ private
 
    procedure Test_Register_Service (T : in out AUnit.Test_Cases.Test_Case'Class);
    procedure Test_Query_Service (T : in out AUnit.Test_Cases.Test_Case'Class);
+   procedure Test_Use_Service (T : in out AUnit.Test_Cases.Test_Case'Class);
 
 end Test_Message;

@@ -23,12 +23,10 @@ package body Parpen.Name_Service is
                       Data_Length    : in out Types.Bit_Length;
                       Offsets_Offset :    out Types.Bit_Length;
                       Offsets_Length :    out Types.Bit_Length;
-                      Source_ID      :        Client_ID;
                       Method         :        Parpen.Protocol.Method;
                       Cookie         :        Parpen.Protocol.Cookie;
                       Result         :    out Result_Type)
    is
-      pragma Unreferenced (Offsets_Offset, Offsets_Length, Source_ID);
       use type Parpen.Protocol.Method;
       use type Parpen.Binder.Binder_Kind;
       use type Types.Bit_Length;
@@ -92,7 +90,9 @@ package body Parpen.Name_Service is
 
       procedure Query_Name is new Req_GS_Package.Get_Name (Query_Name);
    begin
-      Result      := Result_Invalid;
+      Result         := Result_Invalid;
+      Offsets_Offset := 0;
+      Offsets_Length := 0;
 
       --  Get service
       if Method = 1 then
@@ -114,6 +114,8 @@ package body Parpen.Name_Service is
 
          --  Set offsets to 0
          Data.all (Data'First .. Data'First + 7) := (others => Types.Byte'Val (0));
+         Offsets_Offset := 0;
+         Offsets_Length := 64;
 
          IBinder_Package.Initialize (Ctx    => B_Context,
                                      Buffer => Data,
@@ -129,8 +131,9 @@ package body Parpen.Name_Service is
          IBinder_Package.Set_Cookie (B_Context, Parpen.Binder.Cookie'Val (Parpen.Protocol.Cookie'Pos (Cookie)));
          IBinder_Package.Take_Buffer (B_Context, Data);
 
-         Data_Length := 32 * 8;
-         Result := Result_Valid;
+         Data_Offset := 64;
+         Data_Length := 24 * 8;
+         Result      := Result_Valid;
          return;
 
       --  Add service
@@ -153,6 +156,7 @@ package body Parpen.Name_Service is
          Insert_Name (AS_Context);
          Req_AS_Package.Take_Buffer (AS_Context, Data);
          Result := Result_Valid;
+
       else
          Result := Result_Invalid_Method;
       end if;

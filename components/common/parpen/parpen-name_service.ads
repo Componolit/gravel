@@ -3,7 +3,6 @@ with Parpen.Protocol;
 
 generic
    with package Types is new Parpen.Generic_Types (<>);
-   type Client_ID is (<>);
    Num_Entries : Natural;
 package Parpen.Name_Service is
 
@@ -19,7 +18,6 @@ package Parpen.Name_Service is
                       Data_Length    : in out Types.Bit_Length;
                       Offsets_Offset :    out Types.Bit_Length;
                       Offsets_Length :    out Types.Bit_Length;
-                      Source_ID      :        Client_ID;
                       Method         :        Parpen.Protocol.Method;
                       Cookie         :        Parpen.Protocol.Cookie;
                       Result         :    out Result_Type);

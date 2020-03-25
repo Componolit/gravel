@@ -29,8 +29,9 @@ is
                            Cookie     : Parpen.Protocol.Cookie;
                            Oneway     : Boolean;
                            Accept_FDs : Boolean;
-                           Data       : Types.Bytes;
-                           Last       : Types.Index);
+                           Data       : Types.Bytes_Ptr;
+                           Data_First : Types.Index;
+                           Data_Last  : Types.Index);
    procedure Dispatch (Sender         :        Client_ID;
                        Handle         :        Parpen.Protocol.Handle;
                        Method         :        Parpen.Protocol.Method;

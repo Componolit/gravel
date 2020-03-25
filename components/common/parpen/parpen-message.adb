@@ -6,7 +6,6 @@ package body Parpen.Message is
 
    package Offsets_Package is new Parpen.Protocol.Generic_Offsets (Types);
    package Name_Service is new Parpen.Name_Service (Types       => Types,
-                                                    Client_ID   => Client_ID,
                                                     Num_Entries => Num_Name_DB_Entries);
 
    Name_Service_ID : constant Client_ID := Client_ID'First;
@@ -139,6 +138,8 @@ package body Parpen.Message is
          Receiver := Resolve.Get_Owner (Node);
       end if;
 
+      --  FIXME: Put sender into receive state, store receive buffer offsets into client state
+
       --  Translate message
       Translate (Data           => Data,
                  Data_Offset    => Data_Offset,
@@ -158,7 +159,6 @@ package body Parpen.Message is
                                Data_Length    => Data_Len,
                                Offsets_Offset => Offsets_Off,
                                Offsets_Length => Offsets_Len,
-                               Source_ID      => Sender,
                                Method         => Method,
                                Cookie         => Cookie,
                                Result         => Name_Service_Result);
@@ -175,20 +175,50 @@ package body Parpen.Message is
             return;
          end if;
 
+         --  Translate response
+         Translate (Data           => Data,
+                    Data_Offset    => Data_Off,
+                    Data_Length    => Data_Len,
+                    Offsets_Offset => Offsets_Off,
+                    Offsets_Length => Offsets_Len,
+                    Source_ID      => Receiver,
+                    Dest_ID        => Sender,
+                    Result         => Result);
+         if
+            Result /= Result_Valid
+            or else Data_Off mod 8 /= 0
+            or else Data_Len mod 8 /= 0
+         then
+            return;
+         end if;
+
          Send (ID         => Sender,
                Handle     => Handle,
                Method     => Method,
                Cookie     => Cookie,
                Oneway     => Oneway,
                Accept_FDs => Accept_FDs,
-               Data       => Data.all,
-               Last       => Data'First + Types.Index (Data_Len / 8) - 1);
+               Data       => Data,
+               Data_First => Data'First + Types.Index (Data_Off / 8),
+               Data_Last  => Data'First + Types.Index (Data_Off / 8 + Data_Len / 8 - 1));
 
          Result := Result_Valid;
          return;
+      else
+         --  FIXME: Check if receiver is in receive state, extend send by receive buffer offset
+         Send (ID          => Receiver,
+               Handle      => Handle,
+               Method      => Method,
+               Cookie      => Cookie,
+               Oneway      => Oneway,
+               Accept_FDs  => Accept_FDs,
+               Data        => Data,
+               Data_First  => Types.Index'Val (Types.Index'Pos (Data'First) + Types.Bit_Index'Pos (Data_Offset) / 8),
+               Data_Last   => Types.Index'Val (Types.Index'Pos (Data'First)
+                                               + Types.Bit_Index'Pos (Data_Offset / 8 + Data_Length / 8 - 1)));
+         Result := Result_Valid;
+         return;
       end if;
-
-      Result := Result_Invalid;
    end Dispatch;
 
    procedure Initialize
