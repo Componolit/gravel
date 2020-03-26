@@ -5,6 +5,7 @@ with Parpen.Protocol;
 generic
    with package Types is new Parpen.Generic_Types (<>);
    type Client_ID is (<>);
+   type Client_State is private;
    Num_Nodes           : Natural;
    Num_Handles         : Natural;
    Num_Name_DB_Entries : Natural;
@@ -20,7 +21,13 @@ is
 
    type Database is private;
 
-   procedure Add_Client (ID : Client_ID);
+   procedure Add_Client (ID    : Client_ID;
+                         State : Client_State);
+
+   function Get_Client_State (ID : Client_ID) return Client_State;
+
+   procedure Set_Client_State (ID    : Client_ID;
+                               State : Client_State);
 
    generic
       with procedure Send (ID         : Client_ID;
@@ -45,6 +52,16 @@ is
                        Offsets_Length :        Types.Bit_Length;
                        Result         :    out Result_Type);
 
+   procedure Ignore (ID         : Client_ID;
+                     Handle     : Parpen.Protocol.Handle;
+                     Method     : Parpen.Protocol.Method;
+                     Cookie     : Parpen.Protocol.Cookie;
+                     Oneway     : Boolean;
+                     Accept_FDs : Boolean;
+                     Data       : Types.Bytes_Ptr;
+                     Data_First : Types.Index;
+                     Data_Last  : Types.Index);
+
    --  FIXME: Make private
    procedure Translate (Data           : in out Types.Bytes_Ptr;
                         Data_Offset    :        Types.Bit_Length;
@@ -65,7 +82,8 @@ is
                       Offsets_Length :        Types.Bit_Length;
                       Result         :    out Result_Type);
 
-   procedure Initialize;
+   procedure Initialize (Name_Service_ID    : Client_ID;
+                         Name_Service_State : Client_State);
 
 private
 
@@ -73,10 +91,11 @@ private
    type Handle_ID is new Natural range 0 .. Num_Handles;
    subtype Regular_Handle_ID is Handle_ID range 1 .. Handle_ID'Last;
 
-   package Resolve is new Parpen.Resolve (Client_ID => Client_ID,
-                                          Node_ID   => Node_ID,
-                                          Handle_ID => Regular_Handle_ID,
-                                          Types     => Types);
+   package Resolve is new Parpen.Resolve (Client_ID    => Client_ID,
+                                          Client_State => Client_State,
+                                          Node_ID      => Node_ID,
+                                          Handle_ID    => Regular_Handle_ID,
+                                          Types        => Types);
 
    type Database is tagged record
       Inner : Resolve.Database;

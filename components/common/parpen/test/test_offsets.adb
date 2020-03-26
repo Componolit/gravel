@@ -21,7 +21,10 @@ package body Test_Offsets is
    Client_1 : constant Client_ID := Client_ID'First + 1;
    Client_2 : constant Client_ID := Client_ID'Last - 1;
 
+   type Client_State is null record;
+
    package Message is new Parpen.Message (Client_ID           => Client_ID,
+                                          Client_State        => Client_State,
                                           Types               => Types,
                                           Num_Nodes           => 100,
                                           Num_Handles         => 20,
@@ -128,8 +131,8 @@ package body Test_Offsets is
       Result : Message.Result_Type;
       use type Message.Result_Type;
    begin
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Add_Client (ID => Client_1, State => (null record));
+      Message.Add_Client (ID => Client_2, State => (null record));
 
       Message.Translate (Data           => Input,
                          Data_Offset    => 64,
@@ -228,8 +231,8 @@ package body Test_Offsets is
       Result : Message.Result_Type;
       use type Message.Result_Type;
    begin
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Add_Client (ID => Client_1, State => (null record));
+      Message.Add_Client (ID => Client_2, State => (null record));
 
       Message.Translate (Data           => Input,
                          Data_Offset    => 3 * 64,
@@ -332,8 +335,8 @@ package body Test_Offsets is
       Result : Message.Result_Type;
       use type Message.Result_Type;
    begin
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Add_Client (ID => Client_1, State => (null record));
+      Message.Add_Client (ID => Client_2, State => (null record));
 
       Message.Translate (Data           => Input,
                          Data_Offset    => 3 * 64,
@@ -381,8 +384,8 @@ package body Test_Offsets is
       Result : Message.Result_Type;
       use type Message.Result_Type;
    begin
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Add_Client (ID => Client_1, State => (null record));
+      Message.Add_Client (ID => Client_2, State => (null record));
 
       Message.Translate (Data           => Input,
                          Data_Offset    => 64,
@@ -415,8 +418,8 @@ package body Test_Offsets is
       Result : Message.Result_Type;
       use type Message.Result_Type;
    begin
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Add_Client (ID => Client_1, State => (null record));
+      Message.Add_Client (ID => Client_2, State => (null record));
 
       Message.Translate (Data           => Input,
                          Data_Offset    => 64,

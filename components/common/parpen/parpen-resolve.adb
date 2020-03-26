@@ -57,15 +57,45 @@ package body Parpen.Resolve is
    -- Add_Client --
    ----------------
 
-   procedure Add_Client (DB  : in out Database'Class;
-                         ID  :        Client_ID)
+   procedure Add_Client (DB    : in out Database'Class;
+                         ID    :        Client_ID;
+                         State :        Client_State)
    is
       E : Client_DB.Option := (State    => Client_DB.Status_Valid,
                                Position => ID,
-                               Data     => (Handles => Handle_DB.Null_DB));
+                               Data     => (Handles => Handle_DB.Null_DB,
+                                            State   => State));
    begin
       DB.Clients.Insert (E);
    end Add_Client;
+
+   ----------------------
+   -- Get_Client_State --
+   ----------------------
+
+   function Get_Client_State (DB : Database'Class;
+                              ID : Client_ID) return Client_State is
+      (DB.Clients.Get (ID).Data.State);
+
+   ----------------------
+   -- Set_Client_State --
+   ----------------------
+
+   procedure Set_Client_State (DB    : in out Database'Class;
+                               ID    :        Client_ID;
+                               State :        Client_State)
+   is
+      procedure Set_State (Client : in out Client_Type);
+      procedure Set_State (Client : in out Client_Type)
+      is
+      begin
+         Client.State := State;
+      end Set_State;
+      procedure Set_State is new Client_DB.Generic_Apply (Operation => Set_State);
+   begin
+      Set_State (DB => DB.Clients,
+                 K  => ID);
+   end Set_Client_State;
 
    ----------------
    -- Add_Handle --

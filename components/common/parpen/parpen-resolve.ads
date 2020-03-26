@@ -4,6 +4,7 @@ with Parpen.Binder;
 
 generic
    type Client_ID is (<>);
+   type Client_State is private;
    type Node_ID is (<>);
    type Handle_ID is (<>);
    with package Types is new Parpen.Generic_Types (<>);
@@ -55,8 +56,20 @@ is
                        Value  :        Parpen.Binder.Value) with
       Pre => Initialized (DB);
 
-   procedure Add_Client (DB : in out Database'Class;
-                         ID :        Client_ID) with
+   procedure Add_Client (DB    : in out Database'Class;
+                         ID    :        Client_ID;
+                         State :        Client_State) with
+      Pre => Initialized (DB);
+
+   procedure Set_Client_State (DB    : in out Database'Class;
+                               ID    :        Client_ID;
+                               State :        Client_State) with
+      Pre  => Initialized (DB),
+      Post => Initialized (DB);
+
+   --  FIXME: Ensure client exists in precondition
+   function Get_Client_State (DB : Database'Class;
+                              ID : Client_ID) return Client_State with
       Pre => Initialized (DB);
 
    procedure Add_Handle (DB    : in out Database'Class;
@@ -104,6 +117,7 @@ private
    type Client_Type is
       record
          Handles : Handle_DB.Database;
+         State   : Client_State;
       end record;
 
    package Client_DB is new Parpen.Unique_Map (Key     => Client_ID,

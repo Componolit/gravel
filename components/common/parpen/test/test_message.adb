@@ -21,10 +21,13 @@ package body Test_Message is
                                               Bit_Length => Bit_Length);
 
    type Client_ID is new Natural range 11 .. 21;
+   type Client_State is (Receiving, Not_Receiving);
+   NS_ID    : constant Client_ID := Client_ID'First;
    Client_1 : constant Client_ID := Client_ID'First + 1;
    Client_2 : constant Client_ID := Client_ID'Last - 1;
 
    package Message is new Parpen.Message (Client_ID           => Client_ID,
+                                          Client_State        => Client_State,
                                           Types               => Types,
                                           Num_Nodes           => 100,
                                           Num_Handles         => 20,
@@ -85,7 +88,8 @@ package body Test_Message is
 
       procedure Dispatch is new Message.Dispatch (Send_Message);
    begin
-      Message.Add_Client (ID => Client_1);
+      Message.Initialize (Name_Service_ID => NS_ID, Name_Service_State => Receiving);
+      Message.Add_Client (ID => Client_1, State => Not_Receiving);
       Dispatch (Sender         => Client_1,
                 Handle         => 0,
                 Method         => 3,
@@ -211,9 +215,9 @@ package body Test_Message is
       procedure Dispatch_Add is new Message.Dispatch (No_Reply);
       procedure Dispatch_Get is new Message.Dispatch (Check_Reply);
    begin
-      Message.Initialize;
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Initialize (Name_Service_ID => NS_ID, Name_Service_State => Receiving);
+      Message.Add_Client (ID => Client_1, State => Not_Receiving);
+      Message.Add_Client (ID => Client_2, State => Not_Receiving);
 
       Dispatch_Add (Sender         => Client_1,
                     Handle         => 0,
@@ -245,7 +249,7 @@ package body Test_Message is
       Assert (Reply_Checked, "Reply not checked");
    end Test_Query_Service;
 
-   procedure Test_Use_Service (T : in out AUnit.Test_Cases.Test_Case'Class)
+   procedure Test_Oneway (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
 
@@ -280,31 +284,6 @@ package body Test_Message is
 
       Result : Message.Result_Type;
       use type Message.Result_Type;
-
-      procedure Ignore (ID         : Client_ID;
-                        Handle     : Parpen.Protocol.Handle;
-                        Method     : Parpen.Protocol.Method;
-                        Cookie     : Parpen.Protocol.Cookie;
-                        Oneway     : Boolean;
-                        Accept_FDs : Boolean;
-                        Data       : String_Ptr;
-                        Data_First : Positive;
-                        Data_Last  : Positive);
-
-      procedure Ignore (ID         : Client_ID;
-                        Handle     : Parpen.Protocol.Handle;
-                        Method     : Parpen.Protocol.Method;
-                        Cookie     : Parpen.Protocol.Cookie;
-                        Oneway     : Boolean;
-                        Accept_FDs : Boolean;
-                        Data       : String_Ptr;
-                        Data_First : Positive;
-                        Data_Last  : Positive)
-      is
-         pragma Unreferenced (ID, Handle, Method, Cookie, Oneway, Accept_FDs, Data, Data_First, Data_Last);
-      begin
-         null;
-      end Ignore;
 
       Received_Handle : Parpen.Protocol.Handle;
       Handle_Parsed   : Boolean := False;
@@ -382,13 +361,13 @@ package body Test_Message is
          Transaction_Done := True;
       end Check_Transaction;
 
-      procedure Dispatch_Add is new Message.Dispatch (Ignore);
+      procedure Dispatch_Add is new Message.Dispatch (Message.Ignore);
       procedure Dispatch_Get is new Message.Dispatch (Parse_Handle);
       procedure Dispatch_Use is new Message.Dispatch (Check_Transaction);
    begin
-      Message.Initialize;
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Initialize (Name_Service_ID => NS_ID, Name_Service_State => Receiving);
+      Message.Add_Client (ID => Client_1, State => Not_Receiving);
+      Message.Add_Client (ID => Client_2, State => Not_Receiving);
 
       Dispatch_Add (Sender         => Client_1,
                     Handle         => 0,
@@ -433,7 +412,104 @@ package body Test_Message is
                     Result         => Result);
       Assert (Result = Message.Result_Valid, "Client/client transaction failed: " & Result'Img);
       Assert (Transaction_Done, "Transaction not performed");
-   end Test_Use_Service;
+   end Test_Oneway;
+
+   procedure Test_Twoway (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+
+      Add_Service : String_Ptr := new String'(
+         ""
+         & 16#00# & 16#00# & 16#00# & 16#00#
+         & 16#00# & 16#00# & 16#00# & 16#40# -- Offset list with single entry (16#40# -> 64 bit offset within data)
+         & 16#00# & 16#00# & 16#00# & 16#04# -- Len
+         & "Test"                            -- Name
+         & "wb*" & 16#85#                    -- Weak binder
+         & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+         & 16#01# & 16#00# & 16#00# & 16#00# -- binder (value: 100000000000001)
+         & 16#00# & 16#00# & 16#00# & 16#01# --
+         & 16#12# & 16#34# & 16#56# & 16#78# -- cookie (part 1)
+         & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
+         & 16#00#                            -- Allow_Isolated: False
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Dump_Flags: 0
+      );
+
+      Get_Service : String_Ptr := new String'(
+         ""
+         & 16#00# & 16#00# & 16#00# & 16#04# -- Len
+         & "Test"                            -- Name
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+      );
+
+      Test_Msg : String_Ptr := new String'("Test Message");
+      Result   : Message.Result_Type;
+      use type Message.Result_Type;
+
+      procedure Dispatch is new Message.Dispatch (Message.Ignore);
+   begin
+      Message.Initialize (Name_Service_ID => NS_ID, Name_Service_State => Receiving);
+      Message.Add_Client (ID => Client_1, State => Not_Receiving);
+      Message.Add_Client (ID => Client_2, State => Not_Receiving);
+
+      Dispatch (Sender         => Client_1,
+                Handle         => 0,
+                Method         => 3,
+                Cookie         => 16#dead_beef#,
+                Oneway         => True,
+                Accept_FDs     => False,
+                Data           => Add_Service,
+                Data_Offset    => 64,
+                Data_Length    => Add_Service.all'Size - 64,
+                Offsets_Offset => 0,
+                Offsets_Length => 64,
+                Result         => Result);
+      Assert (Result = Message.Result_Valid, "Registering service failed: " & Result'Img);
+
+      Dispatch (Sender         => Client_2,
+                Handle         => 0,
+                Method         => 1,
+                Cookie         => 16#beef_dead_c0de#,
+                Oneway         => False,
+                Accept_FDs     => False,
+                Data           => Get_Service,
+                Data_Offset    => 0,
+                Data_Length    => Get_Service.all'Size,
+                Offsets_Offset => 0,
+                Offsets_Length => 0,
+                Result         => Result);
+      Assert (Result = Message.Result_Valid, "Quering service failed: " & Result'Img);
+
+      Dispatch (Sender         => Client_2,
+                Handle         => 1,
+                Method         => 17,
+                Cookie         => 16#beef_c0de#,
+                Oneway         => True,
+                Accept_FDs     => False,
+                Data           => Test_Msg,
+                Data_Offset    => 0,
+                Data_Length    => Test_Msg.all'Size,
+                Offsets_Offset => 0,
+                Offsets_Length => 0,
+                Result         => Result);
+      Assert (Result = Message.Result_Valid, "Client/client transaction failed: " & Result'Img);
+   end Test_Twoway;
+
+   procedure Test_Client_State (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+   begin
+      Message.Initialize (Name_Service_ID => NS_ID, Name_Service_State => Receiving);
+      Message.Add_Client (ID => Client_1, State => Not_Receiving);
+      Assert (Message.Get_Client_State (ID => Client_1) = Not_Receiving, "Invalid client state");
+      Message.Set_Client_State (ID => Client_1, State => Receiving);
+      Assert (Message.Get_Client_State (ID => Client_1) = Receiving, "Invalid client state");
+   end Test_Client_State;
 
    function Name (T : Test) return AUnit.Message_String is
       pragma Unreferenced (T);
@@ -446,7 +522,9 @@ package body Test_Message is
    begin
       Register_Routine (T, Test_Register_Service'Access, "Register service");
       Register_Routine (T, Test_Query_Service'Access, "Query service");
-      Register_Routine (T, Test_Use_Service'Access, "Use service");
+      Register_Routine (T, Test_Oneway'Access, "Oneway interaction");
+      Register_Routine (T, Test_Twoway'Access, "Twoway interaction");
+      Register_Routine (T, Test_Client_State'Access, "Client state");
    end Register_Tests;
 
 end Test_Message;

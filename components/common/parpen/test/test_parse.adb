@@ -23,13 +23,16 @@ package body Test_Parse is
    Client_2 : constant Client_ID := Client_ID'Last - 1;
    Client_3 : constant Client_ID := Client_ID'Last - 2;
 
+   type Client_State is null record;
+
    type Node_ID is new Natural range 7 .. 51;
    type Handle_ID is new Natural range 18 .. 47;
 
-   package Resolve is new Parpen.Resolve (Client_ID => Client_ID,
-                                          Node_ID   => Node_ID,
-                                          Handle_ID => Handle_ID,
-                                          Types     => Types);
+   package Resolve is new Parpen.Resolve (Client_ID    => Client_ID,
+                                          Client_State => Client_State,
+                                          Node_ID      => Node_ID,
+                                          Handle_ID    => Handle_ID,
+                                          Types        => Types);
 
    function "&" (Left : String; Right : Natural) return String is
       (Left & (1 => Character'Val (Right)));
@@ -186,7 +189,7 @@ package body Test_Parse is
       use type Resolve.Result_Type;
    begin
       Database.Initialize;
-      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_1, State => (null record));
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
                         Length    => Input.all'Size,
@@ -215,8 +218,8 @@ package body Test_Parse is
       Database : Resolve.Database;
    begin
       Database.Initialize;
-      Database.Add_Client (ID => Client_1);
-      Database.Add_Client (ID => Client_2);
+      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_2, State => (null record));
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
                         Length    => Input.all'Size,
@@ -245,8 +248,8 @@ package body Test_Parse is
       Database : Resolve.Database;
    begin
       Database.Initialize;
-      Database.Add_Client (ID => Client_1);
-      Database.Add_Client (ID => Client_2);
+      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_2, State => (null record));
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
                         Length    => Input.all'Size,
@@ -281,8 +284,8 @@ package body Test_Parse is
       D2.Add_Node (Cursor => Node, Owner => Client_1, Value => 16#1#);
 
       Database.Initialize;
-      Database.Add_Client (ID => Client_1);
-      Database.Add_Client (ID => Client_2);
+      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_2, State => (null record));
 
       --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
       Database.Add_Handle (ID => Client_2, Node => Node);
@@ -331,8 +334,8 @@ package body Test_Parse is
       Assert (not Node.Found, "Node already present");
       Database.Add_Node (Cursor => Node, Owner => Client_1, Value => 16#100000000000001#);
 
-      Database.Add_Client (ID => Client_1);
-      Database.Add_Client (ID => Client_2);
+      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_2, State => (null record));
 
       --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
       Database.Add_Handle (ID => Client_2, Node => Node);
@@ -379,8 +382,8 @@ package body Test_Parse is
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1);
-      Database.Add_Client (ID => Client_2);
+      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_2, State => (null record));
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -424,9 +427,9 @@ package body Test_Parse is
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1);
-      Database.Add_Client (ID => Client_2);
-      Database.Add_Client (ID => Client_3);
+      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_2, State => (null record));
+      Database.Add_Client (ID => Client_3, State => (null record));
 
       Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
       Assert (not Node.Found, "Node already present");
@@ -480,9 +483,9 @@ package body Test_Parse is
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1);
-      Database.Add_Client (ID => Client_2);
-      Database.Add_Client (ID => Client_3);
+      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_2, State => (null record));
+      Database.Add_Client (ID => Client_3, State => (null record));
 
       Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
       Assert (not Node.Found, "Node already present");
@@ -544,8 +547,8 @@ package body Test_Parse is
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1);
-      Database.Add_Client (ID => Client_2);
+      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_2, State => (null record));
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -598,9 +601,9 @@ package body Test_Parse is
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1);
-      Database.Add_Client (ID => Client_2);
-      Database.Add_Client (ID => Client_3);
+      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_2, State => (null record));
+      Database.Add_Client (ID => Client_3, State => (null record));
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -648,7 +651,7 @@ package body Test_Parse is
       Database : Resolve.Database;
    begin
       Database.Initialize;
-      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_1, State => (null record));
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -681,7 +684,7 @@ package body Test_Parse is
    begin
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_1, State => (null record));
 
       Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
       Assert (not Node.Found, "Node already present");
@@ -734,9 +737,9 @@ package body Test_Parse is
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1);
-      Database.Add_Client (ID => Client_2);
-      Database.Add_Client (ID => Client_3);
+      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_2, State => (null record));
+      Database.Add_Client (ID => Client_3, State => (null record));
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 48,
@@ -778,7 +781,7 @@ package body Test_Parse is
       Node := Database.Get_Node (Owner_ID => Client_1, Value => Value);
       Database.Add_Node (Cursor => Node, Owner => Client_1, Value => Value);
 
-      Database.Add_Client (ID => Client_1);
+      Database.Add_Client (ID => Client_1, State => (null record));
       Database.Add_Handle (ID => Client_1, Node => Node);
 
       --  The Handle_ID type starts at 18

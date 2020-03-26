@@ -8,7 +8,17 @@ package body Parpen.Message is
    package Name_Service is new Parpen.Name_Service (Types       => Types,
                                                     Num_Entries => Num_Name_DB_Entries);
 
-   Name_Service_ID : constant Client_ID := Client_ID'First;
+   type Client_ID_Option (Valid : Boolean := False) is
+      record
+         case Valid is
+            when True =>
+               ID : Client_ID;
+            when False =>
+               null;
+         end case;
+      end record;
+
+   NS_ID : Client_ID_Option := (Valid => False);
 
    ---------------
    -- Translate --
@@ -60,10 +70,11 @@ package body Parpen.Message is
    -- Add_Client --
    ----------------
 
-   procedure Add_Client (ID : Client_ID)
+   procedure Add_Client (ID    : Client_ID;
+                         State : Client_State)
    is
    begin
-      Clients.Inner.Add_Client (ID);
+      Clients.Inner.Add_Client (ID, State);
    end Add_Client;
 
    -------------
@@ -127,7 +138,7 @@ package body Parpen.Message is
       use type Types.Index;
    begin
       if Handle = 0 then
-         Receiver := Name_Service_ID;
+         Receiver := NS_ID.ID;
       else
          Node := Clients.Inner.Get_Node (Owner_ID => Sender,
                                          Handle   => Parpen.Binder.Handle'Val (Parpen.Protocol.Handle'Pos (Handle)));
@@ -205,7 +216,7 @@ package body Parpen.Message is
          Result := Result_Valid;
          return;
       else
-         --  FIXME: Check if receiver is in receive state, extend send by receive buffer offset
+         --  FIXME: Check if receiver is in receive state, extend send by receive buffer offset, remove receive state
          Send (ID          => Receiver,
                Handle      => Handle,
                Method      => Method,
@@ -221,14 +232,57 @@ package body Parpen.Message is
       end if;
    end Dispatch;
 
-   procedure Initialize
+   ----------------------
+   -- Get_Client_State --
+   ----------------------
+
+   function Get_Client_State (ID : Client_ID) return Client_State is (Clients.Inner.Get_Client_State (ID));
+
+   ----------------------
+   -- Set_Client_State --
+   ----------------------
+
+   procedure Set_Client_State (ID    : Client_ID;
+                               State : Client_State)
+   is
+   begin
+      Clients.Inner.Set_Client_State (ID    => ID,
+                                      State => State);
+   end Set_Client_State;
+
+   ----------------
+   -- Initialize --
+   ----------------
+
+   procedure Initialize (Name_Service_ID    : Client_ID;
+                         Name_Service_State : Client_State)
    is
    begin
       Name_Service.Initialize;
       Clients.Inner.Initialize;
-      Add_Client (Name_Service_ID);
+      NS_ID := (Valid => True,
+                ID    => Name_Service_ID);
+      Add_Client (ID    => Name_Service_ID,
+                  State => Name_Service_State);
    end Initialize;
 
-begin
-   Initialize;
+   ------------
+   -- Ignore --
+   ------------
+
+   procedure Ignore (ID         : Client_ID;
+                     Handle     : Parpen.Protocol.Handle;
+                     Method     : Parpen.Protocol.Method;
+                     Cookie     : Parpen.Protocol.Cookie;
+                     Oneway     : Boolean;
+                     Accept_FDs : Boolean;
+                     Data       : Types.Bytes_Ptr;
+                     Data_First : Types.Index;
+                     Data_Last  : Types.Index)
+   is
+      pragma Unreferenced (ID, Handle, Method, Cookie, Oneway, Accept_FDs, Data, Data_First, Data_Last);
+   begin
+      null;
+   end Ignore;
+
 end Parpen.Message;
