@@ -70,11 +70,11 @@ package body Parpen.Message is
    -- Add_Client --
    ----------------
 
-   procedure Add_Client (ID    : Client_ID;
-                         State : Client_State)
+   procedure Add_Client (ID : Client_ID)
    is
    begin
-      Clients.Inner.Add_Client (ID, State);
+      Clients.Inner.Add_Client (ID    => ID,
+                                State => (Receiving => False));
    end Add_Client;
 
    -------------
@@ -119,17 +119,20 @@ package body Parpen.Message is
                        Oneway         :        Boolean;
                        Accept_FDs     :        Boolean;
                        Data           : in out Types.Bytes_Ptr;
-                       Data_Offset    :        Types.Bit_Length;
-                       Data_Length    :        Types.Bit_Length;
+                       Send_Offset    :        Types.Bit_Length;
+                       Send_Length    :        Types.Bit_Length;
+                       Recv_Offset    :        Types.Bit_Length;
+                       Recv_Length    :        Types.Bit_Length;
                        Offsets_Offset :        Types.Bit_Length;
                        Offsets_Length :        Types.Bit_Length;
                        Result         :    out Result_Type)
    is
+      pragma Unreferenced (Recv_Offset, Recv_Length);
       Receiver            : Client_ID;
       Node                : Resolve.Node_Option;
       Name_Service_Result : Name_Service.Result_Type;
-      Data_Off            : Types.Bit_Length := Data_Offset;
-      Data_Len            : Types.Bit_Length := Data_Length;
+      Send_Off            : Types.Bit_Length := Send_Offset;
+      Send_Len            : Types.Bit_Length := Send_Length;
       Offsets_Off         : Types.Bit_Length := Offsets_Offset;
       Offsets_Len         : Types.Bit_Length := Offsets_Length;
       use type Parpen.Protocol.Handle;
@@ -153,8 +156,8 @@ package body Parpen.Message is
 
       --  Translate message
       Translate (Data           => Data,
-                 Data_Offset    => Data_Offset,
-                 Data_Length    => Data_Length,
+                 Data_Offset    => Send_Offset,
+                 Data_Length    => Send_Length,
                  Offsets_Offset => Offsets_Offset,
                  Offsets_Length => Offsets_Length,
                  Source_ID      => Sender,
@@ -166,8 +169,8 @@ package body Parpen.Message is
 
       if Handle = 0 then
          Name_Service.Process (Data           => Data,
-                               Data_Offset    => Data_Off,
-                               Data_Length    => Data_Len,
+                               Data_Offset    => Send_Off,
+                               Data_Length    => Send_Len,
                                Offsets_Offset => Offsets_Off,
                                Offsets_Length => Offsets_Len,
                                Method         => Method,
@@ -181,15 +184,15 @@ package body Parpen.Message is
             return;
          end if;
 
-         if Oneway or Data_Len = 0 then
+         if Oneway or Send_Len = 0 then
             Result := Result_Valid;
             return;
          end if;
 
          --  Translate response
          Translate (Data           => Data,
-                    Data_Offset    => Data_Off,
-                    Data_Length    => Data_Len,
+                    Data_Offset    => Send_Off,
+                    Data_Length    => Send_Len,
                     Offsets_Offset => Offsets_Off,
                     Offsets_Length => Offsets_Len,
                     Source_ID      => Receiver,
@@ -197,8 +200,8 @@ package body Parpen.Message is
                     Result         => Result);
          if
             Result /= Result_Valid
-            or else Data_Off mod 8 /= 0
-            or else Data_Len mod 8 /= 0
+            or else Send_Off mod 8 /= 0
+            or else Send_Len mod 8 /= 0
          then
             return;
          end if;
@@ -210,8 +213,8 @@ package body Parpen.Message is
                Oneway     => Oneway,
                Accept_FDs => Accept_FDs,
                Data       => Data,
-               Data_First => Data'First + Types.Index (Data_Off / 8),
-               Data_Last  => Data'First + Types.Index (Data_Off / 8 + Data_Len / 8 - 1));
+               Data_First => Data'First + Types.Index (Send_Off / 8),
+               Data_Last  => Data'First + Types.Index (Send_Off / 8 + Send_Len / 8 - 1));
 
          Result := Result_Valid;
          return;
@@ -224,9 +227,9 @@ package body Parpen.Message is
                Oneway      => Oneway,
                Accept_FDs  => Accept_FDs,
                Data        => Data,
-               Data_First  => Types.Index'Val (Types.Index'Pos (Data'First) + Types.Bit_Index'Pos (Data_Offset) / 8),
+               Data_First  => Types.Index'Val (Types.Index'Pos (Data'First) + Types.Bit_Index'Pos (Send_Offset) / 8),
                Data_Last   => Types.Index'Val (Types.Index'Pos (Data'First)
-                                               + Types.Bit_Index'Pos (Data_Offset / 8 + Data_Length / 8 - 1)));
+                                               + Types.Bit_Index'Pos (Send_Offset / 8 + Send_Length / 8 - 1)));
          Result := Result_Valid;
          return;
       end if;
@@ -254,16 +257,14 @@ package body Parpen.Message is
    -- Initialize --
    ----------------
 
-   procedure Initialize (Name_Service_ID    : Client_ID;
-                         Name_Service_State : Client_State)
+   procedure Initialize (Name_Service_ID : Client_ID)
    is
    begin
       Name_Service.Initialize;
       Clients.Inner.Initialize;
       NS_ID := (Valid => True,
                 ID    => Name_Service_ID);
-      Add_Client (ID    => Name_Service_ID,
-                  State => Name_Service_State);
+      Add_Client (ID => Name_Service_ID);
    end Initialize;
 
    ------------

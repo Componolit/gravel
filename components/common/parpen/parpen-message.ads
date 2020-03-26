@@ -5,7 +5,6 @@ with Parpen.Protocol;
 generic
    with package Types is new Parpen.Generic_Types (<>);
    type Client_ID is (<>);
-   type Client_State is private;
    Num_Nodes           : Natural;
    Num_Handles         : Natural;
    Num_Name_DB_Entries : Natural;
@@ -21,8 +20,18 @@ is
 
    type Database is private;
 
-   procedure Add_Client (ID    : Client_ID;
-                         State : Client_State);
+   type Client_State (Receiving : Boolean := False) is
+      record
+         case Receiving is
+            when True =>
+               First : Types.Index;
+               Last  : Types.Index;
+            when False =>
+               null;
+         end case;
+      end record;
+
+   procedure Add_Client (ID : Client_ID);
 
    function Get_Client_State (ID : Client_ID) return Client_State;
 
@@ -46,8 +55,10 @@ is
                        Oneway         :        Boolean;
                        Accept_FDs     :        Boolean;
                        Data           : in out Types.Bytes_Ptr;
-                       Data_Offset    :        Types.Bit_Length;
-                       Data_Length    :        Types.Bit_Length;
+                       Send_Offset    :        Types.Bit_Length;
+                       Send_Length    :        Types.Bit_Length;
+                       Recv_Offset    :        Types.Bit_Length;
+                       Recv_Length    :        Types.Bit_Length;
                        Offsets_Offset :        Types.Bit_Length;
                        Offsets_Length :        Types.Bit_Length;
                        Result         :    out Result_Type);
@@ -82,8 +93,7 @@ is
                       Offsets_Length :        Types.Bit_Length;
                       Result         :    out Result_Type);
 
-   procedure Initialize (Name_Service_ID    : Client_ID;
-                         Name_Service_State : Client_State);
+   procedure Initialize (Name_Service_ID : Client_ID);
 
 private
 
@@ -97,9 +107,10 @@ private
                                           Handle_ID    => Regular_Handle_ID,
                                           Types        => Types);
 
-   type Database is tagged record
-      Inner : Resolve.Database;
-   end record;
+   type Database is tagged
+      record
+         Inner : Resolve.Database;
+      end record;
 
    Clients : Database;
 

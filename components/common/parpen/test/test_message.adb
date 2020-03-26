@@ -21,13 +21,11 @@ package body Test_Message is
                                               Bit_Length => Bit_Length);
 
    type Client_ID is new Natural range 11 .. 21;
-   type Client_State is (Receiving, Not_Receiving);
    NS_ID    : constant Client_ID := Client_ID'First;
    Client_1 : constant Client_ID := Client_ID'First + 1;
    Client_2 : constant Client_ID := Client_ID'Last - 1;
 
    package Message is new Parpen.Message (Client_ID           => Client_ID,
-                                          Client_State        => Client_State,
                                           Types               => Types,
                                           Num_Nodes           => 100,
                                           Num_Handles         => 20,
@@ -88,8 +86,8 @@ package body Test_Message is
 
       procedure Dispatch is new Message.Dispatch (Send_Message);
    begin
-      Message.Initialize (Name_Service_ID => NS_ID, Name_Service_State => Receiving);
-      Message.Add_Client (ID => Client_1, State => Not_Receiving);
+      Message.Initialize (Name_Service_ID => NS_ID);
+      Message.Add_Client (ID => Client_1);
       Dispatch (Sender         => Client_1,
                 Handle         => 0,
                 Method         => 3,
@@ -97,8 +95,10 @@ package body Test_Message is
                 Oneway         => True,
                 Accept_FDs     => False,
                 Data           => Add_Service,
-                Data_Offset    => 64,
-                Data_Length    => Add_Service.all'Size - 64,
+                Send_Offset    => 64,
+                Send_Length    => Add_Service.all'Size - 64,
+                Recv_Offset    => 0,
+                Recv_Length    => 0,
                 Offsets_Offset => 0,
                 Offsets_Length => 64,
                 Result         => Result);
@@ -215,9 +215,9 @@ package body Test_Message is
       procedure Dispatch_Add is new Message.Dispatch (No_Reply);
       procedure Dispatch_Get is new Message.Dispatch (Check_Reply);
    begin
-      Message.Initialize (Name_Service_ID => NS_ID, Name_Service_State => Receiving);
-      Message.Add_Client (ID => Client_1, State => Not_Receiving);
-      Message.Add_Client (ID => Client_2, State => Not_Receiving);
+      Message.Initialize (Name_Service_ID => NS_ID);
+      Message.Add_Client (ID => Client_1);
+      Message.Add_Client (ID => Client_2);
 
       Dispatch_Add (Sender         => Client_1,
                     Handle         => 0,
@@ -226,8 +226,10 @@ package body Test_Message is
                     Oneway         => True,
                     Accept_FDs     => False,
                     Data           => Add_Service,
-                    Data_Offset    => 64,
-                    Data_Length    => Add_Service.all'Size - 64,
+                    Send_Offset    => 64,
+                    Send_Length    => Add_Service.all'Size - 64,
+                    Recv_Offset    => 0,
+                    Recv_Length    => 0,
                     Offsets_Offset => 0,
                     Offsets_Length => 64,
                     Result         => Result);
@@ -240,8 +242,10 @@ package body Test_Message is
                     Oneway         => False,
                     Accept_FDs     => False,
                     Data           => Get_Service,
-                    Data_Offset    => 0,
-                    Data_Length    => Get_Service.all'Size,
+                    Send_Offset    => 0,
+                    Send_Length    => Get_Service.all'Size,
+                    Recv_Offset    => 0,
+                    Recv_Length    => 0,
                     Offsets_Offset => 0,
                     Offsets_Length => 0,
                     Result         => Result);
@@ -365,9 +369,9 @@ package body Test_Message is
       procedure Dispatch_Get is new Message.Dispatch (Parse_Handle);
       procedure Dispatch_Use is new Message.Dispatch (Check_Transaction);
    begin
-      Message.Initialize (Name_Service_ID => NS_ID, Name_Service_State => Receiving);
-      Message.Add_Client (ID => Client_1, State => Not_Receiving);
-      Message.Add_Client (ID => Client_2, State => Not_Receiving);
+      Message.Initialize (Name_Service_ID => NS_ID);
+      Message.Add_Client (ID => Client_1);
+      Message.Add_Client (ID => Client_2);
 
       Dispatch_Add (Sender         => Client_1,
                     Handle         => 0,
@@ -376,8 +380,10 @@ package body Test_Message is
                     Oneway         => True,
                     Accept_FDs     => False,
                     Data           => Add_Service,
-                    Data_Offset    => 64,
-                    Data_Length    => Add_Service.all'Size - 64,
+                    Send_Offset    => 64,
+                    Send_Length    => Add_Service.all'Size - 64,
+                    Recv_Offset    => 0,
+                    Recv_Length    => 0,
                     Offsets_Offset => 0,
                     Offsets_Length => 64,
                     Result         => Result);
@@ -390,8 +396,10 @@ package body Test_Message is
                     Oneway         => False,
                     Accept_FDs     => False,
                     Data           => Get_Service,
-                    Data_Offset    => 0,
-                    Data_Length    => Get_Service.all'Size,
+                    Send_Offset    => 0,
+                    Send_Length    => Get_Service.all'Size,
+                    Recv_Offset    => 0,
+                    Recv_Length    => 0,
                     Offsets_Offset => 0,
                     Offsets_Length => 0,
                     Result         => Result);
@@ -405,8 +413,10 @@ package body Test_Message is
                     Oneway         => True,
                     Accept_FDs     => False,
                     Data           => Test_Msg,
-                    Data_Offset    => 0,
-                    Data_Length    => Test_Msg.all'Size,
+                    Send_Offset    => 0,
+                    Send_Length    => Test_Msg.all'Size,
+                    Recv_Offset    => 0,
+                    Recv_Length    => 0,
                     Offsets_Offset => 0,
                     Offsets_Length => 0,
                     Result         => Result);
@@ -453,9 +463,9 @@ package body Test_Message is
 
       procedure Dispatch is new Message.Dispatch (Message.Ignore);
    begin
-      Message.Initialize (Name_Service_ID => NS_ID, Name_Service_State => Receiving);
-      Message.Add_Client (ID => Client_1, State => Not_Receiving);
-      Message.Add_Client (ID => Client_2, State => Not_Receiving);
+      Message.Initialize (Name_Service_ID => NS_ID);
+      Message.Add_Client (ID => Client_1);
+      Message.Add_Client (ID => Client_2);
 
       Dispatch (Sender         => Client_1,
                 Handle         => 0,
@@ -464,8 +474,10 @@ package body Test_Message is
                 Oneway         => True,
                 Accept_FDs     => False,
                 Data           => Add_Service,
-                Data_Offset    => 64,
-                Data_Length    => Add_Service.all'Size - 64,
+                Send_Offset    => 64,
+                Send_Length    => Add_Service.all'Size - 64,
+                Recv_Offset    => 0,
+                Recv_Length    => 0,
                 Offsets_Offset => 0,
                 Offsets_Length => 64,
                 Result         => Result);
@@ -478,8 +490,10 @@ package body Test_Message is
                 Oneway         => False,
                 Accept_FDs     => False,
                 Data           => Get_Service,
-                Data_Offset    => 0,
-                Data_Length    => Get_Service.all'Size,
+                Send_Offset    => 0,
+                Send_Length    => Get_Service.all'Size,
+                Recv_Offset    => 0,
+                Recv_Length    => 0,
                 Offsets_Offset => 0,
                 Offsets_Length => 0,
                 Result         => Result);
@@ -492,8 +506,10 @@ package body Test_Message is
                 Oneway         => True,
                 Accept_FDs     => False,
                 Data           => Test_Msg,
-                Data_Offset    => 0,
-                Data_Length    => Test_Msg.all'Size,
+                Send_Offset    => 0,
+                Send_Length    => Test_Msg.all'Size,
+                Recv_Offset    => 0,
+                Recv_Length    => 0,
                 Offsets_Offset => 0,
                 Offsets_Length => 0,
                 Result         => Result);
@@ -503,12 +519,14 @@ package body Test_Message is
    procedure Test_Client_State (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
+      use type Message.Client_State;
+      CS : constant Message.Client_State := (Receiving => True, First => 1, Last => 42);
    begin
-      Message.Initialize (Name_Service_ID => NS_ID, Name_Service_State => Receiving);
-      Message.Add_Client (ID => Client_1, State => Not_Receiving);
-      Assert (Message.Get_Client_State (ID => Client_1) = Not_Receiving, "Invalid client state");
-      Message.Set_Client_State (ID => Client_1, State => Receiving);
-      Assert (Message.Get_Client_State (ID => Client_1) = Receiving, "Invalid client state");
+      Message.Initialize (Name_Service_ID => NS_ID);
+      Message.Add_Client (ID => Client_1);
+      Assert (Message.Get_Client_State (ID => Client_1) = (Receiving => False), "Invalid client state");
+      Message.Set_Client_State (ID => Client_1, State => CS);
+      Assert (Message.Get_Client_State (ID => Client_1) = CS, "Invalid client state");
    end Test_Client_State;
 
    function Name (T : Test) return AUnit.Message_String is
