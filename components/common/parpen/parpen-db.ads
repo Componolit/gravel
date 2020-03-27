@@ -4,14 +4,14 @@ generic
 package Parpen.DB with SPARK_Mode
 is
 
-   type Curs is private;
+   type Position is private;
    type Status is (Status_OK, Status_Not_Found, Status_Overflow);
 
-   type Cursor_Option (State : Status := Status_Overflow) is
+   type Cursor_Option (Status : Parpen.DB.Status := Status_Overflow) is
    record
-      case State is
+      case Status is
          when Status_OK | Status_Not_Found =>
-            Cursor : Curs;
+            Cursor : Position;
          when Status_Overflow =>
             null;
       end case;
@@ -19,37 +19,45 @@ is
 
    type Database (Size : Natural) is tagged private;
 
-   function Initialized (DB : Database) return Boolean with Ghost;
+   function Initialized (Database : Parpen.DB.Database) return Boolean with Ghost;
 
-   procedure Initialize (DB : out Database) with
-      Post => Initialized (DB);
+   procedure Initialize (Database : out Parpen.DB.Database) with
+      Post => Initialized (Database);
 
-   function Find (DB : Database; K : Key) return Cursor_Option with
-      Pre => Initialized (DB);
+   function Find (Database : Parpen.DB.Database;
+                  Key      : Parpen.DB.Key) return Cursor_Option with
+      Pre => Initialized (Database);
 
-   function Search_Value (DB : Database; E : Element) return Cursor_Option with
-      Pre => Initialized (DB);
+   function Search_Value (Database : Parpen.DB.Database;
+                          Element  : Parpen.DB.Element) return Cursor_Option with
+      Pre => Initialized (Database);
 
    generic
       with function Match (Left, Right : Element) return Boolean;
-   function Search (DB : Database; E : Element) return Cursor_Option with
-      Pre => Initialized (DB);
+   function Search (Database : Parpen.DB.Database;
+                    Element  : Parpen.DB.Element) return Cursor_Option with
+      Pre => Initialized (Database);
 
-   function Get (DB : Database; C : Curs) return Element with
-      Pre => Initialized (DB);
+   function Get (Database : Parpen.DB.Database;
+                 Position : Parpen.DB.Position) return Element with
+      Pre => Initialized (Database);
 
-   procedure Insert (DB : in out Database; C : Curs; K : Key; E : Element) with
-      Pre => Initialized (DB);
+   procedure Insert (Database : in out Parpen.DB.Database;
+                     Position :        Parpen.DB.Position;
+                     Key      :        Parpen.DB.Key;
+                     Element  :        Parpen.DB.Element) with
+      Pre => Initialized (Database);
 
-   procedure Delete (DB : in out Database; C : Curs) with
-      Pre => Initialized (DB);
+   procedure Delete (Database : in out Parpen.DB.Database;
+                     Position :        Parpen.DB.Position) with
+      Pre => Initialized (Database);
 
 private
 
    type Key_Option (Valid : Boolean := False) is record
       case Valid is
          when True =>
-            K : Key;
+            Key : Parpen.DB.Key;
          when False =>
             null;
       end case;
@@ -58,20 +66,20 @@ private
    type Element_Option (Valid : Boolean := False) is record
       case Valid is
          when True =>
-            E : Element;
+            Element : Parpen.DB.Element;
          when False =>
             null;
       end case;
    end record;
 
-   type Curs is record
+   type Position is record
       Inner : Natural;
    end record;
    type Internal_Element is
    record
-      Valid : Boolean;
-      Kee   : Key_Option;
-      Elem  : Element_Option;
+      Valid   : Boolean;
+      Key     : Parpen.DB.Key_Option;
+      Element : Parpen.DB.Element_Option;
    end record;
    Null_Internal_Element : constant Internal_Element := (False, (Valid => False), (Valid => False));
 

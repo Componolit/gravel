@@ -2,37 +2,39 @@ package body Parpen.DB is
 
    generic
       with function Match (E : Internal_Element) return Boolean;
-   function Search_Internal (DB : Database) return Cursor_Option;
+   function Search_Internal (Database : Parpen.DB.Database) return Cursor_Option;
 
-   function Search_Internal (DB : Database) return Cursor_Option
+   function Search_Internal (Database : Parpen.DB.Database) return Cursor_Option
    is
-      Free       : Curs;
+      Free       : Position;
       Free_Found : Boolean := False;
    begin
-      for I in DB.Elements'Range
+      for I in Database.Elements'Range
       loop
-         if Match (DB.Elements (I)) then
-            return Cursor_Option'(State => Status_OK, Cursor => (Inner => I));
+         if Match (Database.Elements (I)) then
+            return Cursor_Option'(Status => Status_OK,
+                                  Cursor => (Inner => I));
          end if;
-         if not DB.Elements (I).Valid then
+         if not Database.Elements (I).Valid then
             Free := (Inner => I);
             Free_Found := True;
          end if;
       end loop;
       if Free_Found then
-         return Cursor_Option'(State => Status_Not_Found, Cursor => Free);
+         return Cursor_Option'(Status => Status_Not_Found,
+                               Cursor => Free);
       end if;
-      return Cursor_Option'(State => Status_Overflow);
+      return Cursor_Option'(Status => Status_Overflow);
    end Search_Internal;
 
    -----------------
    -- Initialized --
    -----------------
 
-   function Initialized (DB : Database) return Boolean with
+   function Initialized (Database : Parpen.DB.Database) return Boolean with
       SPARK_Mode => Off
    is
-      pragma Unreferenced (DB);
+      pragma Unreferenced (Database);
    begin
       return False;
    end Initialized;
@@ -41,77 +43,87 @@ package body Parpen.DB is
    -- Initialize --
    ----------------
 
-   procedure Initialize (DB : out Database) is
+   procedure Initialize (Database : out Parpen.DB.Database) is
    begin
-      DB.Elements := (others => Null_Internal_Element);
+      Database.Elements := (others => Null_Internal_Element);
    end Initialize;
 
    ----------
    -- Find --
    ----------
 
-   function Find (DB : Database; K : Key) return Cursor_Option
+   function Find (Database : Parpen.DB.Database;
+                  Key      : Parpen.DB.Key) return Cursor_Option
    is
       function Match (Current : Internal_Element) return Boolean is
-         (Current.Valid and then Current.Kee.Valid and then Current.Kee.K = K);
+         (Current.Valid and then Current.Key.Valid and then Current.Key.Key = Key);
       function Search_Key is new Search_Internal (Match);
    begin
-      return Search_Key (DB);
+      return Search_Key (Database);
    end Find;
 
    ------------------
    -- Search_Value --
    ------------------
 
-   function Search_Value (DB : Database; E : Element) return Cursor_Option
+   function Search_Value (Database : Parpen.DB.Database;
+                          Element  : Parpen.DB.Element) return Cursor_Option
    is
       function Match (Current : Internal_Element) return Boolean is
-         (Current.Valid and then Current.Elem.Valid and then Current.Elem.E = E);
+         (Current.Valid and then Current.Element.Valid and then Current.Element.Element = Element);
       function Search_Equal is new Search_Internal (Match);
    begin
-      return Search_Equal (DB);
+      return Search_Equal (Database);
    end Search_Value;
 
    ------------
    -- Search --
    ------------
 
-   function Search (DB : Database; E : Element) return Cursor_Option
+   function Search (Database : Parpen.DB.Database;
+                    Element  : Parpen.DB.Element) return Cursor_Option
    is
       function Match_Internal (Current : Internal_Element) return Boolean is
-         (Current.Valid and then Current.Elem.Valid and then Match (Current.Elem.E, E));
+         (Current.Valid and then Current.Element.Valid and then Match (Current.Element.Element, Element));
       function Search_Match is new Search_Internal (Match_Internal);
    begin
-      return Search_Match (DB);
+      return Search_Match (Database);
    end Search;
 
    ---------
    -- Get --
    ---------
 
-   function Get (DB : Database; C : Curs) return Element is
+   function Get (Database : Parpen.DB.Database;
+                 Position : Parpen.DB.Position) return Element
+   is
    begin
-      return DB.Elements (C.Inner).Elem.E;
+      return Database.Elements (Position.Inner).Element.Element;
    end Get;
 
    ------------
    -- Insert --
    ------------
 
-   procedure Insert (DB : in out Database; C : Curs; K : Key; E : Element) is
+   procedure Insert (Database : in out Parpen.DB.Database;
+                     Position :        Parpen.DB.Position;
+                     Key      :        Parpen.DB.Key;
+                     Element  :        Parpen.DB.Element)
+   is
    begin
-      DB.Elements (C.Inner) := Internal_Element'(Valid => True,
-                                                 Kee   => (Valid => True, K => K),
-                                                 Elem  => (Valid => True, E => E));
+      Database.Elements (Position.Inner) := Internal_Element'(Valid   => True,
+                                                              Key     => (Valid => True, Key     => Key),
+                                                              Element => (Valid => True, Element => Element));
    end Insert;
 
    ------------
    -- Delete --
    ------------
 
-   procedure Delete (DB : in out Database; C : Curs) is
+   procedure Delete (Database : in out Parpen.DB.Database;
+                     Position :        Parpen.DB.Position) is
    begin
-      DB.Elements (C.Inner) := Null_Internal_Element;
+      Database.Elements (Position.Inner) := Null_Internal_Element;
    end Delete;
 
 end Parpen.DB;

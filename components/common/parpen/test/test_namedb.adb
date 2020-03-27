@@ -48,7 +48,7 @@ package body Test_NameDB is
       Assert (Status = NameDB.Status_OK, "Adding entry into emptry database failed");
       DB.Get (Key, Result);
       Assert (Result.Valid, "Get was invalid");
-      Assert (Result.Elem = Value, "Get returned invalid value");
+      Assert (Result.Element = Value, "Get returned invalid value");
       DB.Get ("Non-existing key", Result);
       Assert (not Result.Valid, "Get for non-existing element was valid");
    end Test_Simple_Get;

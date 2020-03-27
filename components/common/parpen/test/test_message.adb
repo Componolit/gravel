@@ -56,8 +56,8 @@ package body Test_Message is
          & 16#00# & 16#00# & 16#00# & 16#00# -- Dump_Flags: 0
       );
 
-      Result : Message.Result_Type;
-      use type Message.Result_Type;
+      Status : Message.Status_Type;
+      use type Message.Status_Type;
 
       procedure Send_Message (ID         : Client_ID;
                               Handle     : Parpen.Protocol.Handle;
@@ -106,8 +106,8 @@ package body Test_Message is
                 Recv_Length    => 0,
                 Offsets_Offset => 0,
                 Offsets_Length => 64,
-                Result         => Result);
-      Assert (Result = Message.Result_Valid, "Translating message failed: " & Result'Img);
+                Status         => Status);
+      Assert (Status = Message.Status_Valid, "Translating message failed: " & Status'Img);
    end Test_Register_Service;
 
    procedure Test_Query_Service (T : in out AUnit.Test_Cases.Test_Case'Class)
@@ -130,8 +130,8 @@ package body Test_Message is
          & 16#00# & 16#00# & 16#00# & 16#00# -- Dump_Flags: 0
       );
 
-      Result : Message.Result_Type;
-      use type Message.Result_Type;
+      Status : Message.Status_Type;
+      use type Message.Status_Type;
 
       procedure No_Reply (ID         : Client_ID;
                           Handle     : Parpen.Protocol.Handle;
@@ -248,8 +248,8 @@ package body Test_Message is
                     Recv_Length    => Add_Service.all'Size - 64,
                     Offsets_Offset => 0,
                     Offsets_Length => 64,
-                    Result         => Result);
-      Assert (Result = Message.Result_Valid, "Registering service failed: " & Result'Img);
+                    Status         => Status);
+      Assert (Status = Message.Status_Valid, "Registering service failed: " & Status'Img);
 
       Dispatch_Get (Sender         => Client_2,
                     Handle         => 0,
@@ -264,8 +264,8 @@ package body Test_Message is
                     Recv_Length    => Get_Service.all'Size,
                     Offsets_Offset => 0,
                     Offsets_Length => 0,
-                    Result         => Result);
-      Assert (Result = Message.Result_Valid, "Quering service failed: " & Result'Img);
+                    Status         => Status);
+      Assert (Status = Message.Status_Valid, "Quering service failed: " & Status'Img);
       Assert (Reply_Checked, "Reply not checked");
    end Test_Query_Service;
 
@@ -302,8 +302,8 @@ package body Test_Message is
          & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
       );
 
-      Result : Message.Result_Type;
-      use type Message.Result_Type;
+      Status : Message.Status_Type;
+      use type Message.Status_Type;
 
       Received_Handle : Parpen.Protocol.Handle;
       Handle_Parsed   : Boolean := False;
@@ -413,8 +413,8 @@ package body Test_Message is
                 Recv_Length    => 0,
                 Offsets_Offset => 0,
                 Offsets_Length => 64,
-                Result         => Result);
-      Assert (Result = Message.Result_Valid, "Registering service failed: " & Result'Img);
+                Status         => Status);
+      Assert (Status = Message.Status_Valid, "Registering service failed: " & Status'Img);
 
       Dispatch_Get (Sender         => Client_2,
                     Handle         => 0,
@@ -429,8 +429,8 @@ package body Test_Message is
                     Recv_Length    => Get_Service.all'Size,
                     Offsets_Offset => 0,
                     Offsets_Length => 0,
-                    Result         => Result);
-      Assert (Result = Message.Result_Valid, "Quering service failed: " & Result'Img);
+                    Status         => Status);
+      Assert (Status = Message.Status_Valid, "Quering service failed: " & Status'Img);
       Assert (Handle_Parsed, "Handle not parsed");
 
       --  Receive-only to make Client_1 read for receiving the message
@@ -448,8 +448,8 @@ package body Test_Message is
                 Recv_Length    => Recv_Buffer.all'Size,
                 Offsets_Offset => 0,
                 Offsets_Length => 0,
-                Result         => Result);
-      Assert (Result = Message.Result_Valid, "Receiving message filed: " & Result'Img);
+                Status         => Status);
+      Assert (Status = Message.Status_Valid, "Receiving message filed: " & Status'Img);
 
       Dispatch_Use (Sender         => Client_2,
                     Handle         => Received_Handle,
@@ -464,8 +464,8 @@ package body Test_Message is
                     Recv_Length    => 0,
                     Offsets_Offset => 0,
                     Offsets_Length => 0,
-                    Result         => Result);
-      Assert (Result = Message.Result_Valid, "Client/client transaction failed: " & Result'Img);
+                    Status         => Status);
+      Assert (Status = Message.Status_Valid, "Client/client transaction failed: " & Status'Img);
       Assert (Transaction_Done, "Transaction not performed");
    end Test_Oneway;
 
@@ -530,10 +530,10 @@ package body Test_Message is
 
       Reply         : String_Ptr := new String'("Test Message");
       Recv_Buffer   : String_Ptr := new String'(1 .. 100 => 'x');
-      Result        : Message.Result_Type;
+      Status        : Message.Status_Type;
       Callback_Done : Boolean;
       Reply_Done    : Boolean;
-      use type Message.Result_Type;
+      use type Message.Status_Type;
 
       procedure Check_Callback (ID         : Client_ID;
                                 Handle     : Parpen.Protocol.Handle;
@@ -635,8 +635,8 @@ package body Test_Message is
                 Recv_Length    => 0,
                 Offsets_Offset => 0,
                 Offsets_Length => 64,
-                Result         => Result);
-      Assert (Result = Message.Result_Valid, "Registering service failed: " & Result'Img);
+                Status         => Status);
+      Assert (Status = Message.Status_Valid, "Registering service failed: " & Status'Img);
 
       --  Receive-only to make Client_1 read for receiving the message
       --  FIXME: Make Send_Offset/_Length a descriminant record
@@ -654,8 +654,8 @@ package body Test_Message is
                 Recv_Length    => Recv_Buffer.all'Size,
                 Offsets_Offset => 0,
                 Offsets_Length => 0,
-                Result         => Result);
-      Assert (Result = Message.Result_Valid, "Receiving message filed: " & Result'Img);
+                Status         => Status);
+      Assert (Status = Message.Status_Valid, "Receiving message filed: " & Status'Img);
 
       --  Query service
       Dispatch (Sender         => Client_2,
@@ -671,8 +671,8 @@ package body Test_Message is
                 Recv_Length    => Get_Service.all'Size,
                 Offsets_Offset => 0,
                 Offsets_Length => 0,
-                Result         => Result);
-      Assert (Result = Message.Result_Valid, "Quering service failed: " & Result'Img);
+                Status         => Status);
+      Assert (Status = Message.Status_Valid, "Quering service failed: " & Status'Img);
 
       --  Send message containing callback to Client_1
       Dispatch_Callback (Sender         => Client_2,
@@ -688,8 +688,8 @@ package body Test_Message is
                          Recv_Length    => Callback.all'Size,
                          Offsets_Offset => 0,
                          Offsets_Length => 64,
-                         Result         => Result);
-      Assert (Result = Message.Result_Valid, "Client/client transaction failed: " & Result'Img);
+                         Status         => Status);
+      Assert (Status = Message.Status_Valid, "Client/client transaction failed: " & Status'Img);
       Assert (Callback_Done, "Transaction not performed");
 
       --  Invoke callback to Client_1
@@ -706,8 +706,8 @@ package body Test_Message is
                       Recv_Length    => 0,
                       Offsets_Offset => 0,
                       Offsets_Length => 0,
-                      Result         => Result);
-      Assert (Result = Message.Result_Valid, "Reply transaction failed: " & Result'Img);
+                      Status         => Status);
+      Assert (Status = Message.Status_Valid, "Reply transaction failed: " & Status'Img);
       Assert (Reply_Done, "Reply not performed");
    end Test_Twoway;
 

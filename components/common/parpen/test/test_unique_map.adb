@@ -32,22 +32,22 @@ package body Test_Unique_Map is
    begin
       Database.Initialize;
 
-      Data := Database.Get (K => 14);
-      Assert (Data.State = DB.Status_Not_Found, "Element found in empty database");
+      Data := Database.Get (Key => 14);
+      Assert (Data.Status = DB.Status_Not_Found, "Element found in empty database");
 
-      Data := (State => DB.Status_Valid, Position => Data.Free, Data => (100, 200));
+      Data := (Status => DB.Status_Valid, Position => Data.Free, Data => (100, 200));
       Database.Insert (Data);
-      Assert (Data.State = DB.Status_Valid, "Result not valid after insert");
+      Assert (Data.Status = DB.Status_Valid, "Result not valid after insert");
 
-      Data := Database.Get (K => 14);
-      Assert (Data.State = DB.Status_Valid, "Unexpected result");
+      Data := Database.Get (Key => 14);
+      Assert (Data.Status = DB.Status_Valid, "Unexpected result");
       Assert (Data.Data = (100, 200), "Invalid element");
 
-      New_Data := Database.Get (K => 14);
+      New_Data := Database.Get (Key => 14);
       Assert (Data = New_Data, "Result differ between requests");
 
-      Data := Database.Get (K => 15);
-      Assert (Data.State = DB.Status_Not_Found, "Non-existing element found in database");
+      Data := Database.Get (Key => 15);
+      Assert (Data.Status = DB.Status_Not_Found, "Non-existing element found in database");
    end Test_Basic_Insert;
 
    procedure Test_Basic_Delete (T : in out AUnit.Test_Cases.Test_Case'Class)
@@ -58,18 +58,18 @@ package body Test_Unique_Map is
    begin
       Database.Initialize;
 
-      Data := Database.Get (K => 14);
-      Assert (Data.State = DB.Status_Not_Found, "Element found in empty database");
+      Data := Database.Get (Key => 14);
+      Assert (Data.Status = DB.Status_Not_Found, "Element found in empty database");
 
-      Data := (State => DB.Status_Valid, Position => Data.Free, Data => (100, 200));
+      Data := (Status => DB.Status_Valid, Position => Data.Free, Data => (100, 200));
       Database.Insert (Data);
-      Data := Database.Get (K => 14);
-      Assert (Data.State = DB.Status_Valid, "Unexpected element");
+      Data := Database.Get (Key => 14);
+      Assert (Data.Status = DB.Status_Valid, "Unexpected element");
       Assert (Data.Data = (100, 200), "Invalid element");
 
-      Database.Delete (K => 14);
-      Data := Database.Get (K => 14);
-      Assert (Data.State = DB.Status_Not_Found, "Element found after deletion database");
+      Database.Delete (Key => 14);
+      Data := Database.Get (Key => 14);
+      Assert (Data.Status = DB.Status_Not_Found, "Element found after deletion database");
    end Test_Basic_Delete;
 
    procedure Test_Search_Value (T : in out AUnit.Test_Cases.Test_Case'Class)
@@ -80,14 +80,14 @@ package body Test_Unique_Map is
    begin
       Database.Initialize;
 
-      Data := Database.Find (E => (43, 44));
-      Assert (Data.State = DB.Status_Not_Found, "Value found in empty database");
+      Data := Database.Find (Element => (43, 44));
+      Assert (Data.Status = DB.Status_Not_Found, "Value found in empty database");
 
-      Data := (State => DB.Status_Valid, Position => Data.Free, Data => (43, 44));
+      Data := (Status => DB.Status_Valid, Position => Data.Free, Data => (43, 44));
       Database.Insert (Data);
 
-      Data := Database.Find (E => (43, 44));
-      Assert (Data.State = DB.Status_Valid, "Value not found database");
+      Data := Database.Find (Element => (43, 44));
+      Assert (Data.Status = DB.Status_Valid, "Value not found database");
       Assert (Data.Data = (43, 44), "Invalid element for result of Search_Value");
    end Test_Search_Value;
 
@@ -102,15 +102,15 @@ package body Test_Unique_Map is
    begin
       Database.Initialize;
 
-      Data := Database.Find (E => (43, 44));
-      Assert (Data.State = DB.Status_Not_Found, "Value found in empty database");
+      Data := Database.Find (Element => (43, 44));
+      Assert (Data.Status = DB.Status_Not_Found, "Value found in empty database");
 
-      Data := (State => DB.Status_Valid, Position => Data.Free, Data => (43, 44));
+      Data := (Status => DB.Status_Valid, Position => Data.Free, Data => (43, 44));
       Database.Insert (Data);
-      Data := Search_Partial (Database, E => (43, 44));
-      Assert (Data.State = DB.Status_Valid, "Value not found database");
-      Data := Database.Get (K => Data.Position);
-      Assert (Data.State = DB.Status_Valid, "Value not found database");
+      Data := Search_Partial (Database, Element => (43, 44));
+      Assert (Data.Status = DB.Status_Valid, "Value not found database");
+      Data := Database.Get (Key => Data.Position);
+      Assert (Data.Status = DB.Status_Valid, "Value not found database");
       Assert (Data.Data = (43, 44), "Invalid element for result of Search_Value");
    end Test_Search_Partial_Value;
 
@@ -133,9 +133,9 @@ package body Test_Unique_Map is
          Data : Inner.Option;
          use type Inner.Status;
       begin
-         Data := DB.Get (K => 11);
-         Assert (Data.State = Inner.Status_Not_Found, "Element found in empty database");
-         Data := (State => Inner.Status_Valid, Position => Data.Free, Data => (1234, 5678));
+         Data := DB.Get (Key => 11);
+         Assert (Data.Status = Inner.Status_Not_Found, "Element found in empty database");
+         Data := (Status => Inner.Status_Valid, Position => Data.Free, Data => (1234, 5678));
          DB.Insert (Data);
       end Set_Value;
 
@@ -144,10 +144,10 @@ package body Test_Unique_Map is
          Data : Inner.Option;
          use type Inner.Status;
       begin
-         Data := DB.Get (K => 11);
-         Assert (Data.State = Inner.Status_Valid, "Element not found");
-         Data := DB.Get (K => 11);
-         Assert (Data.State = Inner.Status_Valid, "Element not found");
+         Data := DB.Get (Key => 11);
+         Assert (Data.Status = Inner.Status_Valid, "Element not found");
+         Data := DB.Get (Key => 11);
+         Assert (Data.Status = Inner.Status_Valid, "Element not found");
          Assert (Data.Data = (1234, 5678), "Invalid value");
       end Check_Value;
 
@@ -158,13 +158,13 @@ package body Test_Unique_Map is
    begin
       Database.Initialize;
 
-      Outer_Result := Database.Get (K => 14);
-      Assert (Outer_Result.State = Outer.Status_Not_Found, "Element found in empty database");
-      Outer_Result := (State => Outer.Status_Valid, Position => Outer_Result.Free, Data => Inner.Null_DB);
+      Outer_Result := Database.Get (Key => 14);
+      Assert (Outer_Result.Status = Outer.Status_Not_Found, "Element found in empty database");
+      Outer_Result := (Status => Outer.Status_Valid, Position => Outer_Result.Free, Data => Inner.Null_DB);
       Database.Insert (Outer_Result);
 
-      Set_Value (DB => Database, K => 14);
-      Check_Value (DB => Database, K => 14);
+      Set_Value (Database => Database, Key => 14);
+      Check_Value (Database => Database, Key => 14);
    end Test_Nested_Insert;
 
    procedure Register_Tests (T : in out Test) is

@@ -165,9 +165,9 @@ package body Test_Parse is
    is
       pragma Unreferenced (T);
       Input    : String_Ptr := new String'("Dummy");
-      Result   : Resolve.Result_Type;
+      Status   : Resolve.Status_Type;
       Database : Resolve.Database;
-      use type Resolve.Result_Type;
+      use type Resolve.Status_Type;
    begin
       Database.Initialize;
       Database.Resolve (Buffer    => Input,
@@ -175,8 +175,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_Invalid_Source, "Invalid source not detected");
+                        Status    => Status);
+      Assert (Status = Resolve.Status_Invalid_Source, "Invalid source not detected");
    end Test_Resolve_Invalid_Source;
 
 
@@ -184,9 +184,9 @@ package body Test_Parse is
    is
       pragma Unreferenced (T);
       Input    : String_Ptr := new String'("Dummy");
-      Result   : Resolve.Result_Type;
+      Status   : Resolve.Status_Type;
       Database : Resolve.Database;
-      use type Resolve.Result_Type;
+      use type Resolve.Status_Type;
    begin
       Database.Initialize;
       Database.Add_Client (ID => Client_1, State => (null record));
@@ -195,8 +195,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_Invalid_Destination, "Invalid destination not detected");
+                        Status    => Status);
+      Assert (Status = Resolve.Status_Invalid_Destination, "Invalid destination not detected");
    end Test_Resolve_Invalid_Dest;
 
 
@@ -213,8 +213,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Result_Type;
-      Result   : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status   : Resolve.Status_Type;
       Database : Resolve.Database;
    begin
       Database.Initialize;
@@ -225,8 +225,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_Invalid_Handle, "Invalid node not detected: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_Invalid_Handle, "Invalid node not detected: " & Status'Img);
    end Test_Resolve_Invalid_Node;
 
 
@@ -243,8 +243,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Result_Type;
-      Result   : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status   : Resolve.Status_Type;
       Database : Resolve.Database;
    begin
       Database.Initialize;
@@ -255,8 +255,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_Handle_Not_Found, "Missing node not detected: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_Handle_Not_Found, "Missing node not detected: " & Status'Img);
    end Test_Resolve_Missing_Handle;
 
 
@@ -273,8 +273,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Result_Type;
-      Result   : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status   : Resolve.Status_Type;
       Database : Resolve.Database;
       D2       : Resolve.Database;
       Node     : Resolve.Node_Option;
@@ -295,8 +295,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_Node_Not_Found, "Missing node not detected");
+                        Status    => Status);
+      Assert (Status = Resolve.Status_Node_Not_Found, "Missing node not detected");
    end Test_Resolve_Missing_Node;
 
 
@@ -323,8 +323,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Result_Type;
-      Result   : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status   : Resolve.Status_Type;
       Database : Resolve.Database;
       Node     : Resolve.Node_Option;
    begin
@@ -345,8 +345,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Resolve_Handle_To_Binder;
 
@@ -375,8 +375,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Result_Type;
-      Result   : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status   : Resolve.Status_Type;
       Database : Resolve.Database;
    begin
       Assert (Input.all /= Expected.all, "Binder do not differ");
@@ -390,8 +390,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Resolve_Binder_To_Handle;
 
@@ -418,8 +418,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Result_Type;
-      Result     : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status     : Resolve.Status_Type;
       Database   : Resolve.Database;
       Node       : Resolve.Node_Option;
       Other_Node : Resolve.Node_Option;
@@ -445,8 +445,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Resolve_Handle_To_Handle;
 
@@ -474,8 +474,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Result_Type;
-      Result     : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status     : Resolve.Status_Type;
       Database   : Resolve.Database;
       Node       : Resolve.Node_Option;
       Other_Node : Resolve.Node_Option;
@@ -501,8 +501,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful (1): " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful (1): " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
 
       Database.Resolve (Buffer    => Input,
@@ -510,8 +510,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful (2): " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful (2): " & Status'Img);
       Assert (Input.all = Output, "Binder not resolved correctly");
    end Test_Pass_Handle_To_Non_Owner;
 
@@ -540,8 +540,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Result_Type;
-      Result   : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status   : Resolve.Status_Type;
       Database : Resolve.Database;
    begin
       Assert (Input.all /= Expected.all, "Binder do not differ");
@@ -555,8 +555,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving binder unsuccessful: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving binder unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
 
       Database.Resolve (Buffer    => Input,
@@ -564,8 +564,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Output, "Handle not resolved correctly");
    end Test_Send_And_Receive_Binder;
 
@@ -594,8 +594,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Result_Type;
-      Result   : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status   : Resolve.Status_Type;
       Database : Resolve.Database;
    begin
       Assert (Input.all /= Expected.all, "Binder do not differ");
@@ -610,8 +610,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving binder unsuccessful: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving binder unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
 
       Database.Resolve (Buffer    => Input,
@@ -619,15 +619,15 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_2,
                         Dest_ID   => Client_3,
-                        Result    => Result);
+                        Status    => Status);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
                         Length    => Input.all'Size,
                         Source_ID => Client_3,
                         Dest_ID   => Client_1,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Output, "Handle not resolved correctly");
    end Test_Send_And_Receive_Binder_Multi;
 
@@ -646,8 +646,8 @@ package body Test_Parse is
       );
       Expected : constant String := Input.all;
 
-      use type Resolve.Result_Type;
-      Result   : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status   : Resolve.Status_Type;
       Database : Resolve.Database;
    begin
       Database.Initialize;
@@ -658,8 +658,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_1,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving binder unsuccessful: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving binder unsuccessful: " & Status'Img);
       Assert (Input.all = Expected, "Binder not resolved correctly");
    end Test_Resolve_Binder_To_Self;
 
@@ -677,8 +677,8 @@ package body Test_Parse is
       );
       Expected : constant String := Input.all;
 
-      use type Resolve.Result_Type;
-      Result     : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status     : Resolve.Status_Type;
       Database   : Resolve.Database;
       Node       : Resolve.Node_Option;
    begin
@@ -696,8 +696,8 @@ package body Test_Parse is
                         Length    => Input.all'Size,
                         Source_ID => Client_1,
                         Dest_ID   => Client_1,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Expected, "Binder not resolved correctly");
    end Test_Resolve_Handle_To_Self;
 
@@ -730,8 +730,8 @@ package body Test_Parse is
          & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
       );
 
-      use type Resolve.Result_Type;
-      Result   : Resolve.Result_Type;
+      use type Resolve.Status_Type;
+      Status   : Resolve.Status_Type;
       Database : Resolve.Database;
    begin
       Assert (Input.all /= Expected.all, "Binder do not differ");
@@ -746,8 +746,8 @@ package body Test_Parse is
                         Length    => Input.all'Size - 48,
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving binder unsuccessful: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving binder unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
 
       Database.Resolve (Buffer    => Input,
@@ -755,15 +755,15 @@ package body Test_Parse is
                         Length    => Input.all'Size - 48,
                         Source_ID => Client_2,
                         Dest_ID   => Client_3,
-                        Result    => Result);
+                        Status    => Status);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 48,
                         Length    => Input.all'Size - 48,
                         Source_ID => Client_3,
                         Dest_ID   => Client_1,
-                        Result    => Result);
-      Assert (Result = Resolve.Result_OK, "Resolving handle unsuccessful: " & Result'Img);
+                        Status    => Status);
+      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Output, "Handle not resolved correctly");
    end Test_Embedded_Object;
 

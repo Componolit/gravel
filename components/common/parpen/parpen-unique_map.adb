@@ -2,37 +2,40 @@ package body Parpen.Unique_Map is
 
    generic
       with function Match (E : Internal_Element) return Boolean;
-   function Internal_Find (DB : Database) return Option;
+   function Internal_Find (Database : Parpen.Unique_Map.Database) return Option;
 
-   function Internal_Find (DB : Database) return Option
+   function Internal_Find (Database : Parpen.Unique_Map.Database) return Option
    is
       Free       : Key;
       Free_Found : Boolean := False;
    begin
-      for I in DB.Elements'Range
+      for I in Database.Elements'Range
       loop
-         if Match (DB.Elements (I)) then
-            return Option'(State => Status_Valid, Data => DB.Elements (I).Elem.E, Position => I);
+         if Match (Database.Elements (I)) then
+            return Option'(Status   => Status_Valid,
+                           Data     => Database.Elements (I).Element.Element,
+                           Position => I);
          end if;
-         if not DB.Elements (I).Valid and not Free_Found then
+         if not Database.Elements (I).Valid and not Free_Found then
             Free := I;
             Free_Found := True;
          end if;
       end loop;
       if Free_Found then
-         return Option'(State => Status_Not_Found, Free => Free);
+         return Option'(Status => Status_Not_Found,
+                        Free   => Free);
       end if;
-      return Option'(State => Status_Invalid);
+      return Option'(Status => Status_Invalid);
    end Internal_Find;
 
    -----------------
    -- Initialized --
    -----------------
 
-   function Initialized (DB : Database) return Boolean with
+   function Initialized (Database : Parpen.Unique_Map.Database) return Boolean with
       SPARK_Mode => Off
    is
-      pragma Unreferenced (DB);
+      pragma Unreferenced (Database);
    begin
       return False;
    end Initialized;
@@ -41,75 +44,92 @@ package body Parpen.Unique_Map is
    -- Initialize --
    ----------------
 
-   procedure Initialize (DB : out Database) is
+   procedure Initialize (Database : out Parpen.Unique_Map.Database) is
    begin
-      DB.Elements := (others => Null_Internal_Element);
+      Database.Elements := (others => Null_Internal_Element);
    end Initialize;
 
    ---------
    -- Get --
    ---------
 
-   function Get (DB : Database; K : Key) return Option
+   function Get (Database : Parpen.Unique_Map.Database;
+                 Key      : Parpen.Unique_Map.Key) return Option
    is
    begin
-      return (if DB.Elements (K).Valid
-              then (State => Status_Valid, Data => DB.Elements (K).Elem.E, Position => K)
-              else (State => Status_Not_Found, Free => K));
+      return (if Database.Elements (Key).Valid
+              then (Status   => Status_Valid,
+                    Data     => Database.Elements (Key).Element.Element,
+                    Position => Key)
+              else (Status => Status_Not_Found,
+                    Free    => Key));
    end Get;
 
    ----------
    -- Find --
    ----------
 
-   function Find (DB : Database; E : Element) return Option
+   function Find (Database : Parpen.Unique_Map.Database;
+                  Element  : Parpen.Unique_Map.Element) return Option
    is
       function Match (Current : Internal_Element) return Boolean is
-         (Current.Valid and then Current.Elem.Valid and then Current.Elem.E = E);
+         (Current.Valid
+          and then Current.Element.Valid
+          and then Current.Element.Element = Element);
       function Search_Equal is new Internal_Find (Match);
    begin
-      return Search_Equal (DB);
+      return Search_Equal (Database);
    end Find;
 
    ------------------
    -- Generic_Find --
    ------------------
 
-   function Generic_Find (DB : Database; E : Element) return Option
+   function Generic_Find (Database : Parpen.Unique_Map.Database;
+                          Element  : Parpen.Unique_Map.Element) return Option
    is
       function Match_Internal (Current : Internal_Element) return Boolean is
-         (Current.Valid and then Current.Elem.Valid and then Match (Current.Elem.E, E));
+         (Current.Valid
+          and then Current.Element.Valid
+          and then Match (Current.Element.Element, Element));
       function Search_Match is new Internal_Find (Match_Internal);
    begin
-      return Search_Match (DB);
+      return Search_Match (Database);
    end Generic_Find;
 
    -------------------
    -- Generic_Apply --
    -------------------
 
-   procedure Generic_Apply (DB : in out Database; K : Key) is
+   procedure Generic_Apply (Database : in out Parpen.Unique_Map.Database;
+                            Key      :        Parpen.Unique_Map.Key) is
    begin
-      Operation (DB.Elements (K).Elem.E);
+      Operation (Database.Elements (Key).Element.Element);
    end Generic_Apply;
 
    ------------
    -- Insert --
    ------------
 
-   procedure Insert (DB : in out Database; E : in out Option) is
+   procedure Insert (Database : in out Parpen.Unique_Map.Database;
+                     Element  : in out Option) is
    begin
-      DB.Elements (E.Position) := (Valid => True, Elem => (Valid => True, E => E.Data));
-      E := (State => Status_Valid, Position => E.Position, Data => E.Data);
+      Database.Elements (Element.Position) := (Valid   => True,
+                                               Element => (Valid   => True,
+                                                           Element => Element.Data));
+      Element := (Status   => Status_Valid,
+                  Position => Element.Position,
+                  Data     => Element.Data);
    end Insert;
 
    ------------
    -- Delete --
    ------------
 
-   procedure Delete (DB : in out Database; K : Key) is
+   procedure Delete (Database : in out Parpen.Unique_Map.Database;
+                     Key      :        Parpen.Unique_Map.Key) is
    begin
-      DB.Elements (K) := Null_Internal_Element;
+      Database.Elements (Key) := Null_Internal_Element;
    end Delete;
 
 end Parpen.Unique_Map;

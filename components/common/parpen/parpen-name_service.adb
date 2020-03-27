@@ -25,7 +25,7 @@ package body Parpen.Name_Service is
                       Offsets_Length :    out Types.Bit_Length;
                       Method         :        Parpen.Protocol.Method;
                       Cookie         :        Parpen.Protocol.Cookie;
-                      Result         :    out Result_Type)
+                      Status         :    out Status_Type)
    is
       use type Parpen.Protocol.Method;
       use type Parpen.Binder.Binder_Kind;
@@ -51,7 +51,7 @@ package body Parpen.Name_Service is
                or IBinder_Package.Get_Kind (Binder_Context) = Parpen.Binder.BK_STRONG_HANDLE
             then
                Handle := IBinder_Package.Get_Handle (Binder_Context);
-               Result := Result_Valid;
+               Status := Status_Valid;
             end if;
          end if;
          IBinder_Package.Take_Buffer (Binder_Context, Binder_Buffer.Ptr);
@@ -62,13 +62,15 @@ package body Parpen.Name_Service is
       procedure Insert_Name (Name : Types.Bytes);
       procedure Insert_Name (Name : Types.Bytes)
       is
-         Status : DB.Status;
+         DB_Status : DB.Status;
          use type DB.Status;
       begin
-         Name_DB.Add (Elem   => Handle,
-                      Query  => Name,
-                      Result => Status);
-         Result := (if Status = DB.Status_OK then Result_Valid else Result_Invalid);
+         Name_DB.Add (Element => Handle,
+                      Query   => Name,
+                      Status  => DB_Status);
+         Status := (if DB_Status = DB.Status_OK
+                    then Status_Valid
+                    else Status_Invalid);
       end Insert_Name;
 
       procedure Insert_Name is new Req_AS_Package.Get_Name (Insert_Name);
@@ -78,19 +80,19 @@ package body Parpen.Name_Service is
       is
          DB_Result : DB.Result;
       begin
-         Name_DB.Get (Query => Name,
-                      Res   => DB_Result);
+         Name_DB.Get (Query  => Name,
+                      Result => DB_Result);
          if DB_Result.Valid then
-            Handle := DB_Result.Elem;
-            Result := Result_Valid;
+            Handle := DB_Result.Element;
+            Status := Status_Valid;
          else
-            Result := Result_Invalid;
+            Status := Status_Invalid;
          end if;
       end Query_Name;
 
       procedure Query_Name is new Req_GS_Package.Get_Name (Query_Name);
    begin
-      Result         := Result_Invalid;
+      Status         := Status_Invalid;
       Offsets_Offset := 0;
       Offsets_Length := 0;
 
@@ -108,7 +110,7 @@ package body Parpen.Name_Service is
          Query_Name (GS_Context);
          Req_GS_Package.Take_Buffer (GS_Context, Data);
 
-         if Result = Result_Invalid then
+         if Status = Status_Invalid then
             return;
          end if;
 
@@ -133,7 +135,7 @@ package body Parpen.Name_Service is
 
          Data_Offset := 64;
          Data_Length := 24 * 8;
-         Result      := Result_Valid;
+         Status      := Status_Valid;
          return;
 
       --  Add service
@@ -148,17 +150,17 @@ package body Parpen.Name_Service is
             return;
          end if;
          Parse_Binder (AS_Context);
-         if Result /= Result_Valid then
+         if Status /= Status_Valid then
             Req_AS_Package.Take_Buffer (AS_Context, Data);
             return;
          end if;
 
          Insert_Name (AS_Context);
          Req_AS_Package.Take_Buffer (AS_Context, Data);
-         Result := Result_Valid;
+         Status := Status_Valid;
 
       else
-         Result := Result_Invalid_Method;
+         Status := Status_Invalid_Method;
       end if;
 
       Data_Length := 0;

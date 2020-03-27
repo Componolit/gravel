@@ -6,10 +6,10 @@ generic
    Num_Entries : Natural;
 package Parpen.Name_Service is
 
-   type Result_Type is
-      (Result_Valid,
-       Result_Invalid_Method,
-       Result_Invalid);
+   type Status_Type is
+      (Status_Valid,
+       Status_Invalid_Method,
+       Status_Invalid);
 
    procedure Initialize;
 
@@ -20,5 +20,5 @@ package Parpen.Name_Service is
                       Offsets_Length :    out Types.Bit_Length;
                       Method         :        Parpen.Protocol.Method;
                       Cookie         :        Parpen.Protocol.Cookie;
-                      Result         :    out Result_Type);
+                      Status         :    out Status_Type);
 end Parpen.Name_Service;

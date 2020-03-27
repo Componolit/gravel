@@ -9,31 +9,35 @@ package Parpen.NameDB is
 
    type Database (Size : Natural) is tagged private;
 
-   type Status is (Status_OK, Status_Not_Found, Status_In_Use, Status_Out_Of_Memory);
+   type Status is
+      (Status_OK,
+       Status_Not_Found,
+       Status_In_Use,
+       Status_Out_Of_Memory);
 
    type Result (Valid : Boolean := False) is
    record
       case Valid is
          when True =>
-            Elem : Element;
+            Element : Parpen.NameDB.Element;
          when False =>
-            Stat : Status;
+            Status  : Parpen.NameDB.Status;
       end case;
    end record;
 
-   procedure Init (DB : out Database);
+   procedure Init (Database : out Parpen.NameDB.Database);
 
-   procedure Add (DB     : in out Database;
-                  Elem   :        Element;
-                  Query  :        Query_String;
-                  Result :    out Status);
+   procedure Add (Database : in out Parpen.NameDB.Database;
+                  Element  :        Parpen.NameDB.Element;
+                  Query    :        Query_String;
+                  Status   :    out Parpen.NameDB.Status);
 
-   function Exists (DB    :     Database;
-                    Query :     Query_String) return Boolean;
+   function Exists (Database :     Parpen.NameDB.Database;
+                    Query    :     Query_String) return Boolean;
 
-   procedure Get (DB    :     Database;
-                  Query :     Query_String;
-                  Res   : out Result);
+   procedure Get (Database :     Parpen.NameDB.Database;
+                  Query    :     Query_String;
+                  Result   : out Parpen.NameDB.Result);
 
 private
 

@@ -4,11 +4,14 @@ generic
 package Parpen.Unique_Map with SPARK_Mode
 is
 
-   type Status is (Status_Valid, Status_Not_Found, Status_Invalid);
+   type Status is
+      (Status_Valid,
+       Status_Not_Found,
+       Status_Invalid);
 
-   type Option (State : Status := Status_Invalid) is
+   type Option (Status : Parpen.Unique_Map.Status := Status_Invalid) is
    record
-      case State is
+      case Status is
          when Status_Valid =>
             Data     : Element;
             Position : Key;
@@ -22,40 +25,46 @@ is
    type Database is tagged private;
    Null_DB : constant Database;
 
-   function Initialized (DB : Database) return Boolean with Ghost;
+   function Initialized (Database : Parpen.Unique_Map.Database) return Boolean with Ghost;
 
-   procedure Initialize (DB : out Database) with
-      Post => Initialized (DB);
+   procedure Initialize (Database : out Parpen.Unique_Map.Database) with
+      Post => Initialized (Database);
 
-   function Get (DB : Database; K : Key) return Option with
-      Pre => Initialized (DB);
+   function Get (Database : Parpen.Unique_Map.Database;
+                 Key      : Parpen.Unique_Map.Key) return Option with
+      Pre => Initialized (Database);
 
-   function Find (DB : Database; E : Element) return Option with
-      Pre => Initialized (DB);
+   function Find (Database : Parpen.Unique_Map.Database;
+                  Element  : Parpen.Unique_Map.Element) return Option with
+      Pre => Initialized (Database);
 
    generic
       with function Match (Left, Right : Element) return Boolean;
-   function Generic_Find (DB : Database; E : Element) return Option with
-      Pre => Initialized (DB);
+   function Generic_Find (Database : Parpen.Unique_Map.Database;
+                          Element  : Parpen.Unique_Map.Element) return Option with
+      Pre => Initialized (Database);
 
    generic
       with procedure Operation (E : in out Element);
-   procedure Generic_Apply (DB : in out Database; K : Key) with
-      Pre => Initialized (DB);
+   procedure Generic_Apply (Database : in out Parpen.Unique_Map.Database;
+                            Key      :        Parpen.Unique_Map.Key) with
+      Pre => Initialized (Database);
 
-   procedure Insert (DB : in out Database; E : in out Option) with
-      Pre => Initialized (DB)
-             and E.State = Status_Valid;
+   procedure Insert (Database : in out Parpen.Unique_Map.Database;
+                     Element  : in out Parpen.Unique_Map.Option) with
+      Pre => Initialized (Database)
+             and Element.Status = Status_Valid;
 
-   procedure Delete (DB : in out Database; K : Key) with
-      Pre => Initialized (DB);
+   procedure Delete (Database : in out Parpen.Unique_Map.Database;
+                     Key      :        Parpen.Unique_Map.Key) with
+      Pre => Initialized (Database);
 
 private
 
    type Element_Option (Valid : Boolean := False) is record
       case Valid is
          when True =>
-            E : Element;
+            Element : Parpen.Unique_Map.Element;
          when False =>
             null;
       end case;
@@ -63,8 +72,8 @@ private
 
    type Internal_Element is
    record
-      Valid : Boolean;
-      Elem  : Element_Option;
+      Valid   : Boolean;
+      Element : Element_Option;
    end record;
    Null_Internal_Element : constant Internal_Element := (False, (Valid => False));
 

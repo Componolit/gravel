@@ -48,20 +48,20 @@ package body Test_Offsets is
                                                      16#aaaaaaaaaaaaaaaa#, 16#0102030405060708#);
       Decoded : Offsets_Array (1 .. 20);
       Last    : Natural := 0;
-      Result  : Message.Result_Type;
-      use type Message.Result_Type;
+      Result  : Message.Status_Type;
+      use type Message.Status_Type;
 
-      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Message.Result_Type);
-      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Message.Result_Type) is
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Message.Status_Type);
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Message.Status_Type) is
       begin
          Last := Last + 1;
          Decoded (Last) := O;
-         Result := Message.Result_Valid;
+         Result := Message.Status_Valid;
       end Handle_Offset;
       procedure Iterate is new Message.Offsets (Handle_Offset);
    begin
       Iterate (Input, 0, 256, Result);
-      Assert (Result = Message.Result_Valid, "Decoding failed");
+      Assert (Result = Message.Status_Valid, "Decoding failed");
       Assert (Last = 4, "Invalid number of offsets");
       Assert (Decoded (Decoded'First .. Last) = Expected, "Parsed offsets mismatch");
    end Test_Parse_Offset_List;
@@ -77,9 +77,9 @@ package body Test_Offsets is
          & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
       );
       Expected : constant String := Input.all;
-      Result   : Message.Result_Type;
+      Result   : Message.Status_Type;
 
-      use type Message.Result_Type;
+      use type Message.Status_Type;
    begin
       Test_Message.Translate (Data           => Input,
                               Data_Offset    => 0,
@@ -89,7 +89,7 @@ package body Test_Offsets is
                               Source_ID      => Client_1,
                               Dest_ID        => Client_2,
                               Result         => Result);
-      Assert (Result = Message.Result_Valid, "Translating message failed: " & Result'Img);
+      Assert (Result = Message.Status_Valid, "Translating message failed: " & Result'Img);
       Assert (Input.all = Expected, "Message not resolved correctly");
    end Test_Empty_Offset_List;
 
@@ -127,8 +127,8 @@ package body Test_Offsets is
          & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
       );
 
-      Result : Message.Result_Type;
-      use type Message.Result_Type;
+      Result : Message.Status_Type;
+      use type Message.Status_Type;
    begin
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
@@ -141,7 +141,7 @@ package body Test_Offsets is
                               Source_ID      => Client_1,
                               Dest_ID        => Client_2,
                               Result         => Result);
-      Assert (Result = Message.Result_Valid, "Resolving binder unsuccessful: " & Result'Img);
+      Assert (Result = Message.Status_Valid, "Resolving binder unsuccessful: " & Result'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Single_Offset;
 
@@ -227,8 +227,8 @@ package body Test_Offsets is
          & 16#9A# & 16#BC# & 16#DE# & 16#F1# -- cookie (part 2)
       );
 
-      Result : Message.Result_Type;
-      use type Message.Result_Type;
+      Result : Message.Status_Type;
+      use type Message.Status_Type;
    begin
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
@@ -241,7 +241,7 @@ package body Test_Offsets is
                               Source_ID      => Client_1,
                               Dest_ID        => Client_2,
                               Result         => Result);
-      Assert (Result = Message.Result_Valid, "Resolving binder unsuccessful: " & Result'Img);
+      Assert (Result = Message.Status_Valid, "Resolving binder unsuccessful: " & Result'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Multiple_Offsets;
 
@@ -331,8 +331,8 @@ package body Test_Offsets is
          & 16#9A# & 16#BC# & 16#DE# & 16#F1# -- cookie (part 2)
       );
 
-      Result : Message.Result_Type;
-      use type Message.Result_Type;
+      Result : Message.Status_Type;
+      use type Message.Status_Type;
    begin
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
@@ -345,7 +345,7 @@ package body Test_Offsets is
                               Source_ID      => Client_1,
                               Dest_ID        => Client_2,
                               Result         => Result);
-      Assert (Result = Message.Result_Valid, "Translating Client_1 to Client_2 unsuccessful: " & Result'Img);
+      Assert (Result = Message.Status_Valid, "Translating Client_1 to Client_2 unsuccessful: " & Result'Img);
 
       Test_Message.Translate (Data           => Input,
                               Data_Offset    => 3 * 64,
@@ -356,7 +356,7 @@ package body Test_Offsets is
                               Dest_ID        => Client_1,
                               Result         => Result);
 
-      Assert (Result = Message.Result_Valid, "Resolving Client_2 to Client_3 unsuccessful: " & Result'Img);
+      Assert (Result = Message.Status_Valid, "Resolving Client_2 to Client_3 unsuccessful: " & Result'Img);
       Assert (Input.all = Expected.all, "Message not resolved correctly");
    end Test_Multiple_Offsets_Mixed;
 
@@ -379,8 +379,8 @@ package body Test_Offsets is
          & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
       );
 
-      Result : Message.Result_Type;
-      use type Message.Result_Type;
+      Result : Message.Status_Type;
+      use type Message.Status_Type;
    begin
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
@@ -393,7 +393,7 @@ package body Test_Offsets is
                               Source_ID      => Client_1,
                               Dest_ID        => Client_2,
                               Result         => Result);
-      Assert (Result = Message.Result_Offset_Out_Of_Range, "Out-of-range offset undetected: " & Result'Img);
+      Assert (Result = Message.Status_Offset_Out_Of_Range, "Out-of-range offset undetected: " & Result'Img);
    end Test_Out_Of_Range_Offset;
 
    procedure Test_Invalid_Binder (T : in out AUnit.Test_Cases.Test_Case'Class)
@@ -413,8 +413,8 @@ package body Test_Offsets is
          & 16#67# & 16#2f# & 16#e4# & 16#ee#
       );
 
-      Result : Message.Result_Type;
-      use type Message.Result_Type;
+      Result : Message.Status_Type;
+      use type Message.Status_Type;
    begin
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
@@ -427,7 +427,7 @@ package body Test_Offsets is
                               Source_ID      => Client_1,
                               Dest_ID        => Client_2,
                               Result         => Result);
-      Assert (Result = Message.Result_Invalid, "Invalid binder undetected: " & Result'Img);
+      Assert (Result = Message.Status_Invalid, "Invalid binder undetected: " & Result'Img);
    end Test_Invalid_Binder;
 
 

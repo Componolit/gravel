@@ -31,39 +31,39 @@ package body Parpen.Message is
                         Offsets_Length :        Types.Bit_Length;
                         Source_ID      :        Client_ID;
                         Dest_ID        :        Client_ID;
-                        Result         :    out Result_Type)
+                        Status         :    out Status_Type)
    is
       use type Types.Bit_Length;
 
-      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Result_Type);
-      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Result_Type)
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Status : out Status_Type);
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Status : out Status_Type)
       is
-         R : Resolve.Result_Type;
-         use type Resolve.Result_Type;
+         S : Resolve.Status_Type;
+         use type Resolve.Status_Type;
          use type Parpen.Protocol.Offset;
       begin
          if O > Parpen.Protocol.Offset (Data_Length) then
-            Result := Result_Offset_Out_Of_Range;
+            Status := Status_Offset_Out_Of_Range;
             return;
          end if;
-         Resolve.Resolve (DB        => Clients.Inner,
+         Resolve.Resolve (Database  => Clients.Inner,
                           Buffer    => Data,
                           Offset    => Data_Offset + Types.Bit_Length (O),
                           Length    => Data_Length - Types.Bit_Length (O),
                           Source_ID => Source_ID,
                           Dest_ID   => Dest_ID,
-                          Result    => R);
-         Result := (case R is
-                    when Resolve.Result_OK => Result_Valid,
-                    when others            => Result_Invalid);
+                          Status    => S);
+         Status := (case S is
+                    when Resolve.Status_OK => Status_Valid,
+                    when others            => Status_Invalid);
       end Handle_Offset;
       procedure Iterate_Offsets is new Message.Offsets (Handle_Offset);
    begin
       if Offsets_Length = 0 then
-         Result := Result_Valid;
+         Status := Status_Valid;
          return;
       end if;
-      Iterate_Offsets (Data, Offsets_Offset, Offsets_Length, Result);
+      Iterate_Offsets (Data, Offsets_Offset, Offsets_Length, Status);
    end Translate;
 
    ----------------
@@ -84,7 +84,7 @@ package body Parpen.Message is
    procedure Offsets (Data           : in out Types.Bytes_Ptr;
                       Offsets_Offset :        Types.Bit_Length;
                       Offsets_Length :        Types.Bit_Length;
-                      Result         :    out Result_Type)
+                      Status         :    out Status_Type)
    is
       use type Types.Bit_Length;
       Context : Offsets_Package.Context := Offsets_Package.Create;
@@ -97,15 +97,15 @@ package body Parpen.Message is
          Offsets_Package.Verify_Message (Context);
 
          if Offsets_Package.Valid_Message (Context) then
-            Operation (Offsets_Package.Get_Data (Context), Result);
+            Operation (Offsets_Package.Get_Data (Context), Status);
          end if;
          Offsets_Package.Take_Buffer (Context, Data);
 
-         if Result /= Result_Valid then
+         if Status /= Status_Valid then
             return;
          end if;
       end loop;
-      Result := Result_Valid;
+      Status := Status_Valid;
    end Offsets;
 
    --------------
@@ -125,11 +125,11 @@ package body Parpen.Message is
                        Recv_Length    :        Types.Bit_Length;
                        Offsets_Offset :        Types.Bit_Length;
                        Offsets_Length :        Types.Bit_Length;
-                       Result         :    out Result_Type)
+                       Status         :    out Status_Type)
    is
       Receiver            : Client_ID;
       Node                : Resolve.Node_Option;
-      Name_Service_Result : Name_Service.Result_Type;
+      Name_Service_Status : Name_Service.Status_Type;
       Send_Off            : Types.Bit_Length := Send_Offset;
       Send_Len            : Types.Bit_Length := Send_Length;
       Offsets_Off         : Types.Bit_Length := Offsets_Offset;
@@ -137,7 +137,7 @@ package body Parpen.Message is
       Receiver_State      : Client_State;
       Sender_State        : Client_State;
       use type Parpen.Protocol.Handle;
-      use type Name_Service.Result_Type;
+      use type Name_Service.Status_Type;
       use type Types.Bit_Length;
       use type Types.Index;
    begin
@@ -147,7 +147,7 @@ package body Parpen.Message is
          Node := Clients.Inner.Get_Node (Owner_ID => Sender,
                                          Handle   => Parpen.Binder.Handle'Val (Parpen.Protocol.Handle'Pos (Handle)));
          if not Resolve.Found (Node) then
-            Result := Result_Invalid_Handle;
+            Status := Status_Invalid_Handle;
             return;
          end if;
          Receiver := Resolve.Get_Owner (Node);
@@ -166,7 +166,7 @@ package body Parpen.Message is
                         State => Sender_State);
 
       if Send_Length = 0 then
-         Result := Result_Valid;
+         Status := Status_Valid;
          return;
       end if;
 
@@ -178,8 +178,8 @@ package body Parpen.Message is
                  Offsets_Length => Offsets_Length,
                  Source_ID      => Sender,
                  Dest_ID        => Receiver,
-                 Result         => Result);
-      if Result /= Result_Valid then
+                 Status         => Status);
+      if Status /= Status_Valid then
          return;
       end if;
 
@@ -191,22 +191,22 @@ package body Parpen.Message is
                                Offsets_Length => Offsets_Len,
                                Method         => Method,
                                Cookie         => Cookie,
-                               Result         => Name_Service_Result);
-         Result := (case Name_Service_Result is
-                    when Name_Service.Result_Valid          => Result_Valid,
-                    when Name_Service.Result_Invalid        => Result_Invalid,
-                    when Name_Service.Result_Invalid_Method => Result_Invalid_Method);
-         if Result /= Result_Valid then
+                               Status         => Name_Service_Status);
+         Status := (case Name_Service_Status is
+                    when Name_Service.Status_Valid          => Status_Valid,
+                    when Name_Service.Status_Invalid        => Status_Invalid,
+                    when Name_Service.Status_Invalid_Method => Status_Invalid_Method);
+         if Status /= Status_Valid then
             return;
          end if;
 
          if Oneway or Send_Len = 0 then
-            Result := Result_Valid;
+            Status := Status_Valid;
             return;
          end if;
 
          if Send_Len > Recv_Length then
-            Result := Result_Receive_Buffer_Too_Small;
+            Status := Status_Receive_Buffer_Too_Small;
             return;
          end if;
 
@@ -218,9 +218,9 @@ package body Parpen.Message is
                     Offsets_Length => Offsets_Len,
                     Source_ID      => Receiver,
                     Dest_ID        => Sender,
-                    Result         => Result);
+                    Status         => Status);
          if
-            Result /= Result_Valid
+            Status /= Status_Valid
             or else Send_Off mod 8 /= 0
             or else Send_Len mod 8 /= 0
          then
@@ -239,12 +239,12 @@ package body Parpen.Message is
                Recv_First  => Sender_State.First,
                Recv_Last   => Sender_State.Last);
 
-         Result := Result_Valid;
+         Status := Status_Valid;
          return;
       else
          Receiver_State := Get_Client_State (Receiver);
          if not Receiver_State.Receiving then
-            Result := Result_Receiver_Not_Ready;
+            Status := Status_Receiver_Not_Ready;
             return;
          end if;
 
@@ -262,7 +262,7 @@ package body Parpen.Message is
                Recv_Last   => Receiver_State.Last);
 
          Set_Client_State (Receiver, (Receiving => False));
-         Result := Result_Valid;
+         Status := Status_Valid;
          return;
       end if;
    end Dispatch;

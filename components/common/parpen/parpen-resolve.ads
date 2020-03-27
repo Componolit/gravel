@@ -10,39 +10,39 @@ generic
    with package Types is new Parpen.Generic_Types (<>);
 package Parpen.Resolve
 is
-   type Result_Type is
-      (Result_OK,
-       Result_Invalid,
-       Result_Invalid_Owner,
-       Result_Invalid_Source,
-       Result_Invalid_Destination,
-       Result_Invalid_Handle,
-       Result_Handle_Not_Found,
-       Result_Node_Not_Found,
-       Result_Needless);
+   type Status_Type is
+      (Status_OK,
+       Status_Invalid,
+       Status_Invalid_Owner,
+       Status_Invalid_Source,
+       Status_Invalid_Destination,
+       Status_Invalid_Handle,
+       Status_Handle_Not_Found,
+       Status_Node_Not_Found,
+       Status_Needless);
 
    type Node_Option is private;
    type Client_Cursor_Option is tagged private;
 
-   function Valid (N : Node_Option) return Boolean;
-   function Found (N : Node_Option) return Boolean;
+   function Valid (Node : Node_Option) return Boolean;
+   function Found (Node : Node_Option) return Boolean;
 
    type Database is tagged private;
 
-   function Initialized (DB : Database) return Boolean with Ghost;
+   function Initialized (Database : Parpen.Resolve.Database) return Boolean with Ghost;
 
-   procedure Initialize (DB : in out Database) with
-      Post => Initialized (DB);
+   procedure Initialize (Database : in out Parpen.Resolve.Database) with
+      Post => Initialized (Database);
 
-   function Get_Node (DB       : Database;
+   function Get_Node (Database : Parpen.Resolve.Database;
                       Owner_ID : Client_ID;
                       Value    : Parpen.Binder.Value) return Node_Option with
-      Pre => Initialized (DB);
+      Pre => Initialized (Database);
 
-   function Get_Node (DB       : Database;
+   function Get_Node (Database : Parpen.Resolve.Database;
                       Owner_ID : Client_ID;
                       Handle   : Parpen.Binder.Handle) return Node_Option with
-      Pre => Initialized (DB);
+      Pre => Initialized (Database);
 
    function Get_Owner (Node : Node_Option) return Client_ID with
       Pre => Found (Node);
@@ -50,41 +50,41 @@ is
    function Get_Value (Node : Node_Option) return Parpen.Binder.Value with
       Pre => Found (Node);
 
-   procedure Add_Node (DB     : in out Database;
-                       Cursor : in out Node_Option;
-                       Owner  :        Client_ID;
-                       Value  :        Parpen.Binder.Value) with
-      Pre => Initialized (DB);
+   procedure Add_Node (Database : in out Parpen.Resolve.Database;
+                       Cursor   : in out Node_Option;
+                       Owner    :        Client_ID;
+                       Value    :        Parpen.Binder.Value) with
+      Pre => Initialized (Database);
 
-   procedure Add_Client (DB    : in out Database;
-                         ID    :        Client_ID;
-                         State :        Client_State) with
-      Pre => Initialized (DB);
+   procedure Add_Client (Database : in out Parpen.Resolve.Database;
+                         ID       :        Client_ID;
+                         State    :        Client_State) with
+      Pre => Initialized (Database);
 
-   procedure Set_Client_State (DB    : in out Database;
-                               ID    :        Client_ID;
-                               State :        Client_State) with
-      Pre  => Initialized (DB),
-      Post => Initialized (DB);
+   procedure Set_Client_State (Database : in out Parpen.Resolve.Database;
+                               ID       :        Client_ID;
+                               State    :        Client_State) with
+      Pre  => Initialized (Database),
+      Post => Initialized (Database);
 
    --  FIXME: Ensure client exists in precondition
-   function Get_Client_State (DB : Database;
-                              ID : Client_ID) return Client_State with
-      Pre => Initialized (DB);
+   function Get_Client_State (Database : Parpen.Resolve.Database;
+                              ID       : Client_ID) return Client_State with
+      Pre => Initialized (Database);
 
-   procedure Add_Handle (DB    : in out Database;
-                         ID    :        Client_ID;
-                         Node  :        Node_Option) with
-      Pre => Initialized (DB);
+   procedure Add_Handle (Database : in out Parpen.Resolve.Database;
+                         ID       :        Client_ID;
+                         Node     :        Node_Option) with
+      Pre => Initialized (Database);
 
-   procedure Resolve (DB        : in out Database;
+   procedure Resolve (Database  : in out Parpen.Resolve.Database;
                       Buffer    : in out Types.Bytes_Ptr;
                       Offset    :        Types.Bit_Length;
                       Length    :        Types.Bit_Length;
                       Source_ID :        Client_ID;
                       Dest_ID   :        Client_ID;
-                      Result    :    out Result_Type) with
-      Pre => Initialized (DB);
+                      Status    :    out Status_Type) with
+      Pre => Initialized (Database);
 
 private
 
@@ -103,13 +103,13 @@ private
          Inner : Node_DB.Option;
       end record;
 
-   function Valid (N : Node_Option) return Boolean is
-      (N.Inner.State = Node_DB.Status_Valid
-       or N.Inner.State = Node_DB.Status_Not_Found);
+   function Valid (Node : Node_Option) return Boolean is
+      (Node.Inner.Status = Node_DB.Status_Valid
+       or Node.Inner.Status = Node_DB.Status_Not_Found);
 
-   function Found (N : Node_Option) return Boolean is
-      (Valid (N)
-       and N.Inner.State /= Node_DB.Status_Not_Found);
+   function Found (Node : Node_Option) return Boolean is
+      (Valid (Node)
+       and Node.Inner.Status /= Node_DB.Status_Not_Found);
 
    package Handle_DB is new Parpen.Unique_Map (Key     => Handle_ID,
                                                Element => Node_ID);
@@ -117,7 +117,7 @@ private
    type Client_Type is
       record
          Handles : Handle_DB.Database;
-         State   : Client_State;
+         Status  : Client_State;
       end record;
 
    package Client_DB is new Parpen.Unique_Map (Key     => Client_ID,
@@ -134,13 +134,14 @@ private
          Clients : Client_DB.Database;
       end record;
 
-   function Initialized (DB : Database) return Boolean is
-      (DB.Nodes.Initialized and DB.Clients.Initialized);
+   function Initialized (Database : Parpen.Resolve.Database) return Boolean is
+      (Database.Nodes.Initialized and Database.Clients.Initialized);
 
-   function Get_Node (DB       : Database;
+   function Get_Node (Database : Parpen.Resolve.Database;
                       Owner_ID : Client_ID;
                       Value    : Parpen.Binder.Value) return Node_Option is
-      (Inner => DB.Nodes.Find ((Owner => Owner_ID, Value => Value)));
+      (Inner => Database.Nodes.Find ((Owner => Owner_ID,
+                                Value => Value)));
 
    function Get_Owner (Node : Node_Option) return Client_ID is
       (Node.Inner.Data.Owner);

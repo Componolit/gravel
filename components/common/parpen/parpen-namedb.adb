@@ -15,31 +15,35 @@ package body Parpen.NameDB is
    -- Init --
    ----------
 
-   procedure Init (DB : out Database)
+   procedure Init (Database : out Parpen.NameDB.Database)
    is
    begin
-      DB.Inner.Initialize;
+      Database.Inner.Initialize;
    end Init;
 
    ---------
    -- Add --
    ---------
 
-   procedure Add
-     (DB : in out Database; Elem : Element; Query : Query_String; Result : out Status)
+   procedure Add (Database : in out Parpen.NameDB.Database;
+                  Element  :        Parpen.NameDB.Element;
+                  Query    :        Query_String;
+                  Status   :    out Parpen.NameDB.Status)
    is
-      H : constant Hash_Type := Hash (Query);
-      C : Name_DB.Cursor_Option;
+      Hash   : constant Hash_Type := Parpen.NameDB.Hash (Query);
+      Cursor : Name_DB.Cursor_Option;
    begin
-      C := DB.Inner.Find (H);
-      case C.State is
+      Cursor := Database.Inner.Find (Hash);
+      case Cursor.Status is
          when Name_DB.Status_OK =>
-            Result := Status_In_Use;
+            Status := Status_In_Use;
          when Name_DB.Status_Overflow =>
-            Result := Status_Out_Of_Memory;
+            Status := Status_Out_Of_Memory;
          when Name_DB.Status_Not_Found =>
-            DB.Inner.Insert (C => C.Cursor, K => H, E => Elem);
-            Result := Status_OK;
+            Database.Inner.Insert (Position => Cursor.Cursor,
+                                   Key      => Hash,
+                                   Element  => Element);
+            Status := Status_OK;
       end case;
    end Add;
 
@@ -47,14 +51,15 @@ package body Parpen.NameDB is
    -- Exists --
    ------------
 
-   function Exists (DB : Database; Query : Query_String) return Boolean
+   function Exists (Database : Parpen.NameDB.Database;
+                    Query    : Query_String) return Boolean
    is
-      H : constant Hash_Type := Hash (Query);
-      C : Name_DB.Cursor_Option;
+      Hash   : constant Hash_Type := Parpen.NameDB.Hash (Query);
+      Cursor : Name_DB.Cursor_Option;
       use type Name_DB.Status;
    begin
-      C := DB.Inner.Find (H);
-      if C.State = Name_DB.Status_OK then
+      Cursor := Database.Inner.Find (Hash);
+      if Cursor.Status = Name_DB.Status_OK then
          return True;
       end if;
       return False;
@@ -64,18 +69,22 @@ package body Parpen.NameDB is
    -- Get --
    ---------
 
-   procedure Get (DB : Database; Query : Query_String; Res : out Result)
+   procedure Get (Database :        Parpen.NameDB.Database;
+                  Query    :        Query_String;
+                  Result   :    out Parpen.NameDB.Result)
    is
-      H : constant Hash_Type := Hash (Query);
-      C : Name_DB.Cursor_Option;
+      Hash   : constant Hash_Type := Parpen.NameDB.Hash (Query);
+      Cursor : Name_DB.Cursor_Option;
       use type Name_DB.Status;
    begin
-      C := DB.Inner.Find (H);
-      if C.State = Name_DB.Status_OK then
-         Res := (Valid => True, Elem => DB.Inner.Get (C.Cursor));
+      Cursor := Database.Inner.Find (Hash);
+      if Cursor.Status = Name_DB.Status_OK then
+         Result := (Valid   => True,
+                    Element => Database.Inner.Get (Cursor.Cursor));
          return;
       end if;
-      Res := (Valid => False, Stat => Status_Not_Found);
+      Result := (Valid  => False,
+                 Status => Status_Not_Found);
    end Get;
 
 end Parpen.NameDB;

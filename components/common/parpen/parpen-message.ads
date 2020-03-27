@@ -10,15 +10,15 @@ generic
    Num_Name_DB_Entries : Natural;
 package Parpen.Message
 is
-   type Result_Type is
-      (Result_Valid,
-       Result_Invalid,
-       Result_Invalid_Handle,
-       Result_Invalid_Method,
-       Result_Offset_Out_Of_Range,
-       Result_Receiver_Not_Ready,
-       Result_Receive_Buffer_Too_Small,
-       Result_Overflow);
+   type Status_Type is
+      (Status_Valid,
+       Status_Invalid,
+       Status_Invalid_Handle,
+       Status_Invalid_Method,
+       Status_Offset_Out_Of_Range,
+       Status_Receiver_Not_Ready,
+       Status_Receive_Buffer_Too_Small,
+       Status_Overflow);
 
    type Database is private;
 
@@ -69,7 +69,7 @@ is
                        Recv_Length    :        Types.Bit_Length;
                        Offsets_Offset :        Types.Bit_Length;
                        Offsets_Length :        Types.Bit_Length;
-                       Result         :    out Result_Type);
+                       Status         :    out Status_Type);
 
    procedure Ignore (ID         : Client_ID;
                      Handle     : Parpen.Protocol.Handle;
@@ -86,11 +86,11 @@ is
    --  Apply Operation to every offset encoded in Data
    generic
       with procedure Operation (Offset   :        Parpen.Protocol.Offset;
-                                Result   :    out Result_Type);
+                                Status   :    out Status_Type);
    procedure Offsets (Data           : in out Types.Bytes_Ptr;
                       Offsets_Offset :        Types.Bit_Length;
                       Offsets_Length :        Types.Bit_Length;
-                      Result         :    out Result_Type);
+                      Status         :    out Status_Type);
 
    --  Initialized package and set client ID of name service
    --  This ID must not be used for other purposes.
@@ -122,6 +122,6 @@ private
                         Offsets_Length :        Types.Bit_Length;
                         Source_ID      :        Client_ID;
                         Dest_ID        :        Client_ID;
-                        Result         :    out Result_Type);
+                        Status         :    out Status_Type);
 
 end Parpen.Message;
