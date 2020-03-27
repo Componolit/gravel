@@ -56,8 +56,8 @@ package body Test_Message is
          & 16#00# & 16#00# & 16#00# & 16#00# -- Dump_Flags: 0
       );
 
-      Status : Message.Status_Type;
-      use type Message.Status_Type;
+      Status : Message.Status;
+      use type Message.Status;
 
       procedure Send_Message (ID         : Client_ID;
                               Handle     : Parpen.Protocol.Handle;
@@ -91,8 +91,10 @@ package body Test_Message is
 
       procedure Dispatch is new Message.Dispatch (Send_Message);
    begin
-      Message.Initialize (Name_Service_ID => NS_ID);
-      Message.Add_Client (ID => Client_1);
+      Message.Initialize (Name_Service_ID => NS_ID, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error initializing Message: " & Status'Img);
+      Message.Add_Client (ID => Client_1, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error adding client: " & Status'Img);
       Dispatch (Sender         => Client_1,
                 Handle         => 0,
                 Method         => 3,
@@ -130,8 +132,8 @@ package body Test_Message is
          & 16#00# & 16#00# & 16#00# & 16#00# -- Dump_Flags: 0
       );
 
-      Status : Message.Status_Type;
-      use type Message.Status_Type;
+      Status : Message.Status;
+      use type Message.Status;
 
       procedure No_Reply (ID         : Client_ID;
                           Handle     : Parpen.Protocol.Handle;
@@ -231,9 +233,12 @@ package body Test_Message is
       procedure Dispatch_Add is new Message.Dispatch (No_Reply);
       procedure Dispatch_Get is new Message.Dispatch (Check_Reply);
    begin
-      Message.Initialize (Name_Service_ID => NS_ID);
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Initialize (Name_Service_ID => NS_ID, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error initializing Message: " & Status'Img);
+      Message.Add_Client (ID => Client_1, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error adding client 1: " & Status'Img);
+      Message.Add_Client (ID => Client_2, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error adding client 2: " & Status'Img);
 
       Dispatch_Add (Sender         => Client_1,
                     Handle         => 0,
@@ -302,8 +307,8 @@ package body Test_Message is
          & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
       );
 
-      Status : Message.Status_Type;
-      use type Message.Status_Type;
+      Status : Message.Status;
+      use type Message.Status;
 
       Received_Handle : Parpen.Protocol.Handle;
       Handle_Parsed   : Boolean := False;
@@ -396,9 +401,12 @@ package body Test_Message is
       procedure Dispatch_Get is new Message.Dispatch (Parse_Handle);
       procedure Dispatch_Use is new Message.Dispatch (Check_Transaction);
    begin
-      Message.Initialize (Name_Service_ID => NS_ID);
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Initialize (Name_Service_ID => NS_ID, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error initializing Message: " & Status'Img);
+      Message.Add_Client (ID => Client_1, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error adding client 1: " & Status'Img);
+      Message.Add_Client (ID => Client_2, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error adding client 2: " & Status'Img);
 
       Dispatch (Sender         => Client_1,
                 Handle         => 0,
@@ -530,10 +538,10 @@ package body Test_Message is
 
       Reply         : String_Ptr := new String'("Test Message");
       Recv_Buffer   : String_Ptr := new String'(1 .. 100 => 'x');
-      Status        : Message.Status_Type;
+      Status        : Message.Status;
       Callback_Done : Boolean;
       Reply_Done    : Boolean;
-      use type Message.Status_Type;
+      use type Message.Status;
 
       procedure Check_Callback (ID         : Client_ID;
                                 Handle     : Parpen.Protocol.Handle;
@@ -617,9 +625,12 @@ package body Test_Message is
       procedure Dispatch_Callback is new Message.Dispatch (Check_Callback);
       procedure Dispatch_Reply is new Message.Dispatch (Check_Reply);
    begin
-      Message.Initialize (Name_Service_ID => NS_ID);
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Initialize (Name_Service_ID => NS_ID, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error initializing Message: " & Status'Img);
+      Message.Add_Client (ID => Client_1, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error adding client 1: " & Status'Img);
+      Message.Add_Client (ID => Client_2, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error adding client 2: " & Status'Img);
 
       --  Register service
       Dispatch (Sender         => Client_1,
@@ -714,13 +725,22 @@ package body Test_Message is
    procedure Test_Client_State (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
+      CS     : constant Message.Client_State := (Status    => Message.Status_Valid,
+                                                 Receiving => True,
+                                                 First     => 1,
+                                                 Last      => 42);
+      Status : Message.Status;
       use type Message.Client_State;
-      CS : constant Message.Client_State := (Receiving => True, First => 1, Last => 42);
+      use type Message.Status;
    begin
-      Message.Initialize (Name_Service_ID => NS_ID);
-      Message.Add_Client (ID => Client_1);
-      Assert (Message.Get_Client_State (ID => Client_1) = (Receiving => False), "Invalid client state");
-      Message.Set_Client_State (ID => Client_1, State => CS);
+      Message.Initialize (Name_Service_ID => NS_ID, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error initializing Message: " & Status'Img);
+      Message.Add_Client (ID => Client_1, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error adding client 1: " & Status'Img);
+      Assert (Message.Get_Client_State (ID => Client_1) = (Status => Message.Status_Invalid, Receiving => False),
+              "Invalid client state");
+      Message.Set_Client_State (ID => Client_1, State => CS, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error setting client state: " & Status'Img);
       Assert (Message.Get_Client_State (ID => Client_1) = CS, "Invalid client state");
    end Test_Client_State;
 

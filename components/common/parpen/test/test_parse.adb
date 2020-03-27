@@ -165,9 +165,9 @@ package body Test_Parse is
    is
       pragma Unreferenced (T);
       Input    : String_Ptr := new String'("Dummy");
-      Status   : Resolve.Status_Type;
+      Status   : Resolve.Status;
       Database : Resolve.Database;
-      use type Resolve.Status_Type;
+      use type Resolve.Status;
    begin
       Database.Initialize;
       Database.Resolve (Buffer    => Input,
@@ -184,12 +184,13 @@ package body Test_Parse is
    is
       pragma Unreferenced (T);
       Input    : String_Ptr := new String'("Dummy");
-      Status   : Resolve.Status_Type;
+      Status   : Resolve.Status;
       Database : Resolve.Database;
-      use type Resolve.Status_Type;
+      use type Resolve.Status;
    begin
       Database.Initialize;
-      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1");
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
                         Length    => Input.all'Size,
@@ -213,13 +214,15 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Status_Type;
-      Status   : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status   : Resolve.Status;
       Database : Resolve.Database;
    begin
       Database.Initialize;
-      Database.Add_Client (ID => Client_1, State => (null record));
-      Database.Add_Client (ID => Client_2, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1");
+      Database.Add_Client (ID => Client_2, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 2");
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
                         Length    => Input.all'Size,
@@ -243,13 +246,15 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Status_Type;
-      Status   : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status   : Resolve.Status;
       Database : Resolve.Database;
    begin
       Database.Initialize;
-      Database.Add_Client (ID => Client_1, State => (null record));
-      Database.Add_Client (ID => Client_2, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1");
+      Database.Add_Client (ID => Client_2, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 2");
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
                         Length    => Input.all'Size,
@@ -273,22 +278,26 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Status_Type;
-      Status   : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status   : Resolve.Status;
       Database : Resolve.Database;
       D2       : Resolve.Database;
       Node     : Resolve.Node_Option;
    begin
       D2.Initialize;
       Node := D2.Get_Node (Owner_ID => Client_1, Value => 16#1#);
-      D2.Add_Node (Cursor => Node, Owner => Client_1, Value => 16#1#);
+      D2.Add_Node (Cursor => Node, Owner => Client_1, Value => 16#1#, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding node");
 
       Database.Initialize;
-      Database.Add_Client (ID => Client_1, State => (null record));
-      Database.Add_Client (ID => Client_2, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1");
+      Database.Add_Client (ID => Client_2, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 2");
 
       --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
-      Database.Add_Handle (ID => Client_2, Node => Node);
+      Database.Add_Handle (ID => Client_2, Node => Node, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding handle");
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -323,8 +332,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Status_Type;
-      Status   : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status   : Resolve.Status;
       Database : Resolve.Database;
       Node     : Resolve.Node_Option;
    begin
@@ -332,13 +341,18 @@ package body Test_Parse is
       Database.Initialize;
       Node := Database.Get_Node (Owner_ID => Client_1, Value => 16#100000000000001#);
       Assert (not Resolve.Found (Node), "Node already present");
-      Database.Add_Node (Cursor => Node, Owner => Client_1, Value => 16#100000000000001#);
+      Database.Add_Node (Cursor => Node, Owner => Client_1, Value => 16#100000000000001#, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding node: " & Status'Img);
 
-      Database.Add_Client (ID => Client_1, State => (null record));
-      Database.Add_Client (ID => Client_2, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1: " & Status'Img);
+
+      Database.Add_Client (ID => Client_2, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1: " & Status'Img);
 
       --  The Handle_ID type starts at 18 (16#12#), hence the first entry matches the node ID encoded above
-      Database.Add_Handle (ID => Client_2, Node => Node);
+      Database.Add_Handle (ID => Client_2, Node => Node, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding handle: " & Status'Img);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -346,7 +360,7 @@ package body Test_Parse is
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Resolve_Handle_To_Binder;
 
@@ -375,15 +389,18 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Status_Type;
-      Status   : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status   : Resolve.Status;
       Database : Resolve.Database;
    begin
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1, State => (null record));
-      Database.Add_Client (ID => Client_2, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1: " & Status'Img);
+
+      Database.Add_Client (ID => Client_2, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 2: " & Status'Img);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -391,7 +408,7 @@ package body Test_Parse is
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Resolve_Binder_To_Handle;
 
@@ -418,8 +435,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Status_Type;
-      Status     : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status     : Resolve.Status;
       Database   : Resolve.Database;
       Node       : Resolve.Node_Option;
       Other_Node : Resolve.Node_Option;
@@ -427,18 +444,27 @@ package body Test_Parse is
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1, State => (null record));
-      Database.Add_Client (ID => Client_2, State => (null record));
-      Database.Add_Client (ID => Client_3, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1: " & Status'Img);
+
+      Database.Add_Client (ID => Client_2, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 2: " & Status'Img);
+
+      Database.Add_Client (ID => Client_3, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 3: " & Status'Img);
 
       Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
       Assert (not Resolve.Found (Node), "Node already present");
-      Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#);
-      Database.Add_Handle (ID => Client_1, Node => Node);
+      Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding node: " & Status'Img);
+      Database.Add_Handle (ID => Client_1, Node => Node, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding handle: " & Status'Img);
 
       Other_Node := Database.Get_Node (Owner_ID => Client_2, Value => 16#100000000000123#);
-      Database.Add_Node (Cursor => Other_Node, Owner => Client_2, Value => 16#100000000000123#);
-      Database.Add_Handle (ID => Client_2, Node => Other_Node);
+      Database.Add_Node (Cursor => Other_Node, Owner => Client_2, Value => 16#100000000000123#, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding node: " & Status'Img);
+      Database.Add_Handle (ID => Client_2, Node => Other_Node, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding handle: " & Status'Img);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -446,7 +472,7 @@ package body Test_Parse is
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Resolve_Handle_To_Handle;
 
@@ -474,8 +500,8 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Status_Type;
-      Status     : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status     : Resolve.Status;
       Database   : Resolve.Database;
       Node       : Resolve.Node_Option;
       Other_Node : Resolve.Node_Option;
@@ -483,18 +509,25 @@ package body Test_Parse is
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1, State => (null record));
-      Database.Add_Client (ID => Client_2, State => (null record));
-      Database.Add_Client (ID => Client_3, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client: " & Status'Img);
+      Database.Add_Client (ID => Client_2, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client: " & Status'Img);
+      Database.Add_Client (ID => Client_3, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client: " & Status'Img);
 
       Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
       Assert (not Resolve.Found (Node), "Node already present");
-      Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#);
-      Database.Add_Handle (ID => Client_1, Node => Node);
+      Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding node: " & Status'Img);
+      Database.Add_Handle (ID => Client_1, Node => Node, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding handle: " & Status'Img);
 
       Other_Node := Database.Get_Node (Owner_ID => Client_2, Value => 16#100000000000123#);
-      Database.Add_Node (Cursor => Other_Node, Owner => Client_2, Value => 16#100000000000123#);
-      Database.Add_Handle (ID => Client_2, Node => Other_Node);
+      Database.Add_Node (Cursor => Other_Node, Owner => Client_2, Value => 16#100000000000123#, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding node: " & Status'Img);
+      Database.Add_Handle (ID => Client_2, Node => Other_Node, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding handle: " & Status'Img);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -502,7 +535,7 @@ package body Test_Parse is
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful (1): " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving handle unsuccessful (1): " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
 
       Database.Resolve (Buffer    => Input,
@@ -511,7 +544,7 @@ package body Test_Parse is
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful (2): " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving handle unsuccessful (2): " & Status'Img);
       Assert (Input.all = Output, "Binder not resolved correctly");
    end Test_Pass_Handle_To_Non_Owner;
 
@@ -540,15 +573,17 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Status_Type;
-      Status   : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status   : Resolve.Status;
       Database : Resolve.Database;
    begin
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1, State => (null record));
-      Database.Add_Client (ID => Client_2, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1: " & Status'Img);
+      Database.Add_Client (ID => Client_2, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 2: " & Status'Img);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -556,7 +591,7 @@ package body Test_Parse is
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving binder unsuccessful: " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving binder unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
 
       Database.Resolve (Buffer    => Input,
@@ -565,7 +600,7 @@ package body Test_Parse is
                         Source_ID => Client_2,
                         Dest_ID   => Client_1,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Output, "Handle not resolved correctly");
    end Test_Send_And_Receive_Binder;
 
@@ -594,16 +629,19 @@ package body Test_Parse is
          & 16#9A# & 16#BC# & 16#DE# & 16#F0# -- cookie (part 2)
       );
 
-      use type Resolve.Status_Type;
-      Status   : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status   : Resolve.Status;
       Database : Resolve.Database;
    begin
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1, State => (null record));
-      Database.Add_Client (ID => Client_2, State => (null record));
-      Database.Add_Client (ID => Client_3, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1: " & Status'Img);
+      Database.Add_Client (ID => Client_2, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 2: " & Status'Img);
+      Database.Add_Client (ID => Client_3, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 3: " & Status'Img);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -611,7 +649,7 @@ package body Test_Parse is
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving binder unsuccessful: " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving binder unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
 
       Database.Resolve (Buffer    => Input,
@@ -627,7 +665,7 @@ package body Test_Parse is
                         Source_ID => Client_3,
                         Dest_ID   => Client_1,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Output, "Handle not resolved correctly");
    end Test_Send_And_Receive_Binder_Multi;
 
@@ -646,12 +684,13 @@ package body Test_Parse is
       );
       Expected : constant String := Input.all;
 
-      use type Resolve.Status_Type;
-      Status   : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status   : Resolve.Status;
       Database : Resolve.Database;
    begin
       Database.Initialize;
-      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1: " & Status'Img);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -659,7 +698,7 @@ package body Test_Parse is
                         Source_ID => Client_1,
                         Dest_ID   => Client_1,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving binder unsuccessful: " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving binder unsuccessful: " & Status'Img);
       Assert (Input.all = Expected, "Binder not resolved correctly");
    end Test_Resolve_Binder_To_Self;
 
@@ -677,19 +716,22 @@ package body Test_Parse is
       );
       Expected : constant String := Input.all;
 
-      use type Resolve.Status_Type;
-      Status     : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status     : Resolve.Status;
       Database   : Resolve.Database;
       Node       : Resolve.Node_Option;
    begin
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1: " & Status'Img);
 
       Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
       Assert (not Resolve.Found (Node), "Node already present");
-      Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#);
-      Database.Add_Handle (ID => Client_1, Node => Node);
+      Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding node: " & Status'Img);
+      Database.Add_Handle (ID => Client_1, Node => Node, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding handle: " & Status'Img);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 0,
@@ -697,7 +739,7 @@ package body Test_Parse is
                         Source_ID => Client_1,
                         Dest_ID   => Client_1,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Expected, "Binder not resolved correctly");
    end Test_Resolve_Handle_To_Self;
 
@@ -730,16 +772,19 @@ package body Test_Parse is
          & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
       );
 
-      use type Resolve.Status_Type;
-      Status   : Resolve.Status_Type;
+      use type Resolve.Status;
+      Status   : Resolve.Status;
       Database : Resolve.Database;
    begin
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
 
-      Database.Add_Client (ID => Client_1, State => (null record));
-      Database.Add_Client (ID => Client_2, State => (null record));
-      Database.Add_Client (ID => Client_3, State => (null record));
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 1: " & Status'Img);
+      Database.Add_Client (ID => Client_2, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 2: " & Status'Img);
+      Database.Add_Client (ID => Client_3, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client 3: " & Status'Img);
 
       Database.Resolve (Buffer    => Input,
                         Offset    => 48,
@@ -747,7 +792,7 @@ package body Test_Parse is
                         Source_ID => Client_1,
                         Dest_ID   => Client_2,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving binder unsuccessful: " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving binder unsuccessful: " & Status'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
 
       Database.Resolve (Buffer    => Input,
@@ -763,7 +808,7 @@ package body Test_Parse is
                         Source_ID => Client_3,
                         Dest_ID   => Client_1,
                         Status    => Status);
-      Assert (Status = Resolve.Status_OK, "Resolving handle unsuccessful: " & Status'Img);
+      Assert (Status = Resolve.Status_Valid, "Resolving handle unsuccessful: " & Status'Img);
       Assert (Input.all = Output, "Handle not resolved correctly");
    end Test_Embedded_Object;
 
@@ -771,18 +816,24 @@ package body Test_Parse is
    is
       pragma Unreferenced (T);
       use type Parpen.Binder.Value;
+      use type Resolve.Status;
       Value    : constant Parpen.Binder.Value := 16#100000000000001#;
       Database : Resolve.Database;
       Node     : Resolve.Node_Option;
       Result   : Resolve.Node_Option;
+      Status   : Resolve.Status;
    begin
       Database.Initialize;
 
       Node := Database.Get_Node (Owner_ID => Client_1, Value => Value);
-      Database.Add_Node (Cursor => Node, Owner => Client_1, Value => Value);
+      Database.Add_Node (Cursor => Node, Owner => Client_1, Value => Value, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding node: " & Status'Img);
 
-      Database.Add_Client (ID => Client_1, State => (null record));
-      Database.Add_Handle (ID => Client_1, Node => Node);
+      Database.Add_Client (ID => Client_1, State => (null record), Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding client: " & Status'Img);
+
+      Database.Add_Handle (ID => Client_1, Node => Node, Status => Status);
+      Assert (Status = Resolve.Status_Valid, "Error adding handle: " & Status'Img);
 
       --  The Handle_ID type starts at 18
       Result := Database.Get_Node (Owner_ID => Client_1, Handle => 18);

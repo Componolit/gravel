@@ -48,11 +48,11 @@ package body Test_Offsets is
                                                      16#aaaaaaaaaaaaaaaa#, 16#0102030405060708#);
       Decoded : Offsets_Array (1 .. 20);
       Last    : Natural := 0;
-      Result  : Message.Status_Type;
-      use type Message.Status_Type;
+      Result  : Message.Status;
+      use type Message.Status;
 
-      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Message.Status_Type);
-      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Message.Status_Type) is
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Message.Status);
+      procedure Handle_Offset (O : Parpen.Protocol.Offset; Result : out Message.Status) is
       begin
          Last := Last + 1;
          Decoded (Last) := O;
@@ -77,9 +77,9 @@ package body Test_Offsets is
          & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
       );
       Expected : constant String := Input.all;
-      Result   : Message.Status_Type;
+      Result   : Message.Status;
 
-      use type Message.Status_Type;
+      use type Message.Status;
    begin
       Test_Message.Translate (Data           => Input,
                               Data_Offset    => 0,
@@ -127,11 +127,13 @@ package body Test_Offsets is
          & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
       );
 
-      Result : Message.Status_Type;
-      use type Message.Status_Type;
+      Result : Message.Status;
+      use type Message.Status;
    begin
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Add_Client (ID => Client_1, Status => Result);
+      Assert (Result = Message.Status_Valid, "Error adding client 1: " & Result'Img);
+      Message.Add_Client (ID => Client_2, Status => Result);
+      Assert (Result = Message.Status_Valid, "Error adding client 2: " & Result'Img);
 
       Test_Message.Translate (Data           => Input,
                               Data_Offset    => 64,
@@ -227,11 +229,13 @@ package body Test_Offsets is
          & 16#9A# & 16#BC# & 16#DE# & 16#F1# -- cookie (part 2)
       );
 
-      Result : Message.Status_Type;
-      use type Message.Status_Type;
+      Result : Message.Status;
+      use type Message.Status;
    begin
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Add_Client (ID => Client_1, Status => Result);
+      Assert (Result = Message.Status_Valid, "Error adding client 1: " & Result'Img);
+      Message.Add_Client (ID => Client_2, Status => Result);
+      Assert (Result = Message.Status_Valid, "Error adding client 2: " & Result'Img);
 
       Test_Message.Translate (Data           => Input,
                               Data_Offset    => 3 * 64,
@@ -331,11 +335,13 @@ package body Test_Offsets is
          & 16#9A# & 16#BC# & 16#DE# & 16#F1# -- cookie (part 2)
       );
 
-      Result : Message.Status_Type;
-      use type Message.Status_Type;
+      Result : Message.Status;
+      use type Message.Status;
    begin
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Add_Client (ID => Client_1, Status => Result);
+      Assert (Result = Message.Status_Valid, "Error adding client 1: " & Result'Img);
+      Message.Add_Client (ID => Client_2, Status => Result);
+      Assert (Result = Message.Status_Valid, "Error adding client 2: " & Result'Img);
 
       Test_Message.Translate (Data           => Input,
                               Data_Offset    => 3 * 64,
@@ -379,11 +385,13 @@ package body Test_Offsets is
          & 16#ff# & 16#00# & 16#67# & 16#2f# & 16#e4# & 16#ee#
       );
 
-      Result : Message.Status_Type;
-      use type Message.Status_Type;
+      Result : Message.Status;
+      use type Message.Status;
    begin
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Add_Client (ID => Client_1, Status => Result);
+      Assert (Result = Message.Status_Valid, "Error adding client 1: " & Result'Img);
+      Message.Add_Client (ID => Client_2, Status => Result);
+      Assert (Result = Message.Status_Valid, "Error adding client 2: " & Result'Img);
 
       Test_Message.Translate (Data           => Input,
                               Data_Offset    => 64,
@@ -413,11 +421,13 @@ package body Test_Offsets is
          & 16#67# & 16#2f# & 16#e4# & 16#ee#
       );
 
-      Result : Message.Status_Type;
-      use type Message.Status_Type;
+      Result : Message.Status;
+      use type Message.Status;
    begin
-      Message.Add_Client (ID => Client_1);
-      Message.Add_Client (ID => Client_2);
+      Message.Add_Client (ID => Client_1, Status => Result);
+      Assert (Result = Message.Status_Valid, "Error adding client 1: " & Result'Img);
+      Message.Add_Client (ID => Client_2, Status => Result);
+      Assert (Result = Message.Status_Valid, "Error adding client 2: " & Result'Img);
 
       Test_Message.Translate (Data           => Input,
                               Data_Offset    => 64,

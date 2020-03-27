@@ -8,13 +8,13 @@ package body Parpen.Resolve is
                              Context   : in out IBinder_Package.Context;
                              Source_ID :        Client_ID;
                              Dest_ID   :        Client_ID;
-                             Status    :    out Status_Type);
+                             Status    :    out Parpen.Resolve.Status);
 
    procedure Resolve_Binder (Database  : in out Parpen.Resolve.Database;
                              Context   : in out IBinder_Package.Context;
                              Source_ID :        Client_ID;
                              Dest_ID   :        Client_ID;
-                             Status    :    out Status_Type);
+                             Status    :    out Parpen.Resolve.Status);
 
    procedure Install_Handle (Database  : in out Parpen.Resolve.Database;
                              Context   : in out IBinder_Package.Context;
@@ -44,13 +44,16 @@ package body Parpen.Resolve is
    procedure Add_Node (Database : in out Parpen.Resolve.Database;
                        Cursor   : in out Node_Option;
                        Owner    :        Client_ID;
-                       Value    :        Parpen.Binder.Value)
+                       Value    :        Parpen.Binder.Value;
+                       Status   :    out Parpen.Resolve.Status)
    is
       Node : Node_DB.Option := (Status   => Node_DB.Status_Valid,
                                 Data     => (Owner, Value),
                                 Position => Cursor.Inner.Free);
    begin
       Database.Nodes.Insert (Node);
+      --  FIXME: Set true state
+      Status := Status_Valid;
    end Add_Node;
 
    ----------------
@@ -59,14 +62,17 @@ package body Parpen.Resolve is
 
    procedure Add_Client (Database : in out Parpen.Resolve.Database;
                          ID       :        Client_ID;
-                         State    :        Client_State)
+                         State    :        Client_State;
+                         Status   :    out Parpen.Resolve.Status)
    is
       Client : Client_DB.Option := (Status   => Client_DB.Status_Valid,
                                     Position => ID,
                                     Data     => (Handles => Handle_DB.Null_DB,
-                                                 Status  => State));
+                                                 State   => State));
    begin
       Database.Clients.Insert (Client);
+      --  FIXME: Add status to Insert
+      Status := Status_Valid;
    end Add_Client;
 
    ----------------------
@@ -74,8 +80,17 @@ package body Parpen.Resolve is
    ----------------------
 
    function Get_Client_State (Database : Parpen.Resolve.Database;
-                              ID       : Client_ID) return Client_State is
-      (Database.Clients.Get (ID).Data.Status);
+                              ID       : Client_ID) return Client_State_Option
+   is
+      Option : constant Client_DB.Option := Database.Clients.Get (ID);
+      use type Client_DB.Status;
+   begin
+      if Option.Status = Client_DB.Status_Valid then
+         return (Status => Status_Valid,
+                 Data   => Option.Data.State);
+      end if;
+      return (Status => Status_Invalid_Client);
+   end Get_Client_State;
 
    ----------------------
    -- Set_Client_State --
@@ -83,18 +98,28 @@ package body Parpen.Resolve is
 
    procedure Set_Client_State (Database : in out Parpen.Resolve.Database;
                                ID       :        Client_ID;
-                               State    :        Client_State)
+                               State    :        Client_State;
+                               Status   :    out Parpen.Resolve.Status)
    is
-      procedure Set_State (Client : in out Client_Type);
-      procedure Set_State (Client : in out Client_Type)
+      procedure Set_State (Client : in out Client_Type;
+                           Status :    out Client_DB.Status);
+      procedure Set_State (Client : in out Client_Type;
+                           Status :    out Client_DB.Status)
       is
       begin
-         Client.Status := State;
+         Client.State := State;
+         Status       := Client_DB.Status_Valid;
       end Set_State;
       procedure Set_State is new Client_DB.Generic_Apply (Operation => Set_State);
+
+      Client_Status : Client_DB.Status;
    begin
       Set_State (Database => Database.Clients,
-                 Key      => ID);
+                 Key      => ID,
+                 Status   => Client_Status);
+      Status := (case Client_Status is
+                 when Client_DB.Status_Valid => Status_Valid,
+                 when others                 => Status_Invalid);
    end Set_Client_State;
 
    ----------------
@@ -103,26 +128,40 @@ package body Parpen.Resolve is
 
    procedure Add_Handle (Database : in out Parpen.Resolve.Database;
                          ID       :        Client_ID;
-                         Node     :        Node_Option)
+                         Node     :        Node_Option;
+                         Status   :    out Parpen.Resolve.Status)
    is
-      procedure Add_Node (Client : in out Client_Type);
-      procedure Add_Node (Client : in out Client_Type)
+      procedure Add_Node (Client : in out Client_Type;
+                          Status :    out Client_DB.Status);
+      procedure Add_Node (Client : in out Client_Type;
+                          Status :    out Client_DB.Status)
       is
          Result : Handle_DB.Option;
          use type Handle_DB.Status;
       begin
          Result := Client.Handles.Find (Node.Inner.Free);
-         if Result.Status = Handle_DB.Status_Not_Found then
-            Result := (Status   => Handle_DB.Status_Valid,
-                       Position => Result.Free,
-                       Data     => Node.Inner.Free);
-            Client.Handles.Insert (Result);
+         if Result.Status /= Handle_DB.Status_Not_Found then
+            Status := Client_DB.Status_Invalid;
+            return;
          end if;
+
+         Status := Client_DB.Status_Valid;
+         Result := (Status   => Handle_DB.Status_Valid,
+                    Position => Result.Free,
+                    Data     => Node.Inner.Free);
+         Client.Handles.Insert (Result);
       end Add_Node;
 
       procedure Add_Node is new Client_DB.Generic_Apply (Operation => Add_Node);
+
+      Client_Status : Client_DB.Status;
    begin
-      Add_Node (Database.Clients, ID);
+      Add_Node (Database => Database.Clients,
+                Key      => ID,
+                Status   => Client_Status);
+      Status := (case Client_Status is
+                 when Client_DB.Status_Valid => Status_Valid,
+                 when others                 => Status_Invalid);
    end Add_Handle;
 
    --------------------
@@ -135,27 +174,37 @@ package body Parpen.Resolve is
                              Node      :        Node_ID;
                              Weak      :        Boolean)
    is
-      Handle : Handle_DB.Option;
-      Cookie : Parpen.Binder.Cookie;
-      Flags  : Parpen.Binder.Flat_Binder_Flags;
+      Handle        : Handle_DB.Option;
+      Cookie        : Parpen.Binder.Cookie;
+      Flags         : Parpen.Binder.Flat_Binder_Flags;
+      Client_Status : Client_DB.Status;
 
-      procedure Insert_Handle (Client : in out Client_Type);
-      procedure Insert_Handle (Client : in out Client_Type)
+      procedure Insert_Handle (Client : in out Client_Type;
+                               Status :    out Client_DB.Status);
+      procedure Insert_Handle (Client : in out Client_Type;
+                               Status :    out Client_DB.Status)
       is
          use type Handle_DB.Status;
       begin
          Handle := Client.Handles.Find (Node);
-         if Handle.Status = Handle_DB.Status_Not_Found then
-            Handle := (Status   => Handle_DB.Status_Valid,
-                       Position => Handle.Free,
-                       Data     => Node);
-            Client.Handles.Insert (Handle);
+         if Handle.Status /= Handle_DB.Status_Not_Found then
+            Status := Client_DB.Status_Invalid;
+            return;
          end if;
+
+         Status := Client_DB.Status_Valid;
+         Handle := (Status   => Handle_DB.Status_Valid,
+                    Position => Handle.Free,
+                    Data     => Node);
+         Client.Handles.Insert (Handle);
       end Insert_Handle;
 
       procedure Update_Client_DB is new Client_DB.Generic_Apply (Insert_Handle);
    begin
-      Update_Client_DB (Database.Clients, Dest_ID);
+      Update_Client_DB (Database => Database.Clients,
+                        Key      => Dest_ID,
+                        Status   => Client_Status);
+      --  FIXME: Report error
 
       --  Replace binder by handle
       Cookie := IBinder_Package.Get_Cookie (Context);
@@ -208,7 +257,7 @@ package body Parpen.Resolve is
                              Context   : in out IBinder_Package.Context;
                              Source_ID :        Client_ID;
                              Dest_ID   :        Client_ID;
-                             Status    :    out Status_Type)
+                             Status    :    out Parpen.Resolve.Status)
    is
       Node   : Node_DB.Option;
       Binder : Parpen.Binder.Value;
@@ -242,7 +291,7 @@ package body Parpen.Resolve is
                          Weak     => Weak);
       end if;
 
-      Status := Status_OK;
+      Status := Status_Valid;
    end Resolve_Binder;
 
    --------------------
@@ -253,7 +302,7 @@ package body Parpen.Resolve is
                              Context   : in out IBinder_Package.Context;
                              Source_ID :        Client_ID;
                              Dest_ID   :        Client_ID;
-                             Status    :    out Status_Type)
+                             Status    :    out Parpen.Resolve.Status)
    is
       Handle           : Parpen.Binder.Handle;
       Node             : Node_DB.Option;
@@ -290,7 +339,7 @@ package body Parpen.Resolve is
                          Node     => Node.Position,
                          Weak     => Weak);
       end if;
-      Status := Status_OK;
+      Status := Status_Valid;
    end Resolve_Handle;
 
    -------------
@@ -303,7 +352,7 @@ package body Parpen.Resolve is
                       Length    :        Types.Bit_Length;
                       Source_ID :        Client_ID;
                       Dest_ID   :        Client_ID;
-                      Status    :    out Status_Type)
+                      Status    :    out Parpen.Resolve.Status)
    is
       Context : IBinder_Package.Context := IBinder_Package.Create;
       Source  : Client_DB.Option;

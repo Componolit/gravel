@@ -10,11 +10,12 @@ generic
    Num_Name_DB_Entries : Natural;
 package Parpen.Message
 is
-   type Status_Type is
+   type Status is
       (Status_Valid,
        Status_Invalid,
        Status_Invalid_Handle,
        Status_Invalid_Method,
+       Status_Invalid_Client,
        Status_Offset_Out_Of_Range,
        Status_Receiver_Not_Ready,
        Status_Receive_Buffer_Too_Small,
@@ -22,26 +23,34 @@ is
 
    type Database is private;
 
-   type Client_State (Receiving : Boolean := False) is
+   type Client_State (Status    : Parpen.Message.Status := Status_Invalid;
+                      Receiving : Boolean := False) is
       record
-         case Receiving is
-            when True =>
-               First : Types.Index;
-               Last  : Types.Index;
-            when False =>
+         case Status is
+            when Status_Valid =>
+               case Receiving is
+                  when True =>
+                     First : Types.Index;
+                     Last  : Types.Index;
+                  when False =>
+                     null;
+               end case;
+            when others =>
                null;
          end case;
       end record;
 
    --  Add a client to client database
-   procedure Add_Client (ID : Client_ID);
+   procedure Add_Client (ID     :        Client_ID;
+                         Status :    out Parpen.Message.Status);
 
    --  Return client state
    function Get_Client_State (ID : Client_ID) return Client_State;
 
    --  Set client state
-   procedure Set_Client_State (ID    : Client_ID;
-                               State : Client_State);
+   procedure Set_Client_State (ID     :        Client_ID;
+                               State  :        Client_State;
+                               Status :    out Parpen.Message.Status);
 
    --  Dispatch a transaction, call generic Send procedure to send data to receiver
    generic
@@ -69,7 +78,7 @@ is
                        Recv_Length    :        Types.Bit_Length;
                        Offsets_Offset :        Types.Bit_Length;
                        Offsets_Length :        Types.Bit_Length;
-                       Status         :    out Status_Type);
+                       Status         :    out Parpen.Message.Status);
 
    procedure Ignore (ID         : Client_ID;
                      Handle     : Parpen.Protocol.Handle;
@@ -86,15 +95,16 @@ is
    --  Apply Operation to every offset encoded in Data
    generic
       with procedure Operation (Offset   :        Parpen.Protocol.Offset;
-                                Status   :    out Status_Type);
+                                Status   :    out Parpen.Message.Status);
    procedure Offsets (Data           : in out Types.Bytes_Ptr;
                       Offsets_Offset :        Types.Bit_Length;
                       Offsets_Length :        Types.Bit_Length;
-                      Status         :    out Status_Type);
+                      Status         :    out Parpen.Message.Status);
 
    --  Initialized package and set client ID of name service
    --  This ID must not be used for other purposes.
-   procedure Initialize (Name_Service_ID : Client_ID);
+   procedure Initialize (Name_Service_ID :         Client_ID;
+                         Status          :     out Parpen.Message.Status);
 
 private
 
@@ -122,6 +132,6 @@ private
                         Offsets_Length :        Types.Bit_Length;
                         Source_ID      :        Client_ID;
                         Dest_ID        :        Client_ID;
-                        Status         :    out Status_Type);
+                        Status         :    out Parpen.Message.Status);
 
 end Parpen.Message;

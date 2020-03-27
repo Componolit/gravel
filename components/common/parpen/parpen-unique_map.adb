@@ -102,9 +102,12 @@ package body Parpen.Unique_Map is
    -------------------
 
    procedure Generic_Apply (Database : in out Parpen.Unique_Map.Database;
-                            Key      :        Parpen.Unique_Map.Key) is
+                            Key      :        Parpen.Unique_Map.Key;
+                            Status   :    out Parpen.Unique_Map.Status)
+   is
    begin
-      Operation (Database.Elements (Key).Element.Element);
+      Operation (Element => Database.Elements (Key).Element.Element,
+                 Status  => Status);
    end Generic_Apply;
 
    ------------

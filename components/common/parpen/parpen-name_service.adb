@@ -25,7 +25,7 @@ package body Parpen.Name_Service is
                       Offsets_Length :    out Types.Bit_Length;
                       Method         :        Parpen.Protocol.Method;
                       Cookie         :        Parpen.Protocol.Cookie;
-                      Status         :    out Status_Type)
+                      Status         :    out Parpen.Name_Service.Status)
    is
       use type Parpen.Protocol.Method;
       use type Parpen.Binder.Binder_Kind;

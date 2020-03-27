@@ -8,7 +8,7 @@ package Parpen.Message.Test is
                         Offsets_Length :        Types.Bit_Length;
                         Source_ID      :        Client_ID;
                         Dest_ID        :        Client_ID;
-                        Result         :    out Status_Type);
+                        Result         :    out Status);
 
 private
 
@@ -19,6 +19,6 @@ private
                         Offsets_Length :        Types.Bit_Length;
                         Source_ID      :        Client_ID;
                         Dest_ID        :        Client_ID;
-                        Result         :    out Status_Type) renames Parpen.Message.Translate;
+                        Result         :    out Status) renames Parpen.Message.Translate;
 
 end Parpen.Message.Test;

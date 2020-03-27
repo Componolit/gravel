@@ -45,9 +45,11 @@ is
       Pre => Initialized (Database);
 
    generic
-      with procedure Operation (E : in out Element);
+      with procedure Operation (Element : in out Parpen.Unique_Map.Element;
+                                Status  :    out Parpen.Unique_Map.Status);
    procedure Generic_Apply (Database : in out Parpen.Unique_Map.Database;
-                            Key      :        Parpen.Unique_Map.Key) with
+                            Key      :        Parpen.Unique_Map.Key;
+                            Status   :    out Parpen.Unique_Map.Status) with
       Pre => Initialized (Database);
 
    procedure Insert (Database : in out Parpen.Unique_Map.Database;

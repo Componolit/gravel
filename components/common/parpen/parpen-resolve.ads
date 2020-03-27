@@ -10,9 +10,10 @@ generic
    with package Types is new Parpen.Generic_Types (<>);
 package Parpen.Resolve
 is
-   type Status_Type is
-      (Status_OK,
+   type Status is
+      (Status_Valid,
        Status_Invalid,
+       Status_Invalid_Client,
        Status_Invalid_Owner,
        Status_Invalid_Source,
        Status_Invalid_Destination,
@@ -20,6 +21,16 @@ is
        Status_Handle_Not_Found,
        Status_Node_Not_Found,
        Status_Needless);
+
+   type Client_State_Option (Status : Parpen.Resolve.Status) is
+      record
+         case Status is
+            when Status_Valid =>
+               Data : Client_State;
+            when others =>
+               null;
+         end case;
+      end record;
 
    type Node_Option is private;
    type Client_Cursor_Option is tagged private;
@@ -53,28 +64,31 @@ is
    procedure Add_Node (Database : in out Parpen.Resolve.Database;
                        Cursor   : in out Node_Option;
                        Owner    :        Client_ID;
-                       Value    :        Parpen.Binder.Value) with
+                       Value    :        Parpen.Binder.Value;
+                       Status   :    out Parpen.Resolve.Status) with
       Pre => Initialized (Database);
 
    procedure Add_Client (Database : in out Parpen.Resolve.Database;
                          ID       :        Client_ID;
-                         State    :        Client_State) with
+                         State    :        Client_State;
+                         Status   :    out Parpen.Resolve.Status) with
       Pre => Initialized (Database);
 
    procedure Set_Client_State (Database : in out Parpen.Resolve.Database;
                                ID       :        Client_ID;
-                               State    :        Client_State) with
+                               State    :        Client_State;
+                               Status   :    out Parpen.Resolve.Status) with
       Pre  => Initialized (Database),
       Post => Initialized (Database);
 
-   --  FIXME: Ensure client exists in precondition
    function Get_Client_State (Database : Parpen.Resolve.Database;
-                              ID       : Client_ID) return Client_State with
+                              ID       : Client_ID) return Client_State_Option with
       Pre => Initialized (Database);
 
    procedure Add_Handle (Database : in out Parpen.Resolve.Database;
                          ID       :        Client_ID;
-                         Node     :        Node_Option) with
+                         Node     :        Node_Option;
+                         Status   :    out Parpen.Resolve.Status) with
       Pre => Initialized (Database);
 
    procedure Resolve (Database  : in out Parpen.Resolve.Database;
@@ -83,7 +97,7 @@ is
                       Length    :        Types.Bit_Length;
                       Source_ID :        Client_ID;
                       Dest_ID   :        Client_ID;
-                      Status    :    out Status_Type) with
+                      Status    :    out Parpen.Resolve.Status) with
       Pre => Initialized (Database);
 
 private
@@ -117,7 +131,7 @@ private
    type Client_Type is
       record
          Handles : Handle_DB.Database;
-         Status  : Client_State;
+         State   : Client_State;
       end record;
 
    package Client_DB is new Parpen.Unique_Map (Key     => Client_ID,
@@ -141,7 +155,7 @@ private
                       Owner_ID : Client_ID;
                       Value    : Parpen.Binder.Value) return Node_Option is
       (Inner => Database.Nodes.Find ((Owner => Owner_ID,
-                                Value => Value)));
+                                      Value => Value)));
 
    function Get_Owner (Node : Node_Option) return Client_ID is
       (Node.Inner.Data.Owner);

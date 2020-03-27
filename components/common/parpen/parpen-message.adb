@@ -31,31 +31,33 @@ package body Parpen.Message is
                         Offsets_Length :        Types.Bit_Length;
                         Source_ID      :        Client_ID;
                         Dest_ID        :        Client_ID;
-                        Status         :    out Status_Type)
+                        Status         :    out Parpen.Message.Status)
    is
       use type Types.Bit_Length;
 
-      procedure Handle_Offset (O : Parpen.Protocol.Offset; Status : out Status_Type);
-      procedure Handle_Offset (O : Parpen.Protocol.Offset; Status : out Status_Type)
+      procedure Handle_Offset (Offset :        Parpen.Protocol.Offset;
+                               Status :    out Parpen.Message.Status);
+      procedure Handle_Offset (Offset :        Parpen.Protocol.Offset;
+                               Status :    out Parpen.Message.Status)
       is
-         S : Resolve.Status_Type;
-         use type Resolve.Status_Type;
+         S : Resolve.Status;
+         use type Resolve.Status;
          use type Parpen.Protocol.Offset;
       begin
-         if O > Parpen.Protocol.Offset (Data_Length) then
+         if Offset > Parpen.Protocol.Offset (Data_Length) then
             Status := Status_Offset_Out_Of_Range;
             return;
          end if;
          Resolve.Resolve (Database  => Clients.Inner,
                           Buffer    => Data,
-                          Offset    => Data_Offset + Types.Bit_Length (O),
-                          Length    => Data_Length - Types.Bit_Length (O),
+                          Offset    => Data_Offset + Types.Bit_Length (Offset),
+                          Length    => Data_Length - Types.Bit_Length (Offset),
                           Source_ID => Source_ID,
                           Dest_ID   => Dest_ID,
                           Status    => S);
          Status := (case S is
-                    when Resolve.Status_OK => Status_Valid,
-                    when others            => Status_Invalid);
+                    when Resolve.Status_Valid => Status_Valid,
+                    when others               => Status_Invalid);
       end Handle_Offset;
       procedure Iterate_Offsets is new Message.Offsets (Handle_Offset);
    begin
@@ -70,11 +72,18 @@ package body Parpen.Message is
    -- Add_Client --
    ----------------
 
-   procedure Add_Client (ID : Client_ID)
+   procedure Add_Client (ID     :        Client_ID;
+                         Status :    out Parpen.Message.Status)
    is
+      Resolve_Status : Resolve.Status;
    begin
-      Clients.Inner.Add_Client (ID    => ID,
-                                State => (Receiving => False));
+      Clients.Inner.Add_Client (ID     => ID,
+                                State  => (Status    => Status_Invalid,
+                                           Receiving => False),
+                                Status => Resolve_Status);
+      Status := (case Resolve_Status is
+                 when Resolve.Status_Valid => Status_Valid,
+                 when others               => Status_Invalid);
    end Add_Client;
 
    -------------
@@ -84,7 +93,7 @@ package body Parpen.Message is
    procedure Offsets (Data           : in out Types.Bytes_Ptr;
                       Offsets_Offset :        Types.Bit_Length;
                       Offsets_Length :        Types.Bit_Length;
-                      Status         :    out Status_Type)
+                      Status         :    out Parpen.Message.Status)
    is
       use type Types.Bit_Length;
       Context : Offsets_Package.Context := Offsets_Package.Create;
@@ -125,11 +134,11 @@ package body Parpen.Message is
                        Recv_Length    :        Types.Bit_Length;
                        Offsets_Offset :        Types.Bit_Length;
                        Offsets_Length :        Types.Bit_Length;
-                       Status         :    out Status_Type)
+                       Status         :    out Parpen.Message.Status)
    is
       Receiver            : Client_ID;
       Node                : Resolve.Node_Option;
-      Name_Service_Status : Name_Service.Status_Type;
+      Name_Service_Status : Name_Service.Status;
       Send_Off            : Types.Bit_Length := Send_Offset;
       Send_Len            : Types.Bit_Length := Send_Length;
       Offsets_Off         : Types.Bit_Length := Offsets_Offset;
@@ -137,7 +146,7 @@ package body Parpen.Message is
       Receiver_State      : Client_State;
       Sender_State        : Client_State;
       use type Parpen.Protocol.Handle;
-      use type Name_Service.Status_Type;
+      use type Name_Service.Status;
       use type Types.Bit_Length;
       use type Types.Index;
    begin
@@ -155,18 +164,23 @@ package body Parpen.Message is
 
       --  Update sender state
       if Recv_Length > 0 then
-         Sender_State := (Receiving => True,
+         Sender_State := (Status    => Status_Valid,
+                          Receiving => True,
                           First     => Types.Index'Val (Types.Index'First + Types.Bit_Length'Pos (Recv_Offset / 8)),
                           Last      => Types.Index'Val (Types.Index'First
                                                         + Types.Bit_Length'Pos (Recv_Offset / 8 + Recv_Length / 8)));
       else
-         Sender_State := (Receiving => False);
+         Sender_State := (Status    => Status_Invalid,
+                          Receiving => False);
       end if;
-      Set_Client_State (ID    => Sender,
-                        State => Sender_State);
+      Set_Client_State (ID     => Sender,
+                        State  => Sender_State,
+                        Status => Status);
+      if Status /= Status_Valid then
+         return;
+      end if;
 
       if Send_Length = 0 then
-         Status := Status_Valid;
          return;
       end if;
 
@@ -261,8 +275,10 @@ package body Parpen.Message is
                Recv_First  => Receiver_State.First,
                Recv_Last   => Receiver_State.Last);
 
-         Set_Client_State (Receiver, (Receiving => False));
-         Status := Status_Valid;
+         Set_Client_State (ID     => Receiver,
+                           State  => (Status    => Status_Invalid,
+                                      Receiving => False),
+                           Status => Status);
          return;
       end if;
    end Dispatch;
@@ -271,32 +287,51 @@ package body Parpen.Message is
    -- Get_Client_State --
    ----------------------
 
-   function Get_Client_State (ID : Client_ID) return Client_State is (Clients.Inner.Get_Client_State (ID));
+   function Get_Client_State (ID : Client_ID) return Client_State
+   is
+      State : constant Resolve.Client_State_Option := Clients.Inner.Get_Client_State (ID);
+      use type Resolve.Status;
+   begin
+      if State.Status /= Resolve.Status_Valid then
+         return (Status    => Status_Invalid,
+                 Receiving => False);
+      end if;
+      return State.Data;
+   end Get_Client_State;
 
    ----------------------
    -- Set_Client_State --
    ----------------------
 
-   procedure Set_Client_State (ID    : Client_ID;
-                               State : Client_State)
+   procedure Set_Client_State (ID     :        Client_ID;
+                               State  :        Client_State;
+                               Status :    out Parpen.Message.Status)
    is
+      Client_Status : Resolve.Status;
    begin
-      Clients.Inner.Set_Client_State (ID    => ID,
-                                      State => State);
+      Clients.Inner.Set_Client_State (ID     => ID,
+                                      State  => State,
+                                      Status => Client_Status);
+      Status := (case Client_Status is
+                 when Resolve.Status_Valid          => Status_Valid,
+                 when Resolve.Status_Invalid_Client => Status_Invalid_Client,
+                 when others                        => Status_Invalid);
    end Set_Client_State;
 
    ----------------
    -- Initialize --
    ----------------
 
-   procedure Initialize (Name_Service_ID : Client_ID)
+   procedure Initialize (Name_Service_ID :         Client_ID;
+                         Status          :     out Parpen.Message.Status)
    is
    begin
       Name_Service.Initialize;
       Clients.Inner.Initialize;
       NS_ID := (Valid => True,
                 ID    => Name_Service_ID);
-      Add_Client (ID => Name_Service_ID);
+      Add_Client (ID     => Name_Service_ID,
+                  Status => Status);
    end Initialize;
 
    ------------

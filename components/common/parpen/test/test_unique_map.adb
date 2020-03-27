@@ -124,11 +124,12 @@ package body Test_Unique_Map is
                                               Key     => Key);
       Outer_Result : Outer.Option;
       Database     : Outer.Database;
+      Status       : Outer.Status;
 
-      procedure Set_Value (DB : in out Inner.Database);
-      procedure Check_Value (DB : in out Inner.Database);
-
-      procedure Set_Value (DB : in out Inner.Database)
+      procedure Set_Value (DB     : in out Inner.Database;
+                           Status :    out Outer.Status);
+      procedure Set_Value (DB     : in out Inner.Database;
+                           Status :    out Outer.Status)
       is
          Data : Inner.Option;
          use type Inner.Status;
@@ -137,9 +138,13 @@ package body Test_Unique_Map is
          Assert (Data.Status = Inner.Status_Not_Found, "Element found in empty database");
          Data := (Status => Inner.Status_Valid, Position => Data.Free, Data => (1234, 5678));
          DB.Insert (Data);
+         Status := Outer.Status_Valid;
       end Set_Value;
 
-      procedure Check_Value (DB : in out Inner.Database)
+      procedure Check_Value (DB     : in out Inner.Database;
+                             Status :    out Outer.Status);
+      procedure Check_Value (DB     : in out Inner.Database;
+                             Status :    out Outer.Status)
       is
          Data : Inner.Option;
          use type Inner.Status;
@@ -149,6 +154,7 @@ package body Test_Unique_Map is
          Data := DB.Get (Key => 11);
          Assert (Data.Status = Inner.Status_Valid, "Element not found");
          Assert (Data.Data = (1234, 5678), "Invalid value");
+         Status := Outer.Status_Valid;
       end Check_Value;
 
       procedure Set_Value is new Outer.Generic_Apply (Operation => Set_Value);
@@ -163,8 +169,10 @@ package body Test_Unique_Map is
       Outer_Result := (Status => Outer.Status_Valid, Position => Outer_Result.Free, Data => Inner.Null_DB);
       Database.Insert (Outer_Result);
 
-      Set_Value (Database => Database, Key => 14);
-      Check_Value (Database => Database, Key => 14);
+      Set_Value (Database => Database, Key => 14, Status => Status);
+      Assert (Status = Outer.Status_Valid, "Error setting value: " & Status'Img);
+      Check_Value (Database => Database, Key => 14, Status => Status);
+      Assert (Status = Outer.Status_Valid, "Error checking value: " & Status'Img);
    end Test_Nested_Insert;
 
    procedure Register_Tests (T : in out Test) is
