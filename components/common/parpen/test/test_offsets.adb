@@ -1,6 +1,6 @@
 with AUnit.Assertions; use AUnit.Assertions;
 with Parpen.Generic_Types;
-with Parpen.Message;
+with Parpen.Message.Test;
 with Parpen.Protocol;
 
 package body Test_Offsets is
@@ -26,6 +26,8 @@ package body Test_Offsets is
                                           Num_Nodes           => 100,
                                           Num_Handles         => 20,
                                           Num_Name_DB_Entries => 50);
+
+   package Test_Message is new Message.Test;
 
    function "&" (Left : String; Right : Natural) return String is
       (Left & (1 => Character'Val (Right)));
@@ -79,14 +81,14 @@ package body Test_Offsets is
 
       use type Message.Result_Type;
    begin
-      Message.Translate (Data           => Input,
-                         Data_Offset    => 0,
-                         Data_Length    => Input'Length,
-                         Offsets_Offset => 0,
-                         Offsets_Length => 0,
-                         Source_ID      => Client_1,
-                         Dest_ID        => Client_2,
-                         Result         => Result);
+      Test_Message.Translate (Data           => Input,
+                              Data_Offset    => 0,
+                              Data_Length    => Input'Length,
+                              Offsets_Offset => 0,
+                              Offsets_Length => 0,
+                              Source_ID      => Client_1,
+                              Dest_ID        => Client_2,
+                              Result         => Result);
       Assert (Result = Message.Result_Valid, "Translating message failed: " & Result'Img);
       Assert (Input.all = Expected, "Message not resolved correctly");
    end Test_Empty_Offset_List;
@@ -131,14 +133,14 @@ package body Test_Offsets is
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
 
-      Message.Translate (Data           => Input,
-                         Data_Offset    => 64,
-                         Data_Length    => Input.all'Size - 64,
-                         Offsets_Offset => 0,
-                         Offsets_Length => 64,
-                         Source_ID      => Client_1,
-                         Dest_ID        => Client_2,
-                         Result         => Result);
+      Test_Message.Translate (Data           => Input,
+                              Data_Offset    => 64,
+                              Data_Length    => Input.all'Size - 64,
+                              Offsets_Offset => 0,
+                              Offsets_Length => 64,
+                              Source_ID      => Client_1,
+                              Dest_ID        => Client_2,
+                              Result         => Result);
       Assert (Result = Message.Result_Valid, "Resolving binder unsuccessful: " & Result'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Single_Offset;
@@ -231,14 +233,14 @@ package body Test_Offsets is
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
 
-      Message.Translate (Data           => Input,
-                         Data_Offset    => 3 * 64,
-                         Data_Length    => Input.all'Size - 3 * 64,
-                         Offsets_Offset => 0,
-                         Offsets_Length => 3 * 64,
-                         Source_ID      => Client_1,
-                         Dest_ID        => Client_2,
-                         Result         => Result);
+      Test_Message.Translate (Data           => Input,
+                              Data_Offset    => 3 * 64,
+                              Data_Length    => Input.all'Size - 3 * 64,
+                              Offsets_Offset => 0,
+                              Offsets_Length => 3 * 64,
+                              Source_ID      => Client_1,
+                              Dest_ID        => Client_2,
+                              Result         => Result);
       Assert (Result = Message.Result_Valid, "Resolving binder unsuccessful: " & Result'Img);
       Assert (Input.all = Expected.all, "Binder not resolved correctly");
    end Test_Multiple_Offsets;
@@ -335,25 +337,24 @@ package body Test_Offsets is
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
 
-      Message.Translate (Data           => Input,
-                         Data_Offset    => 3 * 64,
-                         Data_Length    => Input.all'Size - 3 * 64,
-                         Offsets_Offset => 64,     --  This is a trick to prevent the first binder
-                         Offsets_Length => 2 * 64, --  from being translated. In the second translation
-                                                   --  this is then used as binder of Client_2.
-                         Source_ID      => Client_1,
-                         Dest_ID        => Client_2,
-                         Result         => Result);
+      Test_Message.Translate (Data           => Input,
+                              Data_Offset    => 3 * 64,
+                              Data_Length    => Input.all'Size - 3 * 64,
+                              Offsets_Offset => 64,     --  Trick to prevent the first binder from being translated. In
+                              Offsets_Length => 2 * 64, --  the second translation this is used as binder of Client_2.
+                              Source_ID      => Client_1,
+                              Dest_ID        => Client_2,
+                              Result         => Result);
       Assert (Result = Message.Result_Valid, "Translating Client_1 to Client_2 unsuccessful: " & Result'Img);
 
-      Message.Translate (Data           => Input,
-                         Data_Offset    => 3 * 64,
-                         Data_Length    => Input.all'Size - 3 * 64,
-                         Offsets_Offset => 0,
-                         Offsets_Length => 3 * 64,
-                         Source_ID      => Client_2,
-                         Dest_ID        => Client_1,
-                         Result         => Result);
+      Test_Message.Translate (Data           => Input,
+                              Data_Offset    => 3 * 64,
+                              Data_Length    => Input.all'Size - 3 * 64,
+                              Offsets_Offset => 0,
+                              Offsets_Length => 3 * 64,
+                              Source_ID      => Client_2,
+                              Dest_ID        => Client_1,
+                              Result         => Result);
 
       Assert (Result = Message.Result_Valid, "Resolving Client_2 to Client_3 unsuccessful: " & Result'Img);
       Assert (Input.all = Expected.all, "Message not resolved correctly");
@@ -384,14 +385,14 @@ package body Test_Offsets is
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
 
-      Message.Translate (Data           => Input,
-                         Data_Offset    => 64,
-                         Data_Length    => Input.all'Size - 64,
-                         Offsets_Offset => 0,
-                         Offsets_Length => 64,
-                         Source_ID      => Client_1,
-                         Dest_ID        => Client_2,
-                         Result         => Result);
+      Test_Message.Translate (Data           => Input,
+                              Data_Offset    => 64,
+                              Data_Length    => Input.all'Size - 64,
+                              Offsets_Offset => 0,
+                              Offsets_Length => 64,
+                              Source_ID      => Client_1,
+                              Dest_ID        => Client_2,
+                              Result         => Result);
       Assert (Result = Message.Result_Offset_Out_Of_Range, "Out-of-range offset undetected: " & Result'Img);
    end Test_Out_Of_Range_Offset;
 
@@ -418,14 +419,14 @@ package body Test_Offsets is
       Message.Add_Client (ID => Client_1);
       Message.Add_Client (ID => Client_2);
 
-      Message.Translate (Data           => Input,
-                         Data_Offset    => 64,
-                         Data_Length    => Input.all'Size - 64,
-                         Offsets_Offset => 0,
-                         Offsets_Length => 64,
-                         Source_ID      => Client_1,
-                         Dest_ID        => Client_2,
-                         Result         => Result);
+      Test_Message.Translate (Data           => Input,
+                              Data_Offset    => 64,
+                              Data_Length    => Input.all'Size - 64,
+                              Offsets_Offset => 0,
+                              Offsets_Length => 64,
+                              Source_ID      => Client_1,
+                              Dest_ID        => Client_2,
+                              Result         => Result);
       Assert (Result = Message.Result_Invalid, "Invalid binder undetected: " & Result'Img);
    end Test_Invalid_Binder;
 

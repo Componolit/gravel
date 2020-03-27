@@ -33,13 +33,17 @@ is
          end case;
       end record;
 
+   --  Add a client to client database
    procedure Add_Client (ID : Client_ID);
 
+   --  Return client state
    function Get_Client_State (ID : Client_ID) return Client_State;
 
+   --  Set client state
    procedure Set_Client_State (ID    : Client_ID;
                                State : Client_State);
 
+   --  Dispatch a transaction, call generic Send procedure to send data to receiver
    generic
       with procedure Send (ID         : Client_ID;
                            Handle     : Parpen.Protocol.Handle;
@@ -79,17 +83,6 @@ is
                      Recv_First : Types.Index;
                      Recv_Last  : Types.Index);
 
-   --  FIXME: Make private
-   procedure Translate (Data           : in out Types.Bytes_Ptr;
-                        Data_Offset    :        Types.Bit_Length;
-                        Data_Length    :        Types.Bit_Length;
-                        Offsets_Offset :        Types.Bit_Length;
-                        Offsets_Length :        Types.Bit_Length;
-                        Source_ID      :        Client_ID;
-                        Dest_ID        :        Client_ID;
-                        Result         :    out Result_Type);
-
-
    --  Apply Operation to every offset encoded in Data
    generic
       with procedure Operation (Offset   :        Parpen.Protocol.Offset;
@@ -99,6 +92,8 @@ is
                       Offsets_Length :        Types.Bit_Length;
                       Result         :    out Result_Type);
 
+   --  Initialized package and set client ID of name service
+   --  This ID must not be used for other purposes.
    procedure Initialize (Name_Service_ID : Client_ID);
 
 private
@@ -119,5 +114,14 @@ private
       end record;
 
    Clients : Database;
+
+   procedure Translate (Data           : in out Types.Bytes_Ptr;
+                        Data_Offset    :        Types.Bit_Length;
+                        Data_Length    :        Types.Bit_Length;
+                        Offsets_Offset :        Types.Bit_Length;
+                        Offsets_Length :        Types.Bit_Length;
+                        Source_ID      :        Client_ID;
+                        Dest_ID        :        Client_ID;
+                        Result         :    out Result_Type);
 
 end Parpen.Message;
