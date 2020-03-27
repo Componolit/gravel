@@ -127,7 +127,6 @@ package body Parpen.Message is
                        Offsets_Length :        Types.Bit_Length;
                        Result         :    out Result_Type)
    is
-      pragma Unreferenced (Recv_Offset, Recv_Length);
       Receiver            : Client_ID;
       Node                : Resolve.Node_Option;
       Name_Service_Result : Name_Service.Result_Type;
@@ -135,6 +134,8 @@ package body Parpen.Message is
       Send_Len            : Types.Bit_Length := Send_Length;
       Offsets_Off         : Types.Bit_Length := Offsets_Offset;
       Offsets_Len         : Types.Bit_Length := Offsets_Length;
+      Receiver_State      : Client_State;
+      Sender_State        : Client_State;
       use type Parpen.Protocol.Handle;
       use type Name_Service.Result_Type;
       use type Types.Bit_Length;
@@ -152,7 +153,22 @@ package body Parpen.Message is
          Receiver := Resolve.Get_Owner (Node);
       end if;
 
-      --  FIXME: Put sender into receive state, store receive buffer offsets into client state
+      --  Update sender state
+      if Recv_Length > 0 then
+         Sender_State := (Receiving => True,
+                          First     => Types.Index'Val (Types.Index'First + Types.Bit_Length'Pos (Recv_Offset / 8)),
+                          Last      => Types.Index'Val (Types.Index'First
+                                                        + Types.Bit_Length'Pos (Recv_Offset / 8 + Recv_Length / 8)));
+      else
+         Sender_State := (Receiving => False);
+      end if;
+      Set_Client_State (ID    => Sender,
+                        State => Sender_State);
+
+      if Send_Length = 0 then
+         Result := Result_Valid;
+         return;
+      end if;
 
       --  Translate message
       Translate (Data           => Data,
@@ -189,6 +205,11 @@ package body Parpen.Message is
             return;
          end if;
 
+         if Send_Len > Recv_Length then
+            Result := Result_Receive_Buffer_Too_Small;
+            return;
+         end if;
+
          --  Translate response
          Translate (Data           => Data,
                     Data_Offset    => Send_Off,
@@ -206,20 +227,27 @@ package body Parpen.Message is
             return;
          end if;
 
-         Send (ID         => Sender,
-               Handle     => Handle,
-               Method     => Method,
-               Cookie     => Cookie,
-               Oneway     => Oneway,
-               Accept_FDs => Accept_FDs,
-               Data       => Data,
-               Data_First => Data'First + Types.Index (Send_Off / 8),
-               Data_Last  => Data'First + Types.Index (Send_Off / 8 + Send_Len / 8 - 1));
+         Send (ID          => Sender,
+               Handle      => Handle,
+               Method      => Method,
+               Cookie      => Cookie,
+               Oneway      => Oneway,
+               Accept_FDs  => Accept_FDs,
+               Data        => Data,
+               Data_First  => Data'First + Types.Index (Send_Off / 8),
+               Data_Last   => Data'First + Types.Index (Send_Off / 8 + Send_Len / 8 - 1),
+               Recv_First  => Sender_State.First,
+               Recv_Last   => Sender_State.Last);
 
          Result := Result_Valid;
          return;
       else
-         --  FIXME: Check if receiver is in receive state, extend send by receive buffer offset, remove receive state
+         Receiver_State := Get_Client_State (Receiver);
+         if not Receiver_State.Receiving then
+            Result := Result_Receiver_Not_Ready;
+            return;
+         end if;
+
          Send (ID          => Receiver,
                Handle      => Handle,
                Method      => Method,
@@ -229,7 +257,11 @@ package body Parpen.Message is
                Data        => Data,
                Data_First  => Types.Index'Val (Types.Index'Pos (Data'First) + Types.Bit_Index'Pos (Send_Offset) / 8),
                Data_Last   => Types.Index'Val (Types.Index'Pos (Data'First)
-                                               + Types.Bit_Index'Pos (Send_Offset / 8 + Send_Length / 8 - 1)));
+                                               + Types.Bit_Index'Pos (Send_Offset / 8 + Send_Length / 8 - 1)),
+               Recv_First  => Receiver_State.First,
+               Recv_Last   => Receiver_State.Last);
+
+         Set_Client_State (Receiver, (Receiving => False));
          Result := Result_Valid;
          return;
       end if;
@@ -279,9 +311,12 @@ package body Parpen.Message is
                      Accept_FDs : Boolean;
                      Data       : Types.Bytes_Ptr;
                      Data_First : Types.Index;
-                     Data_Last  : Types.Index)
+                     Data_Last  : Types.Index;
+                     Recv_First : Types.Index;
+                     Recv_Last  : Types.Index)
    is
-      pragma Unreferenced (ID, Handle, Method, Cookie, Oneway, Accept_FDs, Data, Data_First, Data_Last);
+      pragma Unreferenced
+         (ID, Handle, Method, Cookie, Oneway, Accept_FDs, Data, Data_First, Data_Last, Recv_First, Recv_Last);
    begin
       null;
    end Ignore;

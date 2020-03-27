@@ -16,6 +16,8 @@ is
        Result_Invalid_Handle,
        Result_Invalid_Method,
        Result_Offset_Out_Of_Range,
+       Result_Receiver_Not_Ready,
+       Result_Receive_Buffer_Too_Small,
        Result_Overflow);
 
    type Database is private;
@@ -47,7 +49,9 @@ is
                            Accept_FDs : Boolean;
                            Data       : Types.Bytes_Ptr;
                            Data_First : Types.Index;
-                           Data_Last  : Types.Index);
+                           Data_Last  : Types.Index;
+                           Recv_First : Types.Index;
+                           Recv_Last  : Types.Index);
    procedure Dispatch (Sender         :        Client_ID;
                        Handle         :        Parpen.Protocol.Handle;
                        Method         :        Parpen.Protocol.Method;
@@ -71,7 +75,9 @@ is
                      Accept_FDs : Boolean;
                      Data       : Types.Bytes_Ptr;
                      Data_First : Types.Index;
-                     Data_Last  : Types.Index);
+                     Data_Last  : Types.Index;
+                     Recv_First : Types.Index;
+                     Recv_Last  : Types.Index);
 
    --  FIXME: Make private
    procedure Translate (Data           : in out Types.Bytes_Ptr;
