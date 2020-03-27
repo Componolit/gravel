@@ -21,7 +21,7 @@ is
        Result_Node_Not_Found,
        Result_Needless);
 
-   type Node_Option is tagged private;
+   type Node_Option is private;
    type Client_Cursor_Option is tagged private;
 
    function Valid (N : Node_Option) return Boolean;
@@ -34,12 +34,12 @@ is
    procedure Initialize (DB : in out Database) with
       Post => Initialized (DB);
 
-   function Get_Node (DB       : Database'Class;
+   function Get_Node (DB       : Database;
                       Owner_ID : Client_ID;
                       Value    : Parpen.Binder.Value) return Node_Option with
       Pre => Initialized (DB);
 
-   function Get_Node (DB       : Database'Class;
+   function Get_Node (DB       : Database;
                       Owner_ID : Client_ID;
                       Handle   : Parpen.Binder.Handle) return Node_Option with
       Pre => Initialized (DB);
@@ -50,29 +50,29 @@ is
    function Get_Value (Node : Node_Option) return Parpen.Binder.Value with
       Pre => Found (Node);
 
-   procedure Add_Node (DB     : in out Database'Class;
+   procedure Add_Node (DB     : in out Database;
                        Cursor : in out Node_Option;
                        Owner  :        Client_ID;
                        Value  :        Parpen.Binder.Value) with
       Pre => Initialized (DB);
 
-   procedure Add_Client (DB    : in out Database'Class;
+   procedure Add_Client (DB    : in out Database;
                          ID    :        Client_ID;
                          State :        Client_State) with
       Pre => Initialized (DB);
 
-   procedure Set_Client_State (DB    : in out Database'Class;
+   procedure Set_Client_State (DB    : in out Database;
                                ID    :        Client_ID;
                                State :        Client_State) with
       Pre  => Initialized (DB),
       Post => Initialized (DB);
 
    --  FIXME: Ensure client exists in precondition
-   function Get_Client_State (DB : Database'Class;
+   function Get_Client_State (DB : Database;
                               ID : Client_ID) return Client_State with
       Pre => Initialized (DB);
 
-   procedure Add_Handle (DB    : in out Database'Class;
+   procedure Add_Handle (DB    : in out Database;
                          ID    :        Client_ID;
                          Node  :        Node_Option) with
       Pre => Initialized (DB);
@@ -98,7 +98,7 @@ private
                                              Element => Node_Type);
    use type Node_DB.Status;
 
-   type Node_Option is tagged
+   type Node_Option is
       record
          Inner : Node_DB.Option;
       end record;
@@ -137,7 +137,7 @@ private
    function Initialized (DB : Database) return Boolean is
       (DB.Nodes.Initialized and DB.Clients.Initialized);
 
-   function Get_Node (DB       : Database'Class;
+   function Get_Node (DB       : Database;
                       Owner_ID : Client_ID;
                       Value    : Parpen.Binder.Value) return Node_Option is
       (Inner => DB.Nodes.Find ((Owner => Owner_ID, Value => Value)));

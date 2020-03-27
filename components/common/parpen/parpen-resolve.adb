@@ -41,7 +41,7 @@ package body Parpen.Resolve is
    -- Add_Node --
    --------------
 
-   procedure Add_Node (DB     : in out Database'Class;
+   procedure Add_Node (DB     : in out Database;
                        Cursor : in out Node_Option;
                        Owner  :        Client_ID;
                        Value  :        Parpen.Binder.Value)
@@ -57,7 +57,7 @@ package body Parpen.Resolve is
    -- Add_Client --
    ----------------
 
-   procedure Add_Client (DB    : in out Database'Class;
+   procedure Add_Client (DB    : in out Database;
                          ID    :        Client_ID;
                          State :        Client_State)
    is
@@ -73,7 +73,7 @@ package body Parpen.Resolve is
    -- Get_Client_State --
    ----------------------
 
-   function Get_Client_State (DB : Database'Class;
+   function Get_Client_State (DB : Database;
                               ID : Client_ID) return Client_State is
       (DB.Clients.Get (ID).Data.State);
 
@@ -81,7 +81,7 @@ package body Parpen.Resolve is
    -- Set_Client_State --
    ----------------------
 
-   procedure Set_Client_State (DB    : in out Database'Class;
+   procedure Set_Client_State (DB    : in out Database;
                                ID    :        Client_ID;
                                State :        Client_State)
    is
@@ -101,7 +101,7 @@ package body Parpen.Resolve is
    -- Add_Handle --
    ----------------
 
-   procedure Add_Handle (DB   : in out Database'Class;
+   procedure Add_Handle (DB   : in out Database;
                          ID   :        Client_ID;
                          Node :        Node_Option)
    is
@@ -351,7 +351,7 @@ package body Parpen.Resolve is
    -- Get_Node --
    --------------
 
-   function Get_Node (DB       : Database'Class;
+   function Get_Node (DB       : Database;
                       Owner_ID : Client_ID;
                       Handle   : Parpen.Binder.Handle) return Node_Option
    is

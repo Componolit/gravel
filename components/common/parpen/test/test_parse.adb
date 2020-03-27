@@ -331,7 +331,7 @@ package body Test_Parse is
       Assert (Input.all /= Expected.all, "Binder do not differ");
       Database.Initialize;
       Node := Database.Get_Node (Owner_ID => Client_1, Value => 16#100000000000001#);
-      Assert (not Node.Found, "Node already present");
+      Assert (not Resolve.Found (Node), "Node already present");
       Database.Add_Node (Cursor => Node, Owner => Client_1, Value => 16#100000000000001#);
 
       Database.Add_Client (ID => Client_1, State => (null record));
@@ -432,7 +432,7 @@ package body Test_Parse is
       Database.Add_Client (ID => Client_3, State => (null record));
 
       Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
-      Assert (not Node.Found, "Node already present");
+      Assert (not Resolve.Found (Node), "Node already present");
       Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#);
       Database.Add_Handle (ID => Client_1, Node => Node);
 
@@ -488,7 +488,7 @@ package body Test_Parse is
       Database.Add_Client (ID => Client_3, State => (null record));
 
       Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
-      Assert (not Node.Found, "Node already present");
+      Assert (not Resolve.Found (Node), "Node already present");
       Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#);
       Database.Add_Handle (ID => Client_1, Node => Node);
 
@@ -687,7 +687,7 @@ package body Test_Parse is
       Database.Add_Client (ID => Client_1, State => (null record));
 
       Node := Database.Get_Node (Owner_ID => Client_3, Value => 16#100000000000001#);
-      Assert (not Node.Found, "Node already present");
+      Assert (not Resolve.Found (Node), "Node already present");
       Database.Add_Node (Cursor => Node, Owner => Client_3, Value => 16#100000000000001#);
       Database.Add_Handle (ID => Client_1, Node => Node);
 
