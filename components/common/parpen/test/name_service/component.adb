@@ -75,14 +75,11 @@ is
 
       procedure Handle_Reply (State : in out State_Type)
       is
-         use type Gneiss.Session_Status;
          use type Parpen.Protocol.Reply_Tag;
          package Reply is new Parpen.Container (Types, Message_Buffer'Length);
          Context : Reply_Package.Context := Reply_Package.Create;
       begin
-         if 
-            not Gneiss.Log.Initialized (Log)
-            or else not Message.Initialized (Msg)
+         if not Message.Initialized (Msg)
          then
             return;
          end if;
@@ -96,14 +93,18 @@ is
          Reply_Package.Verify_Message (Context);
          if not Reply_Package.Valid_Message (Context) then
             State := Fail;
-            Gneiss.Log.Client.Error (Log, "Invalid reply");
+            if Gneiss.Log.Initialized (Log) then
+               Gneiss.Log.Client.Error (Log, "Invalid reply");
+            end if;
             return;
          end if;
 
          if Reply_Package.Get_Tag (Context) = Parpen.Protocol.REPLY_ERROR
          then
             State := Fail;
-            Gneiss.Log.Client.Info (Log, "Error detected");
+            if Gneiss.Log.Initialized (Log) then
+               Gneiss.Log.Client.Info (Log, "Error detected");
+            end if;
             return;
          end if;
 
@@ -149,23 +150,29 @@ is
    is
       -- FIXME: Generate label
       Label : constant String := ASCII.ESC & "prpn" & ASCII.NUL;
-      use type Gneiss.Session_Status;
    begin
       Cap := Capability;
-      Gneiss.Log.Client.Initialize (Log, Cap, "parpen_client");
+      Gneiss.Log.Client.Initialize (Log, Cap, "name_service_test");
 
       Message_Client.Initialize (Msg, Cap, Label);
       if not Message.Initialized (Msg) then
+         if Gneiss.Log.Initialized (Log) then
+            Gneiss.Log.Client.Info (Log, "Error initializing message session");
+         end if;
          Main.Vacate (Cap, Main.Failure);
          return;
       end if;
 
       Memory_Client.Initialize (Mem, Cap, Label, 4096);
       if not Memory.Initialized (Mem) then
+         if Gneiss.Log.Initialized (Log) then
+            Gneiss.Log.Client.Info (Log, "Error initializing memory session");
+         end if;
          Main.Vacate (Cap, Main.Failure);
          return;
       end if;
 
+      Gneiss.Log.Client.Info (Log, "Initialized");
       FSM.Reset;
       FSM.Next;
    end Construct;
@@ -198,6 +205,9 @@ is
    procedure Destruct
    is
    begin
+      if Gneiss.Log.Initialized (Log) then
+         Gneiss.Log.Client.Info (Log, "Destructing...");
+      end if;
       Gneiss.Log.Client.Finalize (Log);
    end Destruct;
 
