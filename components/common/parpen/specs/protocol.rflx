@@ -4,7 +4,6 @@ package Protocol is
 	type Connection_ID is range 1 .. 2**32-1 with Size => 32;
 	type Offset is mod 2**64;
 
-	type MBZ30  is range 0 .. 0 with Size => 30;
 	type Method is range 0 .. 2**32-1 with Size => 32;
 	type Length is range 0 .. 2**32-1 with Size => 32;
 	type Cookie is mod 2**64;
@@ -24,15 +23,10 @@ package Protocol is
 			Handle         : Handle;
 			Method         : Method;
 			Cookie         : Cookie;
-			Padding        : MBZ30;
-			Oneway         : Boolean;
-			Accept_FDs     : Boolean;
 			Send_Offset    : Offset;
 			Send_Length    : Length;
 			Meta_Offset    : Offset;
-			Meta_Length    : Length
-				then Receive_Offset if Oneway = False,
-				then null           if Oneway = True;
+			Meta_Length    : Length;
 			Receive_Offset : Offset;
 			Receive_Length : Length;
 		end message;

@@ -128,31 +128,6 @@ is
      Pre =>
        Valid (Val);
 
-   type MBZ30_Base is range 0 .. 2**30 - 1 with
-     Size =>
-       30;
-
-   subtype MBZ30 is MBZ30_Base range 0 .. 0;
-
-   pragma Warnings (Off, "precondition is statically false");
-
-   function Unreachable_Protocol_MBZ30 return Protocol.MBZ30 is
-     (Protocol.MBZ30'First)
-    with
-     Pre =>
-       False;
-
-   pragma Warnings (On, "precondition is statically false");
-
-   function Valid (Val : Protocol.MBZ30_Base) return Boolean is
-     (Val <= 0);
-
-   function Convert (Val : Protocol.MBZ30_Base) return Protocol.MBZ30 is
-     (Val)
-    with
-     Pre =>
-       Valid (Val);
-
    type Offset is mod 2**64;
 
    pragma Warnings (Off, "precondition is statically false");
