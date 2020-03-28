@@ -163,7 +163,7 @@ package body Parpen.Generic_Types is
       if Least_Significant_Index = Most_Significant_Index then
          declare
             LR_Value      : constant Long_Integer := Byte'Pos (Read (Least_Significant_Index)) mod 2**LSE_Offset;
-            Element_Value : constant Long_Integer := (Value'Pos (Val) mod 2**Value'Size);
+            Element_Value : constant Long_Integer := (if Value'Size < 32 then Value'Pos (Val) mod 2**Value'Size else Value'Pos (Val));
             UR_Offset     : constant Natural := LSE_Offset + Value'Size;
             UR_Value      : constant Long_Integer := Byte'Pos (Read (Most_Significant_Index)) / 2**UR_Offset;
          begin
