@@ -11,12 +11,15 @@ with Parpen.Protocol.Generic_Reply;
 with Parpen.Protocol.Generic_Request;
 with Parpen.Container;
 
+with Parpen.Message;
+
 package body Component with
    SPARK_Mode
 is
    Num_Clients  : constant := 10;
    Label_Length : constant := 128;
 
+   subtype Client_ID is Gneiss.Session_Index range 1 .. Num_Clients;
    subtype Message_Buffer is String (1 .. 128);
    Null_Buffer : constant Message_Buffer := (others => ASCII.NUL);
 
@@ -41,6 +44,12 @@ is
    package Reply_Package is new Parpen.Protocol.Generic_Reply (Types);
    package Request_Package is new Parpen.Protocol.Generic_Request (Types);
 
+   package Message_Package is new Parpen.Message (Types               => Types,
+                                                  Client_ID           => Client_ID,
+                                                  Num_Nodes           => 20,
+                                                  Num_Handles         => 100,
+                                                  Num_Name_DB_Entries => 5);
+
    type Server_State is (Uninitialized, SHM_Wait, Initialized, Error);
    type Server_Slot is record
       Len   : Natural := 0;
@@ -55,16 +64,16 @@ is
       Mem : Memory.Server_Session;
    end record;
 
-   type Server_Reg is array (Gneiss.Session_Index range <>) of Server_Session;
-   type Server_Meta is array (Gneiss.Session_Index range <>) of Server_Slot;
+   type Server_Reg is array (Client_ID) of Server_Session;
+   type Server_Meta is array (Client_ID) of Server_Slot;
 
    Cap            : Gneiss.Capability;
    Log            : Gneiss.Log.Client_Session;
    Msg_Dispatcher : Message.Dispatcher_Session;
    Mem_Dispatcher : Memory.Dispatcher_Session;
 
-   Servers      : Server_Reg (1 .. Num_Clients);
-   Servers_Data : Server_Meta (1 .. Num_Clients);
+   Servers      : Server_Reg;
+   Servers_Data : Server_Meta;
 
    -- Memory server
 
@@ -164,19 +173,23 @@ is
       package Reply is new Parpen.Container (Types, Message_Buffer'Length);
       Request_Context : Request_Package.Context := Request_Package.Create;
       Reply_Context   : Reply_Package.Context := Reply_Package.Create;
+      Transaction     : Message_Package.Transaction;
+      pragma Unreferenced (Transaction);
    begin
       Log_Client.Info (Log, "Message received");
       Request.Ptr.all (1 .. Data'Length) := Data;
       Request_Package.Initialize (Request_Context, Request.Ptr);
       Request_Package.Verify_Message (Request_Context);
-      if not Request_Package.Valid_Message (Request_Context) then
-         Log_Client.Error (Log, "Invalid request");
-         Reply_Package.Initialize (Reply_Context, Reply.Ptr);
-         Reply_Package.Set_Tag (Reply_Context, Parpen.Protocol.REPLY_ERROR);
-         Reply_Package.Take_Buffer (Reply_Context, Reply.Ptr);
-         Message_Server.Send (Session, Reply.Ptr.all);
+      if Request_Package.Structural_Valid_Message (Request_Context) then
+         Log_Client.Info (Log, "Received valid Request");
          return;
       end if;
+
+      Log_Client.Error (Log, "Invalid request");
+      Reply_Package.Initialize (Reply_Context, Reply.Ptr);
+      Reply_Package.Set_Tag (Reply_Context, Parpen.Protocol.REPLY_ERROR);
+      Reply_Package.Take_Buffer (Reply_Context, Reply.Ptr);
+      Message_Server.Send (Session, Reply.Ptr.all);
    end Handle_Message;
 
    ----------

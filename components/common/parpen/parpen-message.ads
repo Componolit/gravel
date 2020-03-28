@@ -131,6 +131,6 @@ private
                         Offsets_Length :        Types.Bit_Length;
                         Source_ID      :        Client_ID;
                         Dest_ID        :        Client_ID;
-                        Status         :    out Parpen.Message.Status);
+                        Status         :    out Parpen.Message.Status) with SPARK_Mode;
 
 end Parpen.Message;

@@ -1,6 +1,7 @@
-GENODE_TESTS = \
+GENODE_TESTS ?= \
     gravel/parpen_no_mem_session \
     gravel/parpen_invalid_operation \
+    gravel/parpen_name_service \
 
 #    gravel/parpen
 

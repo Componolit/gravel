@@ -20,6 +20,37 @@ package body Parpen.Message is
 
    NS_ID : Client_ID_Option := (Valid => False);
 
+   -------------
+   -- Offsets --
+   -------------
+
+   procedure Offsets (Data           : in out Types.Bytes_Ptr;
+                      Offsets_Offset :        Types.Bit_Length;
+                      Offsets_Length :        Types.Bit_Length;
+                      Status         :    out Parpen.Message.Status)
+   is
+      use type Types.Bit_Length;
+      Context : Offsets_Package.Context := Offsets_Package.Create;
+   begin
+      for I in 0 .. Offsets_Length / 64 - 1 loop
+         Offsets_Package.Initialize (Context,
+                                     Data,
+                                     Types.First_Bit_Index (Data'First) + Offsets_Offset + I * 64,
+                                     Types.First_Bit_Index (Data'First) + Offsets_Offset + I * 64 + 63);
+         Offsets_Package.Verify_Message (Context);
+
+         if Offsets_Package.Valid_Message (Context) then
+            Operation (Offsets_Package.Get_Data (Context), Status);
+         end if;
+         Offsets_Package.Take_Buffer (Context, Data);
+
+         if Status /= Status_Valid then
+            return;
+         end if;
+      end loop;
+      Status := Status_Valid;
+   end Offsets;
+
    ---------------
    -- Translate --
    ---------------
@@ -85,37 +116,6 @@ package body Parpen.Message is
                  when Resolve.Status_Valid => Status_Valid,
                  when others               => Status_Invalid);
    end Add_Client;
-
-   -------------
-   -- Offsets --
-   -------------
-
-   procedure Offsets (Data           : in out Types.Bytes_Ptr;
-                      Offsets_Offset :        Types.Bit_Length;
-                      Offsets_Length :        Types.Bit_Length;
-                      Status         :    out Parpen.Message.Status)
-   is
-      use type Types.Bit_Length;
-      Context : Offsets_Package.Context := Offsets_Package.Create;
-   begin
-      for I in 0 .. Offsets_Length / 64 - 1 loop
-         Offsets_Package.Initialize (Context,
-                                     Data,
-                                     Types.First_Bit_Index (Data'First) + Offsets_Offset + I * 64,
-                                     Types.First_Bit_Index (Data'First) + Offsets_Offset + I * 64 + 63);
-         Offsets_Package.Verify_Message (Context);
-
-         if Offsets_Package.Valid_Message (Context) then
-            Operation (Offsets_Package.Get_Data (Context), Status);
-         end if;
-         Offsets_Package.Take_Buffer (Context, Data);
-
-         if Status /= Status_Valid then
-            return;
-         end if;
-      end loop;
-      Status := Status_Valid;
-   end Offsets;
 
    -------------------------
    -- Handle_Name_Service --
