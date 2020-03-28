@@ -25,9 +25,6 @@ is
 
    package Message is new Gneiss.Message (Message_Buffer, Null_Buffer);
 
-   procedure Initialize (Session : in out Gneiss.Log.Client_Session);
-   package Log_Client is new Gneiss.Log.Client (Initialize);
-
    package Memory is new Gneiss.Memory (Character, Positive, String);
 
    type String_Ptr is access all String;
@@ -176,16 +173,16 @@ is
       Transaction     : Message_Package.Transaction;
       pragma Unreferenced (Transaction);
    begin
-      Log_Client.Info (Log, "Message received");
+      Gneiss.Log.Client.Info (Log, "Message received");
       Request.Ptr.all (1 .. Data'Length) := Data;
       Request_Package.Initialize (Request_Context, Request.Ptr);
       Request_Package.Verify_Message (Request_Context);
       if Request_Package.Structural_Valid_Message (Request_Context) then
-         Log_Client.Info (Log, "Received valid Request");
+         Gneiss.Log.Client.Info (Log, "Received valid Request");
          return;
       end if;
 
-      Log_Client.Error (Log, "Invalid request");
+      Gneiss.Log.Client.Error (Log, "Invalid request");
       Reply_Package.Initialize (Reply_Context, Reply.Ptr);
       Reply_Package.Set_Tag (Reply_Context, Parpen.Protocol.REPLY_ERROR);
       Reply_Package.Take_Buffer (Reply_Context, Reply.Ptr);
@@ -202,19 +199,18 @@ is
       Idx   : constant Gneiss.Session_Index := Message.Index (Session).Value;
       package Reply is new Parpen.Container (Types, Message_Buffer'Length);
       Context : Reply_Package.Context := Reply_Package.Create;
-      use type Gneiss.Session_Status;
    begin
       Reply_Package.Initialize (Context, Reply.Ptr);
-      if Gneiss.Log.Status (Log) = Gneiss.Initialized then
+      if Gneiss.Log.Initialized (Log) then
          if Idx in Servers'Range then
             case Servers_Data (Idx).State is
                when Uninitialized | Error =>
-                  Log_Client.Error (Log, "Internal error: " & Data);
+                  Gneiss.Log.Client.Error (Log, "Internal error: " & Data);
                when SHM_Wait =>
-                  Log_Client.Error (Log, "SHM not initialized");
+                  Gneiss.Log.Client.Error (Log, "SHM not initialized");
                   Reply_Package.Set_Tag (Context, Parpen.Protocol.REPLY_ERROR);
                   if not Reply_Package.Valid_Message (Context) then
-                     Log_Client.Error (Log, "Invalid reply");
+                     Gneiss.Log.Client.Error (Log, "Invalid reply");
                      return;
                   end if;
                   Reply_Package.Take_Buffer (Context, Reply.Ptr);
@@ -235,7 +231,7 @@ is
    is
       pragma Unreferenced (Session, Data);
    begin
-      Log_Client.Info (Log, "MEMORY: modify called");
+      Gneiss.Log.Client.Info (Log, "MEMORY: modify called");
    end Modify;
 
    -----------
@@ -293,7 +289,7 @@ is
             end if;
          end loop;
       else
-         Log_Client.Info (Log, "MEMORY: " & Name & " sent invalid label");
+         Gneiss.Log.Client.Info (Log, "MEMORY: " & Name & " sent invalid label");
       end if;
 
       for S of Servers loop
@@ -337,11 +333,11 @@ is
             end loop;
          end if;
       else
-         Log_Client.Info (Log, "MEMORY: " & Name & " sent invalid label");
+         Gneiss.Log.Client.Info (Log, "MEMORY: " & Name & " sent invalid label");
       end if;
 
       if not Done then
-         Log_Client.Info (Log, "Error not matching message session found for " & Name & ":" & Label);
+         Gneiss.Log.Client.Info (Log, "Error not matching message session found for " & Name & ":" & Label);
       end if;
 
       for S of Servers loop
@@ -355,17 +351,16 @@ is
 
    procedure Construct (Capability : Gneiss.Capability)
    is
-      use type Gneiss.Session_Status;
    begin
       Cap := Capability;
-      Log_Client.Initialize (Log, Cap, "parpen");
+      Gneiss.Log.Client.Initialize (Log, Cap, "parpen");
 
       Message_Dispatcher.Initialize (Msg_Dispatcher, Cap);
       if Message.Initialized (Msg_Dispatcher) then
          Message_Dispatcher.Register (Msg_Dispatcher);
       else
-         if Gneiss.Log.Status (Log) = Gneiss.Initialized then
-            Log_Client.Info (Log, "Error initializing message session");
+         if Gneiss.Log.Initialized (Log) then
+            Gneiss.Log.Client.Info (Log, "Error initializing message session");
          end if;
          Main.Vacate (Capability, Main.Failure);
          return;
@@ -375,28 +370,13 @@ is
       if Memory.Initialized (Mem_Dispatcher) then
          Memory_Dispatcher.Register (Mem_Dispatcher);
       else
-         if Gneiss.Log.Status (Log) = Gneiss.Initialized then
-            Log_Client.Info (Log, "Error initializing memory session");
+         if Gneiss.Log.Initialized (Log) then
+            Gneiss.Log.Client.Info (Log, "Error initializing memory session");
          end if;
          Main.Vacate (Capability, Main.Failure);
          return;
       end if;
    end Construct;
-
-   ----------------
-   -- Initialize --
-   ----------------
-
-   procedure Initialize (Session : in out Gneiss.Log.Client_Session)
-   is
-   begin
-      case Gneiss.Log.Status (Session) is
-         when Gneiss.Initialized =>
-            Log_Client.Info (Session, "Initialized.");
-         when others =>
-            Main.Vacate (Cap, Main.Failure);
-      end case;
-   end Initialize;
 
    --------------
    -- Destruct --
@@ -406,10 +386,10 @@ is
    is
       use type Gneiss.Session_Status;
    begin
-      if Gneiss.Log.Status (Log) = Gneiss.Initialized then
-         Log_Client.Info (Log, "Destructing...");
+      if Gneiss.Log.Initialized (Log) then
+         Gneiss.Log.Client.Info (Log, "Destructing...");
       end if;
-      Log_Client.Finalize (Log);
+      Gneiss.Log.Client.Finalize (Log);
    end Destruct;
 
 end Component;

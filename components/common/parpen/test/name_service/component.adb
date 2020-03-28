@@ -33,18 +33,13 @@ is
 
    procedure Event;
 
-   procedure Initialize (Session : in out Gneiss.Log.Client_Session);
-   package Log_Client is new Gneiss.Log.Client (Initialize);
-
    package Message is new Gneiss.Message (Message_Buffer, Null_Buffer);
-   procedure Initialize (Session : in out Message.Client_Session);
-   package Message_Client is new Message.Client (Initialize, Event);
+   package Message_Client is new Message.Client (Event);
 
    package Memory is new Gneiss.Memory (Character, Positive, String);
    procedure Modify (Session : in out Memory.Client_Session;
                      Data    : in out String);
-   procedure Initialize (Session : in out Memory.Client_Session);
-   package Memory_Client is new Memory.Client (Initialize, Modify);
+   package Memory_Client is new Memory.Client (Modify);
 
    Cap : Gneiss.Capability;
    Log : Gneiss.Log.Client_Session;
@@ -86,8 +81,8 @@ is
          Context : Reply_Package.Context := Reply_Package.Create;
       begin
          if 
-            Gneiss.Log.Status (Log) /= Gneiss.Initialized
-            or else Message.Status (Msg) /= Gneiss.Initialized
+            not Gneiss.Log.Initialized (Log)
+            or else not Message.Initialized (Msg)
          then
             return;
          end if;
@@ -101,14 +96,14 @@ is
          Reply_Package.Verify_Message (Context);
          if not Reply_Package.Valid_Message (Context) then
             State := Fail;
-            Log_Client.Error (Log, "Invalid reply");
+            Gneiss.Log.Client.Error (Log, "Invalid reply");
             return;
          end if;
 
          if Reply_Package.Get_Tag (Context) = Parpen.Protocol.REPLY_ERROR
          then
             State := Fail;
-            Log_Client.Info (Log, "Error detected");
+            Gneiss.Log.Client.Info (Log, "Error detected");
             return;
          end if;
 
@@ -157,16 +152,16 @@ is
       use type Gneiss.Session_Status;
    begin
       Cap := Capability;
-      Log_Client.Initialize (Log, Cap, "parpen_client");
+      Gneiss.Log.Client.Initialize (Log, Cap, "parpen_client");
 
       Message_Client.Initialize (Msg, Cap, Label);
-      if Message.Status (Msg) /= Gneiss.Initialized then
+      if not Message.Initialized (Msg) then
          Main.Vacate (Cap, Main.Failure);
          return;
       end if;
 
       Memory_Client.Initialize (Mem, Cap, Label, 4096);
-      if Memory.Status (Mem) /= Gneiss.Initialized then
+      if not Memory.Initialized (Mem) then
          Main.Vacate (Cap, Main.Failure);
          return;
       end if;
@@ -174,28 +169,6 @@ is
       FSM.Reset;
       FSM.Next;
    end Construct;
-
-   ----------------
-   -- Initialize --
-   ----------------
-
-   procedure Initialize (Session : in out Gneiss.Log.Client_Session)
-   is
-   begin
-      null;
-   end Initialize;
-
-   procedure Initialize (Session : in out Message.Client_Session)
-   is
-   begin
-      null;
-   end Initialize;
-
-   procedure Initialize (Session : in out Memory.Client_Session)
-   is
-   begin
-      null;
-   end Initialize;
 
    -----------
    -- Event --
@@ -225,7 +198,7 @@ is
    procedure Destruct
    is
    begin
-      Log_Client.Finalize (Log);
+      Gneiss.Log.Client.Finalize (Log);
    end Destruct;
 
 end Component;
