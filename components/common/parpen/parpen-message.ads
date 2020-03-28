@@ -40,6 +40,19 @@ is
          end case;
       end record;
 
+   type Transaction is
+      record
+         Handle         : Parpen.Protocol.Handle;
+         Method         : Parpen.Protocol.Method;
+         Cookie         : Parpen.Protocol.Cookie;
+         Send_Offset    : Types.Bit_Length;
+         Send_Length    : Types.Bit_Length;
+         Recv_Offset    : Types.Bit_Length;
+         Recv_Length    : Types.Bit_Length;
+         Offsets_Offset : Types.Bit_Length;
+         Offsets_Length : Types.Bit_Length;
+      end record;
+
    --  Add a client to client database
    procedure Add_Client (ID     :        Client_ID;
                          Status :    out Parpen.Message.Status);
@@ -58,34 +71,20 @@ is
                            Handle     : Parpen.Protocol.Handle;
                            Method     : Parpen.Protocol.Method;
                            Cookie     : Parpen.Protocol.Cookie;
-                           Oneway     : Boolean;
-                           Accept_FDs : Boolean;
                            Data       : Types.Bytes_Ptr;
                            Data_First : Types.Index;
                            Data_Last  : Types.Index;
                            Recv_First : Types.Index;
                            Recv_Last  : Types.Index);
-   procedure Dispatch (Sender         :        Client_ID;
-                       Handle         :        Parpen.Protocol.Handle;
-                       Method         :        Parpen.Protocol.Method;
-                       Cookie         :        Parpen.Protocol.Cookie;
-                       Oneway         :        Boolean;
-                       Accept_FDs     :        Boolean;
-                       Data           : in out Types.Bytes_Ptr;
-                       Send_Offset    :        Types.Bit_Length;
-                       Send_Length    :        Types.Bit_Length;
-                       Recv_Offset    :        Types.Bit_Length;
-                       Recv_Length    :        Types.Bit_Length;
-                       Offsets_Offset :        Types.Bit_Length;
-                       Offsets_Length :        Types.Bit_Length;
-                       Status         :    out Parpen.Message.Status);
+   procedure Dispatch (Sender      :        Client_ID;
+                       Transaction :        Parpen.Message.Transaction;
+                       Data        : in out Types.Bytes_Ptr;
+                       Status      :    out Parpen.Message.Status);
 
    procedure Ignore (ID         : Client_ID;
                      Handle     : Parpen.Protocol.Handle;
                      Method     : Parpen.Protocol.Method;
                      Cookie     : Parpen.Protocol.Cookie;
-                     Oneway     : Boolean;
-                     Accept_FDs : Boolean;
                      Data       : Types.Bytes_Ptr;
                      Data_First : Types.Index;
                      Data_Last  : Types.Index;

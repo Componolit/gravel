@@ -125,7 +125,6 @@ package body Parpen.Message is
                                   Receiver       :        Client_ID;
                                   Method         :        Parpen.Protocol.Method;
                                   Cookie         :        Parpen.Protocol.Cookie;
-                                  Oneway         :        Boolean;
                                   Data           : in out Types.Bytes_Ptr;
                                   Send_Offset    : in out Types.Bit_Length;
                                   Send_Length    : in out Types.Bit_Length;
@@ -137,7 +136,6 @@ package body Parpen.Message is
                                   Receiver       :        Client_ID;
                                   Method         :        Parpen.Protocol.Method;
                                   Cookie         :        Parpen.Protocol.Cookie;
-                                  Oneway         :        Boolean;
                                   Data           : in out Types.Bytes_Ptr;
                                   Send_Offset    : in out Types.Bit_Length;
                                   Send_Length    : in out Types.Bit_Length;
@@ -168,7 +166,7 @@ package body Parpen.Message is
          return;
       end if;
 
-      if Oneway or Send_Length = 0 then
+      if Send_Length = 0 then
          Status := Status_Valid;
          return;
       end if;
@@ -197,36 +195,27 @@ package body Parpen.Message is
    -- Dispatch --
    --------------
 
-   procedure Dispatch (Sender         :        Client_ID;
-                       Handle         :        Parpen.Protocol.Handle;
-                       Method         :        Parpen.Protocol.Method;
-                       Cookie         :        Parpen.Protocol.Cookie;
-                       Oneway         :        Boolean;
-                       Accept_FDs     :        Boolean;
-                       Data           : in out Types.Bytes_Ptr;
-                       Send_Offset    :        Types.Bit_Length;
-                       Send_Length    :        Types.Bit_Length;
-                       Recv_Offset    :        Types.Bit_Length;
-                       Recv_Length    :        Types.Bit_Length;
-                       Offsets_Offset :        Types.Bit_Length;
-                       Offsets_Length :        Types.Bit_Length;
-                       Status         :    out Parpen.Message.Status)
+   procedure Dispatch (Sender      :        Client_ID;
+                       Transaction :        Parpen.Message.Transaction;
+                       Data        : in out Types.Bytes_Ptr;
+                       Status      :    out Parpen.Message.Status)
    is
       Receiver       : Client_ID;
       Node           : Resolve.Node_Option;
       Receiver_State : Client_State;
       Sender_State   : Client_State;
-      Send_Off       : Types.Bit_Length := Send_Offset;
-      Send_Len       : Types.Bit_Length := Send_Length;
+      Send_Off       : Types.Bit_Length := Transaction.Send_Offset;
+      Send_Len       : Types.Bit_Length := Transaction.Send_Length;
       use type Parpen.Protocol.Handle;
       use type Types.Bit_Length;
       use type Types.Index;
    begin
-      if Handle = 0 then
+      if Transaction.Handle = 0 then
          Receiver := NS_ID.ID;
       else
          Node := Clients.Inner.Get_Node (Owner_ID => Sender,
-                                         Handle   => Parpen.Binder.Handle'Val (Parpen.Protocol.Handle'Pos (Handle)));
+                                         Handle   => Parpen.Binder.Handle'Val
+                                                       (Parpen.Protocol.Handle'Pos (Transaction.Handle)));
          if not Resolve.Found (Node) then
             Status := Status_Invalid_Handle;
             return;
@@ -235,12 +224,14 @@ package body Parpen.Message is
       end if;
 
       --  Update sender state
-      if Recv_Length > 0 then
+      if Transaction.Recv_Length > 0 then
          Sender_State := (Status    => Status_Valid,
                           Receiving => True,
-                          First     => Types.Index'Val (Types.Index'First + Types.Bit_Length'Pos (Recv_Offset / 8)),
+                          First     => Types.Index'Val (Types.Index'First
+                                                        + Types.Bit_Length'Pos (Transaction.Recv_Offset / 8)),
                           Last      => Types.Index'Val (Types.Index'First
-                                                        + Types.Bit_Length'Pos (Recv_Offset / 8 + Recv_Length / 8)));
+                                                        + Types.Bit_Length'Pos (Transaction.Recv_Offset / 8
+                                                                                + Transaction.Recv_Length / 8)));
       else
          Sender_State := (Status    => Status_Invalid,
                           Receiving => False);
@@ -252,16 +243,16 @@ package body Parpen.Message is
          return;
       end if;
 
-      if Send_Length = 0 then
+      if Transaction.Send_Length = 0 then
          return;
       end if;
 
       --  Translate message
       Translate (Data           => Data,
-                 Data_Offset    => Send_Offset,
-                 Data_Length    => Send_Length,
-                 Offsets_Offset => Offsets_Offset,
-                 Offsets_Length => Offsets_Length,
+                 Data_Offset    => Transaction.Send_Offset,
+                 Data_Length    => Transaction.Send_Length,
+                 Offsets_Offset => Transaction.Offsets_Offset,
+                 Offsets_Length => Transaction.Offsets_Length,
                  Source_ID      => Sender,
                  Dest_ID        => Receiver,
                  Status         => Status);
@@ -269,17 +260,16 @@ package body Parpen.Message is
          return;
       end if;
 
-      if Handle = 0 then
+      if Transaction.Handle = 0 then
          Handle_Name_Service (Sender         => Sender,
                               Receiver       => Receiver,
-                              Method         => Method,
-                              Cookie         => Cookie,
-                              Oneway         => Oneway,
+                              Method         => Transaction.Method,
+                              Cookie         => Transaction.Cookie,
                               Data           => Data,
                               Send_Offset    => Send_Off,
                               Send_Length    => Send_Len,
-                              Offsets_Offset => Offsets_Offset,
-                              Offsets_Length => Offsets_Length,
+                              Offsets_Offset => Transaction.Offsets_Offset,
+                              Offsets_Length => Transaction.Offsets_Length,
                               Status         => Status);
 
          if Send_Len = 0 then
@@ -287,17 +277,15 @@ package body Parpen.Message is
             return;
          end if;
 
-         if Send_Len > Recv_Length then
+         if Send_Len > Transaction.Recv_Length then
             Status := Status_Receive_Buffer_Too_Small;
             return;
          end if;
 
          Send (ID          => Sender,
-               Handle      => Handle,
-               Method      => Method,
-               Cookie      => Cookie,
-               Oneway      => Oneway,
-               Accept_FDs  => Accept_FDs,
+               Handle      => Transaction.Handle,
+               Method      => Transaction.Method,
+               Cookie      => Transaction.Cookie,
                Data        => Data,
                Data_First  => Data'First + Types.Index (Send_Off / 8),
                Data_Last   => Data'First + Types.Index (Send_Off / 8 + Send_Len / 8 - 1),
@@ -311,15 +299,15 @@ package body Parpen.Message is
          end if;
 
          Send (ID          => Receiver,
-               Handle      => Handle,
-               Method      => Method,
-               Cookie      => Cookie,
-               Oneway      => Oneway,
-               Accept_FDs  => Accept_FDs,
+               Handle      => Transaction.Handle,
+               Method      => Transaction.Method,
+               Cookie      => Transaction.Cookie,
                Data        => Data,
-               Data_First  => Types.Index'Val (Types.Index'Pos (Data'First) + Types.Bit_Index'Pos (Send_Offset) / 8),
+               Data_First  => Types.Index'Val (Types.Index'Pos (Data'First)
+                                               + Types.Bit_Index'Pos (Transaction.Send_Offset) / 8),
                Data_Last   => Types.Index'Val (Types.Index'Pos (Data'First)
-                                               + Types.Bit_Index'Pos (Send_Offset / 8 + Send_Length / 8 - 1)),
+                                               + Types.Bit_Index'Pos (Transaction.Send_Offset / 8
+                                                                      + Transaction.Send_Length / 8 - 1)),
                Recv_First  => Receiver_State.First,
                Recv_Last   => Receiver_State.Last);
 
@@ -389,8 +377,6 @@ package body Parpen.Message is
                      Handle     : Parpen.Protocol.Handle;
                      Method     : Parpen.Protocol.Method;
                      Cookie     : Parpen.Protocol.Cookie;
-                     Oneway     : Boolean;
-                     Accept_FDs : Boolean;
                      Data       : Types.Bytes_Ptr;
                      Data_First : Types.Index;
                      Data_Last  : Types.Index;
@@ -398,7 +384,7 @@ package body Parpen.Message is
                      Recv_Last  : Types.Index)
    is
       pragma Unreferenced
-         (ID, Handle, Method, Cookie, Oneway, Accept_FDs, Data, Data_First, Data_Last, Recv_First, Recv_Last);
+         (ID, Handle, Method, Cookie, Data, Data_First, Data_Last, Recv_First, Recv_Last);
    begin
       null;
    end Ignore;

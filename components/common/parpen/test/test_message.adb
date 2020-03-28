@@ -63,8 +63,6 @@ package body Test_Message is
                               Handle     : Parpen.Protocol.Handle;
                               Method     : Parpen.Protocol.Method;
                               Cookie     : Parpen.Protocol.Cookie;
-                              Oneway     : Boolean;
-                              Accept_FDs : Boolean;
                               Data       : String_Ptr;
                               Data_First : Positive;
                               Data_Last  : Positive;
@@ -75,8 +73,6 @@ package body Test_Message is
                               Handle     : Parpen.Protocol.Handle;
                               Method     : Parpen.Protocol.Method;
                               Cookie     : Parpen.Protocol.Cookie;
-                              Oneway     : Boolean;
-                              Accept_FDs : Boolean;
                               Data       : String_Ptr;
                               Data_First : Positive;
                               Data_Last  : Positive;
@@ -84,7 +80,7 @@ package body Test_Message is
                               Recv_Last  : Positive)
       is
          pragma Unreferenced
-            (ID, Handle, Method, Cookie, Oneway, Accept_FDs, Data, Data_First, Data_Last, Recv_First, Recv_Last);
+            (ID, Handle, Method, Cookie, Data, Data_First, Data_Last, Recv_First, Recv_Last);
       begin
          Assert (False, "Send called in one-way transaction");
       end Send_Message;
@@ -96,18 +92,16 @@ package body Test_Message is
       Message.Add_Client (ID => Client_1, Status => Status);
       Assert (Status = Message.Status_Valid, "Error adding client: " & Status'Img);
       Dispatch (Sender         => Client_1,
-                Handle         => 0,
-                Method         => 3,
-                Cookie         => 16#dead_beef#,
-                Oneway         => True,
-                Accept_FDs     => False,
+                Transaction    => (Handle         => 0,
+                                   Method         => 3,
+                                   Cookie         => 16#dead_beef#,
+                                   Send_Offset    => 64,
+                                   Send_Length    => Add_Service.all'Size - 64,
+                                   Recv_Offset    => 0,
+                                   Recv_Length    => 0,
+                                   Offsets_Offset => 0,
+                                   Offsets_Length => 64),
                 Data           => Add_Service,
-                Send_Offset    => 64,
-                Send_Length    => Add_Service.all'Size - 64,
-                Recv_Offset    => 0,
-                Recv_Length    => 0,
-                Offsets_Offset => 0,
-                Offsets_Length => 64,
                 Status         => Status);
       Assert (Status = Message.Status_Valid, "Translating message failed: " & Status'Img);
    end Test_Register_Service;
@@ -139,8 +133,6 @@ package body Test_Message is
                           Handle     : Parpen.Protocol.Handle;
                           Method     : Parpen.Protocol.Method;
                           Cookie     : Parpen.Protocol.Cookie;
-                          Oneway     : Boolean;
-                          Accept_FDs : Boolean;
                           Data       : String_Ptr;
                           Data_First : Positive;
                           Data_Last  : Positive;
@@ -151,8 +143,6 @@ package body Test_Message is
                           Handle     : Parpen.Protocol.Handle;
                           Method     : Parpen.Protocol.Method;
                           Cookie     : Parpen.Protocol.Cookie;
-                          Oneway     : Boolean;
-                          Accept_FDs : Boolean;
                           Data       : String_Ptr;
                           Data_First : Positive;
                           Data_Last  : Positive;
@@ -160,7 +150,7 @@ package body Test_Message is
                           Recv_Last  : Positive)
       is
          pragma Unreferenced
-            (ID, Handle, Method, Cookie, Oneway, Accept_FDs, Data, Data_First, Data_Last, Recv_First, Recv_Last);
+            (ID, Handle, Method, Cookie, Data, Data_First, Data_Last, Recv_First, Recv_Last);
       begin
          Assert (False, "Send called in one-way transaction");
       end No_Reply;
@@ -183,8 +173,6 @@ package body Test_Message is
                              Handle     : Parpen.Protocol.Handle;
                              Method     : Parpen.Protocol.Method;
                              Cookie     : Parpen.Protocol.Cookie;
-                             Oneway     : Boolean;
-                             Accept_FDs : Boolean;
                              Data       : String_Ptr;
                              Data_First : Positive;
                              Data_Last  : Positive;
@@ -195,8 +183,6 @@ package body Test_Message is
                              Handle     : Parpen.Protocol.Handle;
                              Method     : Parpen.Protocol.Method;
                              Cookie     : Parpen.Protocol.Cookie;
-                             Oneway     : Boolean;
-                             Accept_FDs : Boolean;
                              Data       : String_Ptr;
                              Data_First : Positive;
                              Data_Last  : Positive;
@@ -220,8 +206,6 @@ package body Test_Message is
          Assert (Handle = 0, "Invalid handle");
          Assert (Method = 1, "Invalid method");
          Assert (Cookie = 16#beef_dead_c0de#, "Invalid cookie");
-         Assert (Oneway = False, "Invalid oneway flag");
-         Assert (Accept_FDs = False, "Invalid accept_fds flag");
          Assert (Data_First in Data'Range, "Data_First out of range");
          Assert (Data_Last in Data'Range, "Data_Last out of range");
          Assert (Data (Data_First .. Data_Last) = Expected.all, "Invalid reply");
@@ -241,34 +225,30 @@ package body Test_Message is
       Assert (Status = Message.Status_Valid, "Error adding client 2: " & Status'Img);
 
       Dispatch_Add (Sender         => Client_1,
-                    Handle         => 0,
-                    Method         => 3,
-                    Cookie         => 16#dead_beef#,
-                    Oneway         => True,
-                    Accept_FDs     => False,
+                    Transaction    => (Handle         => 0,
+                                       Method         => 3,
+                                       Cookie         => 16#dead_beef#,
+                                       Send_Offset    => 64,
+                                       Send_Length    => Add_Service.all'Size - 64,
+                                       Recv_Offset    => 64,
+                                       Recv_Length    => Add_Service.all'Size - 64,
+                                       Offsets_Offset => 0,
+                                       Offsets_Length => 64),
                     Data           => Add_Service,
-                    Send_Offset    => 64,
-                    Send_Length    => Add_Service.all'Size - 64,
-                    Recv_Offset    => 64,
-                    Recv_Length    => Add_Service.all'Size - 64,
-                    Offsets_Offset => 0,
-                    Offsets_Length => 64,
                     Status         => Status);
       Assert (Status = Message.Status_Valid, "Registering service failed: " & Status'Img);
 
       Dispatch_Get (Sender         => Client_2,
-                    Handle         => 0,
-                    Method         => 1,
-                    Cookie         => 16#beef_dead_c0de#,
-                    Oneway         => False,
-                    Accept_FDs     => False,
+                    Transaction    => (Handle         => 0,
+                                       Method         => 1,
+                                       Cookie         => 16#beef_dead_c0de#,
+                                       Send_Offset    => 0,
+                                       Send_Length    => Get_Service.all'Size,
+                                       Recv_Offset    => 0,
+                                       Recv_Length    => Get_Service.all'Size,
+                                       Offsets_Offset => 0,
+                                       Offsets_Length => 0),
                     Data           => Get_Service,
-                    Send_Offset    => 0,
-                    Send_Length    => Get_Service.all'Size,
-                    Recv_Offset    => 0,
-                    Recv_Length    => Get_Service.all'Size,
-                    Offsets_Offset => 0,
-                    Offsets_Length => 0,
                     Status         => Status);
       Assert (Status = Message.Status_Valid, "Quering service failed: " & Status'Img);
       Assert (Reply_Checked, "Reply not checked");
@@ -317,8 +297,6 @@ package body Test_Message is
                               Handle     : Parpen.Protocol.Handle;
                               Method     : Parpen.Protocol.Method;
                               Cookie     : Parpen.Protocol.Cookie;
-                              Oneway     : Boolean;
-                              Accept_FDs : Boolean;
                               Data       : String_Ptr;
                               Data_First : Positive;
                               Data_Last  : Positive;
@@ -329,15 +307,13 @@ package body Test_Message is
                               Handle     : Parpen.Protocol.Handle;
                               Method     : Parpen.Protocol.Method;
                               Cookie     : Parpen.Protocol.Cookie;
-                              Oneway     : Boolean;
-                              Accept_FDs : Boolean;
                               Data       : String_Ptr;
                               Data_First : Positive;
                               Data_Last  : Positive;
                               Recv_First : Positive;
                               Recv_Last  : Positive)
       is
-         pragma Unreferenced (ID, Handle, Method, Cookie, Oneway, Accept_FDs, Recv_First, Recv_Last);
+         pragma Unreferenced (ID, Handle, Method, Cookie, Recv_First, Recv_Last);
          Binder_Context : IBinder_Package.Context := IBinder_Package.Create;
          package Binder_Buffer is new Parpen.Container (Types, 24);
          use type Parpen.Binder.Binder_Kind;
@@ -362,8 +338,6 @@ package body Test_Message is
                                    Handle     : Parpen.Protocol.Handle;
                                    Method     : Parpen.Protocol.Method;
                                    Cookie     : Parpen.Protocol.Cookie;
-                                   Oneway     : Boolean;
-                                   Accept_FDs : Boolean;
                                    Data       : String_Ptr;
                                    Data_First : Positive;
                                    Data_Last  : Positive;
@@ -374,8 +348,6 @@ package body Test_Message is
                                    Handle     : Parpen.Protocol.Handle;
                                    Method     : Parpen.Protocol.Method;
                                    Cookie     : Parpen.Protocol.Cookie;
-                                   Oneway     : Boolean;
-                                   Accept_FDs : Boolean;
                                    Data       : String_Ptr;
                                    Data_First : Positive;
                                    Data_Last  : Positive;
@@ -388,8 +360,6 @@ package body Test_Message is
       begin
          Assert (ID = Client_1, "Invalid client");
          Assert (Cookie = 16#beef_c0de#, "Invalid cookie");
-         Assert (Oneway, "Invalid oneway flag");
-         Assert (not Accept_FDs, "Invalid accept_fds flag");
          Assert (Method = 17, "Invalid method");
          Assert (Data (Data_First .. Data_Last) = Test_Msg.all, "Invalid message");
          Assert (Recv_First = 1, "Invalid Recv_First");
@@ -409,34 +379,30 @@ package body Test_Message is
       Assert (Status = Message.Status_Valid, "Error adding client 2: " & Status'Img);
 
       Dispatch (Sender         => Client_1,
-                Handle         => 0,
-                Method         => 3,
-                Cookie         => 16#dead_beef#,
-                Oneway         => True,
-                Accept_FDs     => False,
+                Transaction    => (Handle         => 0,
+                                   Method         => 3,
+                                   Cookie         => 16#dead_beef#,
+                                   Send_Offset    => 64,
+                                   Send_Length    => Add_Service.all'Size - 64,
+                                   Recv_Offset    => 0,
+                                   Recv_Length    => 0,
+                                   Offsets_Offset => 0,
+                                   Offsets_Length => 64),
                 Data           => Add_Service,
-                Send_Offset    => 64,
-                Send_Length    => Add_Service.all'Size - 64,
-                Recv_Offset    => 0,
-                Recv_Length    => 0,
-                Offsets_Offset => 0,
-                Offsets_Length => 64,
                 Status         => Status);
       Assert (Status = Message.Status_Valid, "Registering service failed: " & Status'Img);
 
       Dispatch_Get (Sender         => Client_2,
-                    Handle         => 0,
-                    Method         => 1,
-                    Cookie         => 16#beef_dead_c0de#,
-                    Oneway         => False,
-                    Accept_FDs     => False,
+                    Transaction    => (Handle         => 0,
+                                       Method         => 1,
+                                       Cookie         => 16#beef_dead_c0de#,
+                                       Send_Offset    => 0,
+                                       Send_Length    => Get_Service.all'Size,
+                                       Recv_Offset    => 0,
+                                       Recv_Length    => Get_Service.all'Size,
+                                       Offsets_Offset => 0,
+                                       Offsets_Length => 0),
                     Data           => Get_Service,
-                    Send_Offset    => 0,
-                    Send_Length    => Get_Service.all'Size,
-                    Recv_Offset    => 0,
-                    Recv_Length    => Get_Service.all'Size,
-                    Offsets_Offset => 0,
-                    Offsets_Length => 0,
                     Status         => Status);
       Assert (Status = Message.Status_Valid, "Quering service failed: " & Status'Img);
       Assert (Handle_Parsed, "Handle not parsed");
@@ -444,34 +410,30 @@ package body Test_Message is
       --  Receive-only to make Client_1 read for receiving the message
       --  FIXME: Make Send_Offset/_Length a descriminant record
       Dispatch (Sender         => Client_1,
-                Handle         => 0,
-                Method         => 0,
-                Cookie         => 0,
-                Oneway         => False,
-                Accept_FDs     => False,
+                Transaction    => (Handle         => 0,
+                                   Method         => 0,
+                                   Cookie         => 0,
+                                   Send_Offset    => 0,
+                                   Send_Length    => 0,
+                                   Recv_Offset    => 0,
+                                   Recv_Length    => Recv_Buffer.all'Size,
+                                   Offsets_Offset => 0,
+                                   Offsets_Length => 0),
                 Data           => Recv_Buffer,
-                Send_Offset    => 0,
-                Send_Length    => 0,
-                Recv_Offset    => 0,
-                Recv_Length    => Recv_Buffer.all'Size,
-                Offsets_Offset => 0,
-                Offsets_Length => 0,
                 Status         => Status);
       Assert (Status = Message.Status_Valid, "Receiving message filed: " & Status'Img);
 
       Dispatch_Use (Sender         => Client_2,
-                    Handle         => Received_Handle,
-                    Method         => 17,
-                    Cookie         => 16#beef_c0de#,
-                    Oneway         => True,
-                    Accept_FDs     => False,
+                    Transaction    => (Handle         => Received_Handle,
+                                       Method         => 17,
+                                       Cookie         => 16#beef_c0de#,
+                                       Send_Offset    => 0,
+                                       Send_Length    => Test_Msg.all'Size,
+                                       Recv_Offset    => 0,
+                                       Recv_Length    => 0,
+                                       Offsets_Offset => 0,
+                                       Offsets_Length => 0),
                     Data           => Test_Msg,
-                    Send_Offset    => 0,
-                    Send_Length    => Test_Msg.all'Size,
-                    Recv_Offset    => 0,
-                    Recv_Length    => 0,
-                    Offsets_Offset => 0,
-                    Offsets_Length => 0,
                     Status         => Status);
       Assert (Status = Message.Status_Valid, "Client/client transaction failed: " & Status'Img);
       Assert (Transaction_Done, "Transaction not performed");
@@ -547,8 +509,6 @@ package body Test_Message is
                                 Handle     : Parpen.Protocol.Handle;
                                 Method     : Parpen.Protocol.Method;
                                 Cookie     : Parpen.Protocol.Cookie;
-                                Oneway     : Boolean;
-                                Accept_FDs : Boolean;
                                 Data       : String_Ptr;
                                 Data_First : Positive;
                                 Data_Last  : Positive;
@@ -559,8 +519,6 @@ package body Test_Message is
                                 Handle     : Parpen.Protocol.Handle;
                                 Method     : Parpen.Protocol.Method;
                                 Cookie     : Parpen.Protocol.Cookie;
-                                Oneway     : Boolean;
-                                Accept_FDs : Boolean;
                                 Data       : String_Ptr;
                                 Data_First : Positive;
                                 Data_Last  : Positive;
@@ -573,8 +531,6 @@ package body Test_Message is
       begin
          Assert (ID = Client_1, "Invalid client:" & ID'Img);
          Assert (Cookie = 16#beef_c0de#, "Invalid cookie");
-         Assert (not Oneway, "Invalid oneway flag");
-         Assert (not Accept_FDs, "Invalid accept_fds flag");
          Assert (Method = 17, "Invalid method");
          Assert (Data (Data_First .. Data_Last) = Expected.all, "Invalid message");
          Assert (Recv_First = 1, "Invalid Recv_First");
@@ -586,8 +542,6 @@ package body Test_Message is
                                 Handle     : Parpen.Protocol.Handle;
                                 Method     : Parpen.Protocol.Method;
                                 Cookie     : Parpen.Protocol.Cookie;
-                                Oneway     : Boolean;
-                                Accept_FDs : Boolean;
                                 Data       : String_Ptr;
                                 Data_First : Positive;
                                 Data_Last  : Positive;
@@ -598,8 +552,6 @@ package body Test_Message is
                                 Handle     : Parpen.Protocol.Handle;
                                 Method     : Parpen.Protocol.Method;
                                 Cookie     : Parpen.Protocol.Cookie;
-                                Oneway     : Boolean;
-                                Accept_FDs : Boolean;
                                 Data       : String_Ptr;
                                 Data_First : Positive;
                                 Data_Last  : Positive;
@@ -612,8 +564,6 @@ package body Test_Message is
       begin
          Assert (ID = Client_2, "Invalid client:" & ID'Img);
          Assert (Cookie = 16#b33f_c8de#, "Invalid cookie");
-         Assert (Oneway, "Invalid oneway flag");
-         Assert (not Accept_FDs, "Invalid accept_fds flag");
          Assert (Method = 42, "Invalid method");
          Assert (Data (Data_First .. Data_Last) = Reply.all, "Invalid message");
          Assert (Recv_First = 1, "Invalid Recv_First");
@@ -634,18 +584,16 @@ package body Test_Message is
 
       --  Register service
       Dispatch (Sender         => Client_1,
-                Handle         => 0,
-                Method         => 3,
-                Cookie         => 16#dead_beef#,
-                Oneway         => True,
-                Accept_FDs     => False,
+                Transaction    => (Handle         => 0,
+                                   Method         => 3,
+                                   Cookie         => 16#dead_beef#,
+                                   Send_Offset    => 64,
+                                   Send_Length    => Add_Service.all'Size - 64,
+                                   Recv_Offset    => 0,
+                                   Recv_Length    => 0,
+                                   Offsets_Offset => 0,
+                                   Offsets_Length => 64),
                 Data           => Add_Service,
-                Send_Offset    => 64,
-                Send_Length    => Add_Service.all'Size - 64,
-                Recv_Offset    => 0,
-                Recv_Length    => 0,
-                Offsets_Offset => 0,
-                Offsets_Length => 64,
                 Status         => Status);
       Assert (Status = Message.Status_Valid, "Registering service failed: " & Status'Img);
 
@@ -653,70 +601,62 @@ package body Test_Message is
       --  FIXME: Make Send_Offset/_Length a descriminant record
       --  FIXME: Remove need for dummy Recv_Buffer
       Dispatch (Sender         => Client_1,
-                Handle         => 0,
-                Method         => 0,
-                Cookie         => 0,
-                Oneway         => False,
-                Accept_FDs     => False,
+                Transaction    => (Handle         => 0,
+                                   Method         => 0,
+                                   Cookie         => 0,
+                                   Send_Offset    => 0,
+                                   Send_Length    => 0,
+                                   Recv_Offset    => 0,
+                                   Recv_Length    => Recv_Buffer.all'Size,
+                                   Offsets_Offset => 0,
+                                   Offsets_Length => 0),
                 Data           => Recv_Buffer,
-                Send_Offset    => 0,
-                Send_Length    => 0,
-                Recv_Offset    => 0,
-                Recv_Length    => Recv_Buffer.all'Size,
-                Offsets_Offset => 0,
-                Offsets_Length => 0,
                 Status         => Status);
       Assert (Status = Message.Status_Valid, "Receiving message filed: " & Status'Img);
 
       --  Query service
       Dispatch (Sender         => Client_2,
-                Handle         => 0,
-                Method         => 1,
-                Cookie         => 16#beef_dead_c0de#,
-                Oneway         => False,
-                Accept_FDs     => False,
+                Transaction    => (Handle         => 0,
+                                   Method         => 1,
+                                   Cookie         => 16#beef_dead_c0de#,
+                                   Send_Offset    => 0,
+                                   Send_Length    => Get_Service.all'Size,
+                                   Recv_Offset    => 0,
+                                   Recv_Length    => Get_Service.all'Size,
+                                   Offsets_Offset => 0,
+                                   Offsets_Length => 0),
                 Data           => Get_Service,
-                Send_Offset    => 0,
-                Send_Length    => Get_Service.all'Size,
-                Recv_Offset    => 0,
-                Recv_Length    => Get_Service.all'Size,
-                Offsets_Offset => 0,
-                Offsets_Length => 0,
                 Status         => Status);
       Assert (Status = Message.Status_Valid, "Quering service failed: " & Status'Img);
 
       --  Send message containing callback to Client_1
       Dispatch_Callback (Sender         => Client_2,
-                         Handle         => 1,
-                         Method         => 17,
-                         Cookie         => 16#beef_c0de#,
-                         Oneway         => False,
-                         Accept_FDs     => False,
+                         Transaction    => (Handle         => 1,
+                                            Method         => 17,
+                                            Cookie         => 16#beef_c0de#,
+                                            Send_Offset    => 64,
+                                            Send_Length    => Callback.all'Size - 64,
+                                            Recv_Offset    => 0,
+                                            Recv_Length    => Callback.all'Size,
+                                            Offsets_Offset => 0,
+                                            Offsets_Length => 64),
                          Data           => Callback,
-                         Send_Offset    => 64,
-                         Send_Length    => Callback.all'Size - 64,
-                         Recv_Offset    => 0,
-                         Recv_Length    => Callback.all'Size,
-                         Offsets_Offset => 0,
-                         Offsets_Length => 64,
                          Status         => Status);
       Assert (Status = Message.Status_Valid, "Client/client transaction failed: " & Status'Img);
       Assert (Callback_Done, "Transaction not performed");
 
       --  Invoke callback to Client_1
       Dispatch_Reply (Sender         => Client_1,
-                      Handle         => 1,
-                      Method         => 42,
-                      Cookie         => 16#b33f_c8de#,
-                      Oneway         => True,
-                      Accept_FDs     => False,
+                      Transaction    => (Handle         => 1,
+                                         Method         => 42,
+                                         Cookie         => 16#b33f_c8de#,
+                                         Send_Offset    => 0,
+                                         Send_Length    => Reply.all'Size,
+                                         Recv_Offset    => 0,
+                                         Recv_Length    => 0,
+                                         Offsets_Offset => 0,
+                                         Offsets_Length => 0),
                       Data           => Reply,
-                      Send_Offset    => 0,
-                      Send_Length    => Reply.all'Size,
-                      Recv_Offset    => 0,
-                      Recv_Length    => 0,
-                      Offsets_Offset => 0,
-                      Offsets_Length => 0,
                       Status         => Status);
       Assert (Status = Message.Status_Valid, "Reply transaction failed: " & Status'Img);
       Assert (Reply_Done, "Reply not performed");
