@@ -5,7 +5,7 @@ with Gneiss.Memory.Client;
 with Parpen.Generic_Types;
 with Parpen.Protocol.Generic_Reply;
 
-with RFLX_Container;
+with Parpen.Container;
 
 package body Component with
    SPARK_Mode
@@ -105,7 +105,7 @@ is
    is
       use type Gneiss.Session_Status;
       use type Parpen.Protocol.Reply_Tag;
-      package Reply is new RFLX_Container (Positive, Character, String, String_ptr, Message_Buffer'Length);
+      package Reply is new Parpen.Container (Types, Message_Buffer'Length);
       Context : Reply_Package.Context := Reply_Package.Create;
    begin
       if
