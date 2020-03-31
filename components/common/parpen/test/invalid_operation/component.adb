@@ -3,7 +3,7 @@ with Gneiss.Message.Client;
 with Gneiss.Memory.Client;
 
 with Parpen.Generic_Types;
-with Parpen.Protocol.Generic_Reply;
+with Parpen.Protocol.Generic_Request;
 
 with Parpen.Container;
 
@@ -23,7 +23,7 @@ is
                                               Length     => Natural,
                                               Bit_Length => Bit_Length);
 
-   package Reply_Package is new Parpen.Protocol.Generic_Reply (Types);
+   package Request_Package is new Parpen.Protocol.Generic_Request (Types);
 
    procedure Event;
 
@@ -77,9 +77,9 @@ is
    procedure Event
    is
       use type Gneiss.Session_Status;
-      use type Parpen.Protocol.Reply_Tag;
+      use type Parpen.Protocol.Tag;
       package Reply is new Parpen.Container (Types, Message_Buffer'Length);
-      Context : Reply_Package.Context := Reply_Package.Create;
+      Context : Request_Package.Context := Request_Package.Create;
    begin
       if
          Gneiss.Log.Initialized (Log)
@@ -88,13 +88,13 @@ is
          Main.Vacate (Cap, Main.Failure);
          while Message_Client.Available (Msg) loop
             Message_Client.Read (Msg, Reply.Ptr.all);
-            Reply_Package.Initialize (Context, Reply.Ptr);
-            Reply_Package.Verify_Message (Context);
-            if not Reply_Package.Valid_Message (Context) then
+            Request_Package.Initialize (Context, Reply.Ptr);
+            Request_Package.Verify_Message (Context);
+            if not Request_Package.Valid_Message (Context) then
                Gneiss.Log.Client.Error (Log, "Invalid reply");
                return;
             end if;
-            if Reply_Package.Get_Tag (Context) = Parpen.Protocol.REPLY_ERROR
+            if Request_Package.Get_Tag (Context) = Parpen.Protocol.T_STATUS
             then
                Gneiss.Log.Client.Info (Log, "Error detected");
                Main.Vacate (Cap, Main.Success);

@@ -277,6 +277,9 @@ package body Parpen.Resolve is
          Weak := True;
       elsif IBinder_Package.Get_Kind (Context) /= Parpen.Binder.BK_STRONG_BINDER then
          Weak := False;
+      else
+         Status := Status_Invalid;
+         return;
       end if;
 
       if Node.Data.Owner = Dest_ID then

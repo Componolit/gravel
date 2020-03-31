@@ -1,60 +1,71 @@
 package Protocol is
 
-	type Esc_Char is range 27 .. 27 with Size => 8;
-	type Connection_ID is range 1 .. 2**32-1 with Size => 32;
-	type Offset is mod 2**64;
+   type Esc_Char is range 27 .. 27 with Size => 8;
+   type Connection_ID is range 1 .. 2**32-1 with Size => 32;
+   type Offset is mod 2**64;
 
-	type Method is range 0 .. 2**32-1 with Size => 32;
-	type Length is range 0 .. 2**32-1 with Size => 32;
-	type Cookie is mod 2**64;
+   type Method is range 0 .. 2**32-1 with Size => 32;
+   type Length is range 0 .. 2**32-1 with Size => 32;
+   type Cookie is mod 2**64;
 
-	--  We should reuse Binder.Handle, but this does not work right now
-	--  Ref. Componolit/RecordFlux#186
-	type Handle is range 0 .. 2**32-1 with Size => 32;
+   --  We should reuse Binder.Handle, but this does not work right now
+   --  Ref. Componolit/RecordFlux#186
+   type Handle is range 0 .. 2**32-1 with Size => 32;
 
-	type Label is
-		message
-			Delimiter     : Esc_Char;
-			Connection_ID : Connection_ID;
-		end message;
+   type Label is
+      message
+         Delimiter     : Esc_Char;
+         Connection_ID : Connection_ID;
+      end message;
 
-	type Transaction is
-		message
-			Handle         : Handle;
-			Method         : Method;
-			Cookie         : Cookie;
-			Send_Offset    : Offset;
-			Send_Length    : Length;
-			Meta_Offset    : Offset;
-			Meta_Length    : Length;
-			Receive_Offset : Offset;
-			Receive_Length : Length;
-		end message;
+   type Transaction is
+      message
+         Handle         : Handle;
+         Method         : Method;
+         Cookie         : Cookie;
+         Send_Offset    : Offset;
+         Send_Length    : Length;
+         Meta_Offset    : Offset;
+         Meta_Length    : Length;
+         Receive_Offset : Offset;
+         Receive_Length : Length;
+      end message;
 
-	type Request_Tag is (REQUEST_TRANSACTION => 1) with Size => 8;
+   type Tag is (T_TRANSACTION,
+                T_STATUS) with Size => 8;
 
-	type Request is
-		message
-			Tag  : Request_Tag
-				then Data
-					with Length => Message'Last - Tag'Last;
-			Data : Opaque;
-		end message;
+   type Status is (STATUS_OK,
+                   STATUS_UNKNOWN_ERROR,
+                   STATUS_PROTOCOL_VIOLATION,
+                   STATUS_INVALID_REQUEST,
+                   STATUS_INVALID_HANDLE,
+                   STATUS_INVALID_BINDER,
+                   STATUS_INVALID_METHOD,
+                   STATUS_OFFSET_OUT_OF_RANGE,
+                   STATUS_RECEIVER_NOT_READY,
+                   STATUS_RECEIVE_BUFFER_TOO_SMALL,
+                   STATUS_OVERFLOW) with Size => 8;
 
-	for Request use (Data => Transaction) if Tag = REQUEST_TRANSACTION;
+   type Request is
+      message
+         Tag  : Tag
+            then Data
+               with Length => Message'Last - Tag'Last
+                  if Tag = T_TRANSACTION,
+            then Code
+               if Tag = T_STATUS;
+         Code : Status
+            then null;
+         Data : Opaque;
+      end message;
 
-	type Reply_Tag is (REPLY_ERROR => 1) with Size => 8;
+   for Request use (Data => Transaction) if Tag = T_TRANSACTION;
 
-	type Reply is
-		message
-			Tag : Reply_Tag;
-		end message;
-
-	--  Offset lists without explicit length field do not work at the moment (cf. Componolit/RecordFlux#184)
-	--  Just use the message below for retrieving the numeric value and parse the sequence manually.
-	type Offsets is
-		message
-			Data : Offset;
-		end message;
+   --  Offset lists without explicit length field do not work at the moment (cf. Componolit/RecordFlux#184)
+   --  Just use the message below for retrieving the numeric value and parse the sequence manually.
+   type Offsets is
+      message
+         Data : Offset;
+      end message;
 
 end Protocol;

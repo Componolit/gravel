@@ -25,8 +25,15 @@ package body Test_Message is
    Client_1 : constant Client_ID := Client_ID'First + 1;
    Client_2 : constant Client_ID := Client_ID'Last - 1;
 
+   procedure Trace (Message : String);
+   procedure Trace (Message : String) is
+   begin
+      null;
+   end Trace;
+
    package Message is new Parpen.Message (Client_ID           => Client_ID,
                                           Types               => Types,
+                                          Trace               => Trace,
                                           Num_Nodes           => 100,
                                           Num_Handles         => 20,
                                           Num_Name_DB_Entries => 200);
@@ -65,9 +72,8 @@ package body Test_Message is
                               Cookie     : Parpen.Protocol.Cookie;
                               Data       : String_Ptr;
                               Data_First : Positive;
-                              Data_Last  : Positive;
                               Recv_First : Positive;
-                              Recv_Last  : Positive);
+                              Length     : Natural);
 
       procedure Send_Message (ID         : Client_ID;
                               Handle     : Parpen.Protocol.Handle;
@@ -75,17 +81,15 @@ package body Test_Message is
                               Cookie     : Parpen.Protocol.Cookie;
                               Data       : String_Ptr;
                               Data_First : Positive;
-                              Data_Last  : Positive;
                               Recv_First : Positive;
-                              Recv_Last  : Positive)
+                              Length     : Natural)
       is
-         pragma Unreferenced
-            (ID, Handle, Method, Cookie, Data, Data_First, Data_Last, Recv_First, Recv_Last);
+         pragma Unreferenced (ID, Handle, Method, Cookie, Data, Data_First, Recv_First);
       begin
-         Assert (False, "Send called in one-way transaction");
+         Assert (Length = 0, "Send phase in one-way transaction");
       end Send_Message;
 
-      procedure Dispatch is new Message.Dispatch (Send_Message);
+      procedure Dispatch is new Message.Dispatch (Send => Send_Message);
    begin
       Message.Initialize (Name_Service_ID => NS_ID, Status => Status);
       Assert (Status = Message.Status_Valid, "Error initializing Message: " & Status'Img);
@@ -135,9 +139,8 @@ package body Test_Message is
                           Cookie     : Parpen.Protocol.Cookie;
                           Data       : String_Ptr;
                           Data_First : Positive;
-                          Data_Last  : Positive;
                           Recv_First : Positive;
-                          Recv_Last  : Positive);
+                          Length     : Natural);
 
       procedure No_Reply (ID         : Client_ID;
                           Handle     : Parpen.Protocol.Handle;
@@ -145,14 +148,12 @@ package body Test_Message is
                           Cookie     : Parpen.Protocol.Cookie;
                           Data       : String_Ptr;
                           Data_First : Positive;
-                          Data_Last  : Positive;
                           Recv_First : Positive;
-                          Recv_Last  : Positive)
+                          Length     : Natural)
       is
-         pragma Unreferenced
-            (ID, Handle, Method, Cookie, Data, Data_First, Data_Last, Recv_First, Recv_Last);
+         pragma Unreferenced (ID, Handle, Method, Cookie, Data, Data_First, Recv_First);
       begin
-         Assert (False, "Send called in one-way transaction");
+         Assert (Length = 0, "Send phase in one-way transaction");
       end No_Reply;
 
       Get_Service : String_Ptr := new String'(
@@ -175,9 +176,8 @@ package body Test_Message is
                              Cookie     : Parpen.Protocol.Cookie;
                              Data       : String_Ptr;
                              Data_First : Positive;
-                             Data_Last  : Positive;
                              Recv_First : Positive;
-                             Recv_Last  : Positive);
+                             Length     : Natural);
 
       procedure Check_Reply (ID         : Client_ID;
                              Handle     : Parpen.Protocol.Handle;
@@ -185,9 +185,8 @@ package body Test_Message is
                              Cookie     : Parpen.Protocol.Cookie;
                              Data       : String_Ptr;
                              Data_First : Positive;
-                             Data_Last  : Positive;
                              Recv_First : Positive;
-                             Recv_Last  : Positive)
+                             Length     : Natural)
       is
          Expected : constant String_Ptr := new String'(
             ""
@@ -207,10 +206,10 @@ package body Test_Message is
          Assert (Method = 1, "Invalid method");
          Assert (Cookie = 16#beef_dead_c0de#, "Invalid cookie");
          Assert (Data_First in Data'Range, "Data_First out of range");
-         Assert (Data_Last in Data'Range, "Data_Last out of range");
-         Assert (Data (Data_First .. Data_Last) = Expected.all, "Invalid reply");
+         Assert (Data_First + Length - 1 in Data'Range, "Length out of range");
+         Assert (Data (Data_First .. Data_First + Length - 1) = Expected.all, "Invalid reply");
          Assert (Recv_First = 1, "Recv_First invalid");
-         Assert (Recv_Last = 1 + Get_Service.all'Size / 8, "Recv_Last invalid");
+         Assert (Length = Expected.all'Size / 8, "Length invalid:" & Length'Img);
          Reply_Checked := True;
       end Check_Reply;
 
@@ -299,9 +298,8 @@ package body Test_Message is
                               Cookie     : Parpen.Protocol.Cookie;
                               Data       : String_Ptr;
                               Data_First : Positive;
-                              Data_Last  : Positive;
                               Recv_First : Positive;
-                              Recv_Last  : Positive);
+                              Length     : Natural);
 
       procedure Parse_Handle (ID         : Client_ID;
                               Handle     : Parpen.Protocol.Handle;
@@ -309,18 +307,17 @@ package body Test_Message is
                               Cookie     : Parpen.Protocol.Cookie;
                               Data       : String_Ptr;
                               Data_First : Positive;
-                              Data_Last  : Positive;
                               Recv_First : Positive;
-                              Recv_Last  : Positive)
+                              Length     : Natural)
       is
-         pragma Unreferenced (ID, Handle, Method, Cookie, Recv_First, Recv_Last);
+         pragma Unreferenced (ID, Handle, Method, Cookie, Recv_First);
          Binder_Context : IBinder_Package.Context := IBinder_Package.Create;
          package Binder_Buffer is new Parpen.Container (Types, 24);
          use type Parpen.Binder.Binder_Kind;
       begin
          Binder_Buffer.Ptr.all := (others => Character'Val (0));
-         pragma Assert (Data_Last - Data_First + 1 /= 24, "Invalid data length");
-         Binder_Buffer.Ptr.all := Data (Data_First .. Data_Last);
+         pragma Assert (Length /= 24, "Invalid data length");
+         Binder_Buffer.Ptr.all := Data (Data_First .. Data_First + Length - 1);
          IBinder_Package.Initialize (Binder_Context, Binder_Buffer.Ptr);
          IBinder_Package.Verify_Message (Binder_Context);
          Assert (IBinder_Package.Valid_Message (Binder_Context), "Invalid response");
@@ -340,9 +337,8 @@ package body Test_Message is
                                    Cookie     : Parpen.Protocol.Cookie;
                                    Data       : String_Ptr;
                                    Data_First : Positive;
-                                   Data_Last  : Positive;
                                    Recv_First : Positive;
-                                   Recv_Last  : Positive);
+                                   Length     : Natural);
 
       procedure Check_Transaction (ID         : Client_ID;
                                    Handle     : Parpen.Protocol.Handle;
@@ -350,9 +346,8 @@ package body Test_Message is
                                    Cookie     : Parpen.Protocol.Cookie;
                                    Data       : String_Ptr;
                                    Data_First : Positive;
-                                   Data_Last  : Positive;
                                    Recv_First : Positive;
-                                   Recv_Last  : Positive)
+                                   Length     : Natural)
       is
          pragma Unreferenced (Handle);
          use type Parpen.Protocol.Cookie;
@@ -361,9 +356,9 @@ package body Test_Message is
          Assert (ID = Client_1, "Invalid client");
          Assert (Cookie = 16#beef_c0de#, "Invalid cookie");
          Assert (Method = 17, "Invalid method");
-         Assert (Data (Data_First .. Data_Last) = Test_Msg.all, "Invalid message");
+         Assert (Data (Data_First .. Data_First + Length - 1) = Test_Msg.all, "Invalid message");
          Assert (Recv_First = 1, "Invalid Recv_First");
-         Assert (Recv_Last = 1 + Recv_Buffer.all'Size / 8, "Invalid Recv_Last");
+         Assert (Length = Test_Msg.all'Size / 8, "Invalid Length");
          Transaction_Done := True;
       end Check_Transaction;
 
@@ -511,9 +506,8 @@ package body Test_Message is
                                 Cookie     : Parpen.Protocol.Cookie;
                                 Data       : String_Ptr;
                                 Data_First : Positive;
-                                Data_Last  : Positive;
                                 Recv_First : Positive;
-                                Recv_Last  : Positive);
+                                Length     : Natural);
 
       procedure Check_Callback (ID         : Client_ID;
                                 Handle     : Parpen.Protocol.Handle;
@@ -521,9 +515,8 @@ package body Test_Message is
                                 Cookie     : Parpen.Protocol.Cookie;
                                 Data       : String_Ptr;
                                 Data_First : Positive;
-                                Data_Last  : Positive;
                                 Recv_First : Positive;
-                                Recv_Last  : Positive)
+                                Length     : Natural)
       is
          pragma Unreferenced (Handle);
          use type Parpen.Protocol.Cookie;
@@ -532,31 +525,29 @@ package body Test_Message is
          Assert (ID = Client_1, "Invalid client:" & ID'Img);
          Assert (Cookie = 16#beef_c0de#, "Invalid cookie");
          Assert (Method = 17, "Invalid method");
-         Assert (Data (Data_First .. Data_Last) = Expected.all, "Invalid message");
+         Assert (Data (Data_First .. Data_First + Length - 1) = Expected.all, "Invalid message");
          Assert (Recv_First = 1, "Invalid Recv_First");
-         Assert (Recv_Last = 1 + Recv_Buffer.all'Size / 8, "Invalid Recv_Last");
+         Assert (Length = Callback.all'Size / 8 - 8, "Invalid Length");
          Callback_Done := True;
       end Check_Callback;
 
       procedure Check_Reply (ID         : Client_ID;
-                                Handle     : Parpen.Protocol.Handle;
-                                Method     : Parpen.Protocol.Method;
-                                Cookie     : Parpen.Protocol.Cookie;
-                                Data       : String_Ptr;
-                                Data_First : Positive;
-                                Data_Last  : Positive;
-                                Recv_First : Positive;
-                                Recv_Last  : Positive);
+                             Handle     : Parpen.Protocol.Handle;
+                             Method     : Parpen.Protocol.Method;
+                             Cookie     : Parpen.Protocol.Cookie;
+                             Data       : String_Ptr;
+                             Data_First : Positive;
+                             Recv_First : Positive;
+                             Length     : Natural);
 
       procedure Check_Reply (ID         : Client_ID;
-                                Handle     : Parpen.Protocol.Handle;
-                                Method     : Parpen.Protocol.Method;
-                                Cookie     : Parpen.Protocol.Cookie;
-                                Data       : String_Ptr;
-                                Data_First : Positive;
-                                Data_Last  : Positive;
-                                Recv_First : Positive;
-                                Recv_Last  : Positive)
+                             Handle     : Parpen.Protocol.Handle;
+                             Method     : Parpen.Protocol.Method;
+                             Cookie     : Parpen.Protocol.Cookie;
+                             Data       : String_Ptr;
+                             Data_First : Positive;
+                             Recv_First : Positive;
+                             Length     : Natural)
       is
          pragma Unreferenced (Handle);
          use type Parpen.Protocol.Cookie;
@@ -565,9 +556,9 @@ package body Test_Message is
          Assert (ID = Client_2, "Invalid client:" & ID'Img);
          Assert (Cookie = 16#b33f_c8de#, "Invalid cookie");
          Assert (Method = 42, "Invalid method");
-         Assert (Data (Data_First .. Data_Last) = Reply.all, "Invalid message");
+         Assert (Data (Data_First .. Data_First + Length - 1) = Reply.all, "Invalid message");
          Assert (Recv_First = 1, "Invalid Recv_First");
-         Assert (Recv_Last = 38, "Invalid Recv_Last");
+         Assert (Length = Reply.all'Size / 8, "Invalid Length");
          Reply_Done := True;
       end Check_Reply;
 
@@ -668,7 +659,7 @@ package body Test_Message is
       CS     : constant Message.Client_State := (Status    => Message.Status_Valid,
                                                  Receiving => True,
                                                  First     => 1,
-                                                 Last      => 42);
+                                                 Length    => 42);
       Status : Message.Status;
       use type Message.Client_State;
       use type Message.Status;

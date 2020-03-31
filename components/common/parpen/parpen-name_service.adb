@@ -37,11 +37,12 @@ package body Parpen.Name_Service is
       B_Context  : IBinder_Package.Context := IBinder_Package.Create;
       Handle     : Parpen.Binder.Handle;
 
-      procedure Parse_Binder (Server : Types.Bytes);
-      procedure Parse_Binder (Server : Types.Bytes)
+      procedure Parse_Handle (Server : Types.Bytes);
+      procedure Parse_Handle (Server : Types.Bytes)
       is
          Binder_Context : IBinder_Package.Context := IBinder_Package.Create;
       begin
+         Status := Status_Invalid_Binder;
          Binder_Buffer.Ptr.all := (others => Types.Byte'Val (0));
          Binder_Buffer.Ptr.all := Server;
          IBinder_Package.Initialize (Binder_Context, Binder_Buffer.Ptr);
@@ -52,12 +53,21 @@ package body Parpen.Name_Service is
             then
                Handle := IBinder_Package.Get_Handle (Binder_Context);
                Status := Status_Valid;
+            else
+               Trace ("Parpen.Name_Service: Trying to parse non-handle - "
+                      & (case IBinder_Package.Get_Kind (Binder_Context) is
+                         when Parpen.Binder.BK_WEAK_HANDLE   => "weak handle",
+                         when Parpen.Binder.BK_STRONG_HANDLE => "strong handle",
+                         when Parpen.Binder.BK_WEAK_BINDER   => "weak binder",
+                         when Parpen.Binder.BK_STRONG_BINDER => "strong binder",
+                         when Parpen.Binder.BK_POINTER       => "pointer",
+                         when Parpen.Binder.BK_FD            => "file descriptor"));
             end if;
          end if;
          IBinder_Package.Take_Buffer (Binder_Context, Binder_Buffer.Ptr);
-      end Parse_Binder;
+      end Parse_Handle;
 
-      procedure Parse_Binder is new Req_AS_Package.Get_Server (Parse_Binder);
+      procedure Parse_Handle is new Req_AS_Package.Get_Server (Parse_Handle);
 
       procedure Insert_Name (Name : Types.Bytes);
       procedure Insert_Name (Name : Types.Bytes)
@@ -86,7 +96,7 @@ package body Parpen.Name_Service is
             Handle := DB_Result.Element;
             Status := Status_Valid;
          else
-            Status := Status_Invalid;
+            Status := Status_Not_Found;
          end if;
       end Query_Name;
 
@@ -98,19 +108,23 @@ package body Parpen.Name_Service is
 
       --  Get service
       if Method = 1 then
+
+         Trace ("Parpen.Name_Service: Get service (method 1) called");
          Req_GS_Package.Initialize (Ctx    => GS_Context,
                                     Buffer => Data,
                                     First  => Types.First_Bit_Index (Data'First) + Data_Offset,
                                     Last   => Types.Last_Bit_Index (Data'First) + Data_Offset + Data_Length);
          Req_GS_Package.Verify_Message (GS_Context);
          if not Req_GS_Package.Structural_Valid_Message (GS_Context) then
+            Trace ("Parpen.Name_Service: Get service - invalid request");
             Req_GS_Package.Take_Buffer (GS_Context, Data);
             return;
          end if;
          Query_Name (GS_Context);
          Req_GS_Package.Take_Buffer (GS_Context, Data);
 
-         if Status = Status_Invalid then
+         if Status = Status_Not_Found then
+            Trace ("Parpen.Name_Service: Get service - not found");
             return;
          end if;
 
@@ -140,18 +154,24 @@ package body Parpen.Name_Service is
 
       --  Add service
       elsif Method = 3 then
+
+         Trace ("Parpen.Name_Service: Add service (method 3) called");
          Req_AS_Package.Initialize (Ctx    => AS_Context,
                                     Buffer => Data,
                                     First  => Types.First_Bit_Index (Data'First) + Data_Offset,
                                     Last   => Types.Last_Bit_Index (Data'First) + Data_Offset + Data_Length);
          Req_AS_Package.Verify_Message (AS_Context);
          if not Req_AS_Package.Structural_Valid_Message (AS_Context) then
+            Trace ("Parpen.Name_Service: Add service - invalid request");
             Req_AS_Package.Take_Buffer (AS_Context, Data);
+            Data_Length := 0;
             return;
          end if;
-         Parse_Binder (AS_Context);
+         Parse_Handle (AS_Context);
          if Status /= Status_Valid then
+            Trace ("Parpen.Name_Service: Add service - invalid handle");
             Req_AS_Package.Take_Buffer (AS_Context, Data);
+            Data_Length := 0;
             return;
          end if;
 
@@ -160,6 +180,7 @@ package body Parpen.Name_Service is
          Status := Status_Valid;
 
       else
+         Trace ("Parpen.Name_Service: invalid method");
          Status := Status_Invalid_Method;
       end if;
 

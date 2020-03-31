@@ -3,12 +3,15 @@ with Parpen.Protocol;
 
 generic
    with package Types is new Parpen.Generic_Types (<>);
+   with procedure Trace (Message : String);
    Num_Entries : Natural;
 package Parpen.Name_Service is
 
    type Status is
       (Status_Valid,
        Status_Invalid_Method,
+       Status_Invalid_Binder,
+       Status_Not_Found,
        Status_Invalid);
 
    procedure Initialize;

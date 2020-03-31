@@ -10,9 +10,9 @@ is
 
    use type Types.Bytes, Types.Bytes_Ptr, Types.Index, Types.Length, Types.Bit_Index, Types.Bit_Length;
 
-   type Virtual_Field is (F_Initial, F_Tag, F_Data, F_Final);
+   type Virtual_Field is (F_Initial, F_Tag, F_Data, F_Code, F_Final);
 
-   subtype Field is Virtual_Field range F_Tag .. F_Data;
+   subtype Field is Virtual_Field range F_Tag .. F_Code;
 
    type Field_Cursor is private with
      Default_Initial_Condition =>
@@ -30,7 +30,9 @@ is
             when F_Initial | F_Data | F_Final =>
                null;
             when F_Tag =>
-               Tag_Value : Protocol.Request_Tag_Base;
+               Tag_Value : Protocol.Tag_Base;
+            when F_Code =>
+               Code_Value : Protocol.Status_Base;
          end case;
       end record;
 
@@ -198,10 +200,15 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   function Get_Tag (Ctx : Context) return Protocol.Request_Tag with
+   function Get_Tag (Ctx : Context) return Protocol.Tag with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Tag);
+
+   function Get_Code (Ctx : Context) return Protocol.Status with
+     Pre =>
+       Valid_Context (Ctx)
+          and Valid (Ctx, F_Code);
 
    generic
       with procedure Process_Data (Data : Types.Bytes);
@@ -211,7 +218,7 @@ is
           and Has_Buffer (Ctx)
           and Present (Ctx, F_Data);
 
-   procedure Set_Tag (Ctx : in out Context; Val : Protocol.Request_Tag) with
+   procedure Set_Tag (Ctx : in out Context; Val : Protocol.Tag) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -227,13 +234,42 @@ is
           and Valid (Ctx, F_Tag)
           and Get_Tag (Ctx) = Val
           and Invalid (Ctx, F_Data)
-          and (Predecessor (Ctx, F_Data) = F_Tag
-            and Valid_Next (Ctx, F_Data))
+          and Invalid (Ctx, F_Code)
+          and (if Types.Bit_Length (Convert (Get_Tag (Ctx))) = Types.Bit_Length (Convert (T_TRANSACTION)) then
+             Predecessor (Ctx, F_Data) = F_Tag
+               and Valid_Next (Ctx, F_Data))
+          and (if Types.Bit_Length (Convert (Get_Tag (Ctx))) = Types.Bit_Length (Convert (T_STATUS)) then
+             Predecessor (Ctx, F_Code) = F_Tag
+               and Valid_Next (Ctx, F_Code))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
           and Predecessor (Ctx, F_Tag) = Predecessor (Ctx, F_Tag)'Old
           and Valid_Next (Ctx, F_Tag) = Valid_Next (Ctx, F_Tag)'Old;
+
+   procedure Set_Code (Ctx : in out Context; Val : Protocol.Status) with
+     Pre =>
+       Valid_Context (Ctx)
+          and then not Ctx'Constrained
+          and then Has_Buffer (Ctx)
+          and then Valid_Next (Ctx, F_Code)
+          and then Field_Last (Ctx, F_Code) <= Types.Bit_Index'Last / 2
+          and then Field_Condition (Ctx, (F_Code, Convert (Val)))
+          and then True
+          and then Available_Space (Ctx, F_Code) >= Field_Length (Ctx, F_Code),
+     Post =>
+       Valid_Context (Ctx)
+          and Has_Buffer (Ctx)
+          and Valid (Ctx, F_Code)
+          and Get_Code (Ctx) = Val
+          and Ctx.Buffer_First = Ctx.Buffer_First'Old
+          and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
+          and Ctx.First = Ctx.First'Old
+          and Predecessor (Ctx, F_Code) = Predecessor (Ctx, F_Code)'Old
+          and Valid_Next (Ctx, F_Code) = Valid_Next (Ctx, F_Code)'Old
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
+          and Cursor (Ctx, F_Data) = Cursor (Ctx, F_Data)'Old;
 
    generic
       with procedure Process_Data (Data : out Types.Bytes);
@@ -247,10 +283,12 @@ is
           and then Field_Condition (Ctx, (Fld => F_Data))
           and then Available_Space (Ctx, F_Data) >= Length
           and then (Field_First (Ctx, F_Data) + Length) <= Types.Bit_Index'Last / 2
-          and then ((True)),
+          and then ((Valid (Ctx, F_Tag)
+              and Get_Tag (Ctx) = T_TRANSACTION)),
      Post =>
        Valid_Context (Ctx)
           and Has_Buffer (Ctx)
+          and Invalid (Ctx, F_Code)
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
@@ -269,10 +307,12 @@ is
           and then Field_Condition (Ctx, (Fld => F_Data))
           and then Available_Space (Ctx, F_Data) >= Length
           and then (Field_First (Ctx, F_Data) + Length) <= Types.Bit_Index'Last / 2
-          and then ((True)),
+          and then ((Valid (Ctx, F_Tag)
+              and Get_Tag (Ctx) = T_TRANSACTION)),
      Post =>
        Valid_Context (Ctx)
           and Has_Buffer (Ctx)
+          and Invalid (Ctx, F_Code)
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
@@ -306,6 +346,8 @@ private
             Valid (Val.Tag_Value),
          when F_Data =>
             True,
+         when F_Code =>
+            Valid (Val.Code_Value),
          when F_Initial | F_Final =>
             False));
 
@@ -355,17 +397,30 @@ private
            and Cursors (F).Value.Fld = F))
       and then ((if Structural_Valid (Cursors (F_Data)) then
            (Valid (Cursors (F_Tag))
-               and then Cursors (F_Data).Predecessor = F_Tag)))
+               and then Cursors (F_Data).Predecessor = F_Tag
+               and then Types.Bit_Length (Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_TRANSACTION))))
+        and then (if Structural_Valid (Cursors (F_Code)) then
+           (Valid (Cursors (F_Tag))
+               and then Cursors (F_Code).Predecessor = F_Tag
+               and then Types.Bit_Length (Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_STATUS)))))
       and then ((if Invalid (Cursors (F_Tag)) then
-           Invalid (Cursors (F_Data))))
+           Invalid (Cursors (F_Data)))
+        and then (if Invalid (Cursors (F_Tag)) then
+           Invalid (Cursors (F_Code))))
       and then (if Structural_Valid (Cursors (F_Tag)) then
-         (Cursors (F_Tag).Last - Cursors (F_Tag).First + 1) = Protocol.Request_Tag_Base'Size
+         (Cursors (F_Tag).Last - Cursors (F_Tag).First + 1) = Protocol.Tag_Base'Size
            and then Cursors (F_Tag).Predecessor = F_Initial
            and then Cursors (F_Tag).First = First
-           and then (if Structural_Valid (Cursors (F_Data)) then
+           and then (if Structural_Valid (Cursors (F_Data))
+                and then Types.Bit_Length (Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_TRANSACTION)) then
               (Cursors (F_Data).Last - Cursors (F_Data).First + 1) = (Last - Cursors (F_Tag).Last)
                 and then Cursors (F_Data).Predecessor = F_Tag
-                and then Cursors (F_Data).First = (Cursors (F_Tag).Last + 1))));
+                and then Cursors (F_Data).First = (Cursors (F_Tag).Last + 1))
+           and then (if Structural_Valid (Cursors (F_Code))
+                and then Types.Bit_Length (Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_STATUS)) then
+              (Cursors (F_Code).Last - Cursors (F_Code).First + 1) = Protocol.Status_Base'Size
+                and then Cursors (F_Code).Predecessor = F_Tag
+                and then Cursors (F_Code).First = (Cursors (F_Tag).Last + 1))));
 
    type Context (Buffer_First, Buffer_Last : Types.Index := Types.Index'First; First, Last : Types.Bit_Index := Types.Bit_Index'First) is
       record

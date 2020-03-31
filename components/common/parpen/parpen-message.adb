@@ -6,7 +6,8 @@ package body Parpen.Message is
 
    package Offsets_Package is new Parpen.Protocol.Generic_Offsets (Types);
    package Name_Service is new Parpen.Name_Service (Types       => Types,
-                                                    Num_Entries => Num_Name_DB_Entries);
+                                                    Num_Entries => Num_Name_DB_Entries,
+                                                    Trace       => Trace);
 
    type Client_ID_Option (Valid : Boolean := False) is
       record
@@ -159,15 +160,19 @@ package body Parpen.Message is
 
       Status := (case Name_Service_Status is
                  when Name_Service.Status_Valid          => Status_Valid,
+                 when Name_Service.Status_Not_Found      => Status_Not_Found,
+                 when Name_Service.Status_Invalid_Binder => Status_Invalid_Binder,
                  when Name_Service.Status_Invalid        => Status_Invalid,
                  when Name_Service.Status_Invalid_Method => Status_Invalid_Method);
 
-      if Status /= Status_Valid then
+      if Status /= Status_Valid
+      then
+         Trace ("Parpen.Message: Name service process failed");
          return;
       end if;
 
       if Send_Length = 0 then
-         Status := Status_Valid;
+         Trace ("Parpen.Message: Exiting, Send_Length = 0");
          return;
       end if;
 
@@ -185,6 +190,7 @@ package body Parpen.Message is
          or else Send_Offset mod 8 /= 0
          or else Send_Length mod 8 /= 0
       then
+         Trace ("Parpen.Message: Translation failed");
          return;
       end if;
 
@@ -217,6 +223,7 @@ package body Parpen.Message is
                                          Handle   => Parpen.Binder.Handle'Val
                                                        (Parpen.Protocol.Handle'Pos (Transaction.Handle)));
          if not Resolve.Found (Node) then
+            Trace ("Parpen.Message: Dispatch - invalid handle");
             Status := Status_Invalid_Handle;
             return;
          end if;
@@ -229,9 +236,7 @@ package body Parpen.Message is
                           Receiving => True,
                           First     => Types.Index'Val (Types.Index'First
                                                         + Types.Bit_Length'Pos (Transaction.Recv_Offset / 8)),
-                          Last      => Types.Index'Val (Types.Index'First
-                                                        + Types.Bit_Length'Pos (Transaction.Recv_Offset / 8
-                                                                                + Transaction.Recv_Length / 8)));
+                          Length    => Natural (Transaction.Recv_Length / 8));
       else
          Sender_State := (Status    => Status_Invalid,
                           Receiving => False);
@@ -240,10 +245,12 @@ package body Parpen.Message is
                         State  => Sender_State,
                         Status => Status);
       if Status /= Status_Valid then
+         Trace ("Parpen.Message: Dispatch - error setting client state");
          return;
       end if;
 
       if Transaction.Send_Length = 0 then
+         Trace ("Parpen.Message: Dispatch - no send phase");
          return;
       end if;
 
@@ -257,6 +264,7 @@ package body Parpen.Message is
                  Dest_ID        => Receiver,
                  Status         => Status);
       if Status /= Status_Valid then
+         Trace ("Parpen.Message: Dispatch - translation failed");
          return;
       end if;
 
@@ -272,29 +280,38 @@ package body Parpen.Message is
                               Offsets_Length => Transaction.Offsets_Length,
                               Status         => Status);
 
-         if Send_Len = 0 then
-            Status := Status_Valid;
+         if Status /= Status_Valid then
+            Trace ("Parpen.Message: Dispatch - error handling name service request");
             return;
          end if;
 
          if Send_Len > Transaction.Recv_Length then
+            Trace ("Parpen.Message: Dispatch - receive buffer too small");
             Status := Status_Receive_Buffer_Too_Small;
             return;
          end if;
 
-         Send (ID          => Sender,
-               Handle      => Transaction.Handle,
-               Method      => Transaction.Method,
-               Cookie      => Transaction.Cookie,
-               Data        => Data,
-               Data_First  => Data'First + Types.Index (Send_Off / 8),
-               Data_Last   => Data'First + Types.Index (Send_Off / 8 + Send_Len / 8 - 1),
-               Recv_First  => Sender_State.First,
-               Recv_Last   => Sender_State.Last);
+         Send (ID         => Sender,
+               Handle     => Transaction.Handle,
+               Method     => Transaction.Method,
+               Cookie     => Transaction.Cookie,
+               Data       => Data,
+               Data_First => Types.Index'Val (Types.Index'Pos (Data'First) + Send_Off / 8),
+               Recv_First => (if Sender_State.Status = Status_Valid
+                              then Sender_State.First
+                              else Types.Index'First),
+               Length     => Natural (Send_Len / 8));
       else
          Receiver_State := Get_Client_State (Receiver);
          if not Receiver_State.Receiving then
+            Trace ("Parpen.Message: Dispatch - receiver not ready");
             Status := Status_Receiver_Not_Ready;
+            return;
+         end if;
+
+         if Natural (Transaction.Send_Length / 8) > Receiver_State.Length then
+            Trace ("Parpen.Message: Dispatch - receive buffer too small");
+            Status := Status_Receive_Buffer_Too_Small;
             return;
          end if;
 
@@ -305,11 +322,8 @@ package body Parpen.Message is
                Data        => Data,
                Data_First  => Types.Index'Val (Types.Index'Pos (Data'First)
                                                + Types.Bit_Index'Pos (Transaction.Send_Offset) / 8),
-               Data_Last   => Types.Index'Val (Types.Index'Pos (Data'First)
-                                               + Types.Bit_Index'Pos (Transaction.Send_Offset / 8
-                                                                      + Transaction.Send_Length / 8 - 1)),
                Recv_First  => Receiver_State.First,
-               Recv_Last   => Receiver_State.Last);
+               Length      => Natural (Transaction.Send_Length / 8));
 
          Set_Client_State (ID     => Receiver,
                            State  => (Status    => Status_Invalid,
@@ -379,12 +393,11 @@ package body Parpen.Message is
                      Cookie     : Parpen.Protocol.Cookie;
                      Data       : Types.Bytes_Ptr;
                      Data_First : Types.Index;
-                     Data_Last  : Types.Index;
                      Recv_First : Types.Index;
-                     Recv_Last  : Types.Index)
+                     Length     : Natural)
    is
       pragma Unreferenced
-         (ID, Handle, Method, Cookie, Data, Data_First, Data_Last, Recv_First, Recv_Last);
+         (ID, Handle, Method, Cookie, Data, Data_First, Recv_First, Length);
    begin
       null;
    end Ignore;

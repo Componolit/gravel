@@ -20,7 +20,7 @@ is
      (Protocol_Request.Has_Buffer (Ctx)
       and then Protocol_Request.Present (Ctx, Protocol_Request.F_Data)
       and then Protocol_Request.Valid (Ctx, Protocol_Request.F_Tag)
-      and then Protocol_Request.Get_Tag (Ctx) = REQUEST_TRANSACTION);
+      and then Protocol_Request.Get_Tag (Ctx) = T_TRANSACTION);
 
    procedure Switch_To_Data (Protocol_Request_Context : in out Protocol_Request.Context; Protocol_Transaction_Context : out Protocol_Transaction.Context) with
      Pre =>

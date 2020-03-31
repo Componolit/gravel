@@ -178,80 +178,124 @@ is
      Pre =>
        Valid (Val);
 
-   type Request_Tag_Base is mod 2**8;
+   type Tag_Base is mod 2**8;
 
-   type Request_Tag is (REQUEST_TRANSACTION) with
+   type Tag is (T_TRANSACTION, T_STATUS) with
      Size =>
        8;
-   for Request_Tag use (REQUEST_TRANSACTION => 1);
+   for Tag use (T_TRANSACTION => 0, T_STATUS => 1);
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Protocol_Request_Tag return Protocol.Request_Tag is
-     (Protocol.Request_Tag'First)
+   function Unreachable_Protocol_Tag return Protocol.Tag is
+     (Protocol.Tag'First)
     with
      Pre =>
        False;
 
    pragma Warnings (On, "precondition is statically false");
 
-   function Valid (Val : Protocol.Request_Tag_Base) return Boolean is
+   function Valid (Val : Protocol.Tag_Base) return Boolean is
      ((case Val is
-         when 1 =>
+         when 0 | 1 =>
             True,
          when others =>
             False));
 
-   function Convert (Enum : Protocol.Request_Tag) return Protocol.Request_Tag_Base is
+   function Convert (Enum : Protocol.Tag) return Protocol.Tag_Base is
      ((case Enum is
-         when REQUEST_TRANSACTION =>
+         when T_TRANSACTION =>
+            0,
+         when T_STATUS =>
             1));
 
-   function Convert (Val : Protocol.Request_Tag_Base) return Protocol.Request_Tag is
+   function Convert (Val : Protocol.Tag_Base) return Protocol.Tag is
      ((case Val is
+         when 0 =>
+            T_TRANSACTION,
          when 1 =>
-            REQUEST_TRANSACTION,
+            T_STATUS,
          when others =>
-            Unreachable_Protocol_Request_Tag))
+            Unreachable_Protocol_Tag))
     with
      Pre =>
        Valid (Val);
 
-   type Reply_Tag_Base is mod 2**8;
+   type Status_Base is mod 2**8;
 
-   type Reply_Tag is (REPLY_ERROR) with
+   type Status is (STATUS_OK, STATUS_UNKNOWN_ERROR, STATUS_PROTOCOL_VIOLATION, STATUS_INVALID_REQUEST, STATUS_INVALID_HANDLE, STATUS_INVALID_BINDER, STATUS_INVALID_METHOD, STATUS_OFFSET_OUT_OF_RANGE, STATUS_RECEIVER_NOT_READY, STATUS_RECEIVE_BUFFER_TOO_SMALL, STATUS_OVERFLOW) with
      Size =>
        8;
-   for Reply_Tag use (REPLY_ERROR => 1);
+   for Status use (STATUS_OK => 0, STATUS_UNKNOWN_ERROR => 1, STATUS_PROTOCOL_VIOLATION => 2, STATUS_INVALID_REQUEST => 3, STATUS_INVALID_HANDLE => 4, STATUS_INVALID_BINDER => 5, STATUS_INVALID_METHOD => 6, STATUS_OFFSET_OUT_OF_RANGE => 7, STATUS_RECEIVER_NOT_READY => 8, STATUS_RECEIVE_BUFFER_TOO_SMALL => 9, STATUS_OVERFLOW => 10);
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Protocol_Reply_Tag return Protocol.Reply_Tag is
-     (Protocol.Reply_Tag'First)
+   function Unreachable_Protocol_Status return Protocol.Status is
+     (Protocol.Status'First)
     with
      Pre =>
        False;
 
    pragma Warnings (On, "precondition is statically false");
 
-   function Valid (Val : Protocol.Reply_Tag_Base) return Boolean is
+   function Valid (Val : Protocol.Status_Base) return Boolean is
      ((case Val is
-         when 1 =>
+         when 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 =>
             True,
          when others =>
             False));
 
-   function Convert (Enum : Protocol.Reply_Tag) return Protocol.Reply_Tag_Base is
+   function Convert (Enum : Protocol.Status) return Protocol.Status_Base is
      ((case Enum is
-         when REPLY_ERROR =>
-            1));
+         when STATUS_OK =>
+            0,
+         when STATUS_UNKNOWN_ERROR =>
+            1,
+         when STATUS_PROTOCOL_VIOLATION =>
+            2,
+         when STATUS_INVALID_REQUEST =>
+            3,
+         when STATUS_INVALID_HANDLE =>
+            4,
+         when STATUS_INVALID_BINDER =>
+            5,
+         when STATUS_INVALID_METHOD =>
+            6,
+         when STATUS_OFFSET_OUT_OF_RANGE =>
+            7,
+         when STATUS_RECEIVER_NOT_READY =>
+            8,
+         when STATUS_RECEIVE_BUFFER_TOO_SMALL =>
+            9,
+         when STATUS_OVERFLOW =>
+            10));
 
-   function Convert (Val : Protocol.Reply_Tag_Base) return Protocol.Reply_Tag is
+   function Convert (Val : Protocol.Status_Base) return Protocol.Status is
      ((case Val is
+         when 0 =>
+            STATUS_OK,
          when 1 =>
-            REPLY_ERROR,
+            STATUS_UNKNOWN_ERROR,
+         when 2 =>
+            STATUS_PROTOCOL_VIOLATION,
+         when 3 =>
+            STATUS_INVALID_REQUEST,
+         when 4 =>
+            STATUS_INVALID_HANDLE,
+         when 5 =>
+            STATUS_INVALID_BINDER,
+         when 6 =>
+            STATUS_INVALID_METHOD,
+         when 7 =>
+            STATUS_OFFSET_OUT_OF_RANGE,
+         when 8 =>
+            STATUS_RECEIVER_NOT_READY,
+         when 9 =>
+            STATUS_RECEIVE_BUFFER_TOO_SMALL,
+         when 10 =>
+            STATUS_OVERFLOW,
          when others =>
-            Unreachable_Protocol_Reply_Tag))
+            Unreachable_Protocol_Status))
     with
      Pre =>
        Valid (Val);

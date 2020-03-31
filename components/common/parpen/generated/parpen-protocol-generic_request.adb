@@ -22,7 +22,8 @@ is
      (Valid_Next (Ctx, F_Tag)
       and then Available_Space (Ctx, F_Tag) = (Types.Last_Bit_Index (Ctx.Buffer_Last) - Ctx.First + 1)
       and then Invalid (Ctx, F_Tag)
-      and then Invalid (Ctx, F_Data));
+      and then Invalid (Ctx, F_Data)
+      and then Invalid (Ctx, F_Code));
 
    procedure Take_Buffer (Ctx : in out Context; Buffer : out Types.Bytes_Ptr) is
    begin
@@ -34,7 +35,9 @@ is
      (Ctx.Buffer /= null);
 
    function Message_Last (Ctx : Context) return Types.Bit_Index is
-     ((if Structural_Valid (Ctx.Cursors (F_Data)) then
+     ((if Structural_Valid (Ctx.Cursors (F_Code)) then
+       Ctx.Cursors (F_Code).Last
+    elsif Structural_Valid (Ctx.Cursors (F_Data)) then
        Ctx.Cursors (F_Data).Last
     else
        Types.Unreachable_Bit_Length));
@@ -50,15 +53,22 @@ is
          when F_Tag =>
             (case Fld is
                   when F_Data =>
-                     True,
+                     Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_TRANSACTION)),
+                  when F_Code =>
+                     Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_STATUS)),
                   when others =>
                      False),
-         when F_Data | F_Final =>
+         when F_Data | F_Code | F_Final =>
             False));
 
    function Field_Condition (Ctx : Context; Val : Field_Dependent_Value) return Boolean is
      ((case Val.Fld is
-         when F_Initial | F_Tag | F_Data =>
+         when F_Initial =>
+            True,
+         when F_Tag =>
+            Types.Bit_Length (Val.Tag_Value) = Types.Bit_Length (Convert (T_TRANSACTION))
+               or Types.Bit_Length (Val.Tag_Value) = Types.Bit_Length (Convert (T_STATUS)),
+         when F_Data | F_Code =>
             True,
          when F_Final =>
             False));
@@ -68,16 +78,18 @@ is
          when F_Initial =>
             (case Fld is
                   when F_Tag =>
-                     Protocol.Request_Tag_Base'Size,
+                     Protocol.Tag_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Tag =>
             (case Fld is
                   when F_Data =>
                      (Ctx.Last - Ctx.Cursors (F_Tag).Last),
+                  when F_Code =>
+                     Protocol.Status_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
-         when F_Data | F_Final =>
+         when F_Data | F_Code | F_Final =>
             0));
 
    function Field_First (Ctx : Context; Fld : Field) return Types.Bit_Index is
@@ -85,7 +97,14 @@ is
          when F_Tag =>
             Ctx.First,
          when F_Data =>
-            (if Ctx.Cursors (Fld).Predecessor = F_Tag then
+            (if Ctx.Cursors (Fld).Predecessor = F_Tag
+                  and Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_TRANSACTION)) then
+                (Ctx.Cursors (Ctx.Cursors (Fld).Predecessor).Last + 1)
+             else
+                Types.Unreachable_Bit_Length),
+         when F_Code =>
+            (if Ctx.Cursors (Fld).Predecessor = F_Tag
+                  and Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_STATUS)) then
                 (Ctx.Cursors (Ctx.Cursors (Fld).Predecessor).Last + 1)
              else
                 Types.Unreachable_Bit_Length)));
@@ -103,8 +122,13 @@ is
    function Successor (Ctx : Context; Fld : Field) return Virtual_Field is
      ((case Fld is
          when F_Tag =>
-            F_Data,
-         when F_Data =>
+            (if Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_TRANSACTION)) then
+                F_Data
+             elsif Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_STATUS)) then
+                F_Code
+             else
+                F_Initial),
+         when F_Data | F_Code =>
             F_Final))
     with
      Pre =>
@@ -117,18 +141,21 @@ is
             True,
          when F_Tag =>
             Ctx.Cursors (Fld).Predecessor = F_Initial,
-         when F_Data =>
+         when F_Data | F_Code =>
             (Valid (Ctx.Cursors (F_Tag))
                  and Ctx.Cursors (Fld).Predecessor = F_Tag),
          when F_Final =>
-            (Structural_Valid (Ctx.Cursors (F_Data))
+            (Valid (Ctx.Cursors (F_Code))
+                 and Ctx.Cursors (Fld).Predecessor = F_Code)
+               or (Structural_Valid (Ctx.Cursors (F_Data))
                  and Ctx.Cursors (Fld).Predecessor = F_Data)));
 
    function Invalid_Successor (Ctx : Context; Fld : Field) return Boolean is
      ((case Fld is
          when F_Tag =>
-            Invalid (Ctx.Cursors (F_Data)),
-         when F_Data =>
+            Invalid (Ctx.Cursors (F_Data))
+               and Invalid (Ctx.Cursors (F_Code)),
+         when F_Data | F_Code =>
             True));
 
    function Valid_Next (Ctx : Context; Fld : Field) return Boolean is
@@ -156,10 +183,16 @@ is
           and (case Fld is
                when F_Tag =>
                   Invalid (Ctx, F_Tag)
-                     and Invalid (Ctx, F_Data),
+                     and Invalid (Ctx, F_Data)
+                     and Invalid (Ctx, F_Code),
                when F_Data =>
                   Ctx.Cursors (F_Tag) = Ctx.Cursors (F_Tag)'Old
-                     and Invalid (Ctx, F_Data))
+                     and Invalid (Ctx, F_Data)
+                     and Invalid (Ctx, F_Code),
+               when F_Code =>
+                  Ctx.Cursors (F_Tag) = Ctx.Cursors (F_Tag)'Old
+                     and Ctx.Cursors (F_Data) = Ctx.Cursors (F_Data)'Old
+                     and Invalid (Ctx, F_Code))
    is
       First : constant Types.Bit_Length := Field_First (Ctx, Fld) with
         Ghost;
@@ -170,12 +203,18 @@ is
          and Field_Length (Ctx, Fld) = Length);
       case Fld is
          when F_Tag =>
+            Ctx.Cursors (F_Code) := (S_Invalid, F_Final);
             Ctx.Cursors (F_Data) := (S_Invalid, F_Final);
             Ctx.Cursors (F_Tag) := (S_Invalid, Ctx.Cursors (F_Tag).Predecessor);
             pragma Assert (Field_First (Ctx, Fld) = First
                and Field_Length (Ctx, Fld) = Length);
          when F_Data =>
+            Ctx.Cursors (F_Code) := (S_Invalid, F_Final);
             Ctx.Cursors (F_Data) := (S_Invalid, Ctx.Cursors (F_Data).Predecessor);
+            pragma Assert (Field_First (Ctx, Fld) = First
+               and Field_Length (Ctx, Fld) = Length);
+         when F_Code =>
+            Ctx.Cursors (F_Code) := (S_Invalid, Ctx.Cursors (F_Code).Predecessor);
             pragma Assert (Field_First (Ctx, Fld) = First
                and Field_Length (Ctx, Fld) = Length);
       end case;
@@ -200,7 +239,9 @@ is
          when F_Tag =>
             False,
          when F_Data =>
-            True));
+            True,
+         when F_Code =>
+            False));
 
    function Get_Field_Value (Ctx : Context; Fld : Field) return Field_Dependent_Value with
      Pre =>
@@ -218,13 +259,16 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      function Extract is new Types.Extract (Protocol.Request_Tag_Base);
+      function Extract is new Types.Extract (Protocol.Tag_Base);
+      function Extract is new Types.Extract (Protocol.Status_Base);
    begin
       return ((case Fld is
             when F_Tag =>
                (Fld => F_Tag, Tag_Value => Extract (Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset)),
             when F_Data =>
-               (Fld => F_Data)));
+               (Fld => F_Data),
+            when F_Code =>
+               (Fld => F_Code, Code_Value => Extract (Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset))));
    end Get_Field_Value;
 
    procedure Verify (Ctx : in out Context; Fld : Field) is
@@ -244,16 +288,24 @@ is
                   Ctx.Cursors (Fld) := (State => S_Valid, First => Field_First (Ctx, Fld), Last => Field_Last (Ctx, Fld), Value => Value, Predecessor => Ctx.Cursors (Fld).Predecessor);
                end if;
                pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Tag)) then
-                   (Ctx.Cursors (F_Tag).Last - Ctx.Cursors (F_Tag).First + 1) = Protocol.Request_Tag_Base'Size
+                   (Ctx.Cursors (F_Tag).Last - Ctx.Cursors (F_Tag).First + 1) = Protocol.Tag_Base'Size
                      and then Ctx.Cursors (F_Tag).Predecessor = F_Initial
                      and then Ctx.Cursors (F_Tag).First = Ctx.First
-                     and then (if Structural_Valid (Ctx.Cursors (F_Data)) then
+                     and then (if Structural_Valid (Ctx.Cursors (F_Data))
+                          and then Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_TRANSACTION)) then
                         (Ctx.Cursors (F_Data).Last - Ctx.Cursors (F_Data).First + 1) = (Ctx.Last - Ctx.Cursors (F_Tag).Last)
                           and then Ctx.Cursors (F_Data).Predecessor = F_Tag
-                          and then Ctx.Cursors (F_Data).First = (Ctx.Cursors (F_Tag).Last + 1))));
+                          and then Ctx.Cursors (F_Data).First = (Ctx.Cursors (F_Tag).Last + 1))
+                     and then (if Structural_Valid (Ctx.Cursors (F_Code))
+                          and then Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_STATUS)) then
+                        (Ctx.Cursors (F_Code).Last - Ctx.Cursors (F_Code).First + 1) = Protocol.Status_Base'Size
+                          and then Ctx.Cursors (F_Code).Predecessor = F_Tag
+                          and then Ctx.Cursors (F_Code).First = (Ctx.Cursors (F_Tag).Last + 1))));
                if Fld = F_Tag then
                   Ctx.Cursors (Successor (Ctx, Fld)) := (State => S_Invalid, Predecessor => Fld);
                elsif Fld = F_Data then
+                  Ctx.Cursors (Successor (Ctx, Fld)) := (State => S_Invalid, Predecessor => Fld);
+               elsif Fld = F_Code then
                   Ctx.Cursors (Successor (Ctx, Fld)) := (State => S_Invalid, Predecessor => Fld);
                end if;
             else
@@ -269,6 +321,7 @@ is
    begin
       Verify (Ctx, F_Tag);
       Verify (Ctx, F_Data);
+      Verify (Ctx, F_Code);
    end Verify_Message;
 
    function Present (Ctx : Context; Fld : Field) return Boolean is
@@ -292,18 +345,28 @@ is
 
    function Structural_Valid_Message (Ctx : Context) return Boolean is
      (Valid (Ctx, F_Tag)
-      and then Structural_Valid (Ctx, F_Data));
+      and then ((Structural_Valid (Ctx, F_Data)
+          and then Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_TRANSACTION)))
+        or (Valid (Ctx, F_Code)
+          and then Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_STATUS)))));
 
    function Valid_Message (Ctx : Context) return Boolean is
      (Valid (Ctx, F_Tag)
-      and then Valid (Ctx, F_Data));
+      and then ((Valid (Ctx, F_Data)
+          and then Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_TRANSACTION)))
+        or (Valid (Ctx, F_Code)
+          and then Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_STATUS)))));
 
    function Incomplete_Message (Ctx : Context) return Boolean is
      (Incomplete (Ctx, F_Tag)
-      or Incomplete (Ctx, F_Data));
+      or Incomplete (Ctx, F_Data)
+      or Incomplete (Ctx, F_Code));
 
-   function Get_Tag (Ctx : Context) return Protocol.Request_Tag is
+   function Get_Tag (Ctx : Context) return Protocol.Tag is
      (Convert (Ctx.Cursors (F_Tag).Value.Tag_Value));
+
+   function Get_Code (Ctx : Context) return Protocol.Status is
+     (Convert (Ctx.Cursors (F_Code).Value.Code_Value));
 
    procedure Get_Data (Ctx : Context) is
       First : constant Types.Index := Types.Byte_Index (Ctx.Cursors (F_Data).First);
@@ -345,7 +408,8 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      procedure Insert is new Types.Insert (Protocol.Request_Tag_Base);
+      procedure Insert is new Types.Insert (Protocol.Tag_Base);
+      procedure Insert is new Types.Insert (Protocol.Status_Base);
    begin
       Fst := First;
       Lst := Last;
@@ -354,12 +418,16 @@ is
             null;
          when F_Tag =>
             Insert (Val.Tag_Value, Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset);
-         when F_Data | F_Final =>
+         when F_Data =>
+            null;
+         when F_Code =>
+            Insert (Val.Code_Value, Ctx.Buffer.all (Buffer_First .. Buffer_Last), Offset);
+         when F_Final =>
             null;
       end case;
    end Set_Field_Value;
 
-   procedure Set_Tag (Ctx : in out Context; Val : Protocol.Request_Tag) is
+   procedure Set_Tag (Ctx : in out Context; Val : Protocol.Tag) is
       Field_Value : constant Field_Dependent_Value := (F_Tag, Convert (Val));
       First, Last : Types.Bit_Index;
    begin
@@ -369,6 +437,17 @@ is
       Ctx.Cursors (F_Tag) := (State => S_Valid, First => First, Last => Last, Value => Field_Value, Predecessor => Ctx.Cursors (F_Tag).Predecessor);
       Ctx.Cursors (Successor (Ctx, F_Tag)) := (State => S_Invalid, Predecessor => F_Tag);
    end Set_Tag;
+
+   procedure Set_Code (Ctx : in out Context; Val : Protocol.Status) is
+      Field_Value : constant Field_Dependent_Value := (F_Code, Convert (Val));
+      First, Last : Types.Bit_Index;
+   begin
+      Reset_Dependent_Fields (Ctx, F_Code);
+      Set_Field_Value (Ctx, Field_Value, First, Last);
+      Ctx := (Ctx.Buffer_First, Ctx.Buffer_Last, Ctx.First, Last, Ctx.Buffer, Ctx.Cursors);
+      Ctx.Cursors (F_Code) := (State => S_Valid, First => First, Last => Last, Value => Field_Value, Predecessor => Ctx.Cursors (F_Code).Predecessor);
+      Ctx.Cursors (Successor (Ctx, F_Code)) := (State => S_Invalid, Predecessor => F_Code);
+   end Set_Code;
 
    procedure Set_Bounded_Data (Ctx : in out Context; Length : Types.Bit_Length) is
       First : constant Types.Bit_Index := Field_First (Ctx, F_Data);
@@ -389,13 +468,19 @@ is
       Reset_Dependent_Fields (Ctx, F_Data);
       Ctx := (Ctx.Buffer_First, Ctx.Buffer_Last, Ctx.First, Last, Ctx.Buffer, Ctx.Cursors);
       pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Tag)) then
-          (Ctx.Cursors (F_Tag).Last - Ctx.Cursors (F_Tag).First + 1) = Protocol.Request_Tag_Base'Size
+          (Ctx.Cursors (F_Tag).Last - Ctx.Cursors (F_Tag).First + 1) = Protocol.Tag_Base'Size
             and then Ctx.Cursors (F_Tag).Predecessor = F_Initial
             and then Ctx.Cursors (F_Tag).First = Ctx.First
-            and then (if Structural_Valid (Ctx.Cursors (F_Data)) then
+            and then (if Structural_Valid (Ctx.Cursors (F_Data))
+                 and then Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_TRANSACTION)) then
                (Ctx.Cursors (F_Data).Last - Ctx.Cursors (F_Data).First + 1) = (Ctx.Last - Ctx.Cursors (F_Tag).Last)
                  and then Ctx.Cursors (F_Data).Predecessor = F_Tag
-                 and then Ctx.Cursors (F_Data).First = (Ctx.Cursors (F_Tag).Last + 1))));
+                 and then Ctx.Cursors (F_Data).First = (Ctx.Cursors (F_Tag).Last + 1))
+            and then (if Structural_Valid (Ctx.Cursors (F_Code))
+                 and then Types.Bit_Length (Ctx.Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_STATUS)) then
+               (Ctx.Cursors (F_Code).Last - Ctx.Cursors (F_Code).First + 1) = Protocol.Status_Base'Size
+                 and then Ctx.Cursors (F_Code).Predecessor = F_Tag
+                 and then Ctx.Cursors (F_Code).First = (Ctx.Cursors (F_Tag).Last + 1))));
       Ctx.Cursors (F_Data) := (State => S_Structural_Valid, First => First, Last => Last, Value => (Fld => F_Data), Predecessor => Ctx.Cursors (F_Data).Predecessor);
       Ctx.Cursors (Successor (Ctx, F_Data)) := (State => S_Invalid, Predecessor => F_Data);
    end Initialize_Bounded_Data;

@@ -4,6 +4,7 @@ with Parpen.Protocol;
 
 generic
    with package Types is new Parpen.Generic_Types (<>);
+   with procedure Trace (Message : String);
    type Client_ID is (<>);
    Num_Nodes           : Natural;
    Num_Handles         : Natural;
@@ -14,8 +15,10 @@ is
       (Status_Valid,
        Status_Invalid,
        Status_Invalid_Handle,
+       Status_Invalid_Binder,
        Status_Invalid_Method,
        Status_Invalid_Client,
+       Status_Not_Found,
        Status_Offset_Out_Of_Range,
        Status_Receiver_Not_Ready,
        Status_Receive_Buffer_Too_Small,
@@ -30,8 +33,8 @@ is
             when Status_Valid =>
                case Receiving is
                   when True =>
-                     First : Types.Index;
-                     Last  : Types.Index;
+                     First  : Types.Index;
+                     Length : Natural;
                   when False =>
                      null;
                end case;
@@ -73,9 +76,8 @@ is
                            Cookie     : Parpen.Protocol.Cookie;
                            Data       : Types.Bytes_Ptr;
                            Data_First : Types.Index;
-                           Data_Last  : Types.Index;
                            Recv_First : Types.Index;
-                           Recv_Last  : Types.Index);
+                           Length     : Natural);
    procedure Dispatch (Sender      :        Client_ID;
                        Transaction :        Parpen.Message.Transaction;
                        Data        : in out Types.Bytes_Ptr;
@@ -87,9 +89,8 @@ is
                      Cookie     : Parpen.Protocol.Cookie;
                      Data       : Types.Bytes_Ptr;
                      Data_First : Types.Index;
-                     Data_Last  : Types.Index;
                      Recv_First : Types.Index;
-                     Recv_Last  : Types.Index);
+                     Length     : Natural);
 
    --  Apply Operation to every offset encoded in Data
    generic
