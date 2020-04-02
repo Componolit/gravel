@@ -40,12 +40,69 @@ is
    package Memory_Client is new Memory.Client (Modify);
 
    package Scratch is new Parpen.Container (Types, 4096);
-   Scratch_Len : Natural := 0;
+
+   type Direction is (Dir_Invalid, Dir_In, Dir_Out);
+   type Operation (Direction : Component.Direction := Dir_Invalid) is
+      record
+         case Direction is
+            when Dir_In | Dir_Out =>
+               Start  : Positive;
+               Length : Natural;
+            when Dir_Invalid =>
+               null;
+         end case;
+      end record;
+   Modify_Operation : Component.Operation := (Direction => Dir_Invalid);
 
    Cap : Gneiss.Capability;
    Log : Gneiss.Log.Client_Session;
    Msg : Message.Client_Session;
    Mem : Memory.Client_Session;
+
+   -----------
+   -- Trace --
+   -----------
+
+   procedure Trace (Message : String)
+   is
+   begin
+      if Gneiss.Log.Initialized (Log) then
+         Gneiss.Log.Client.Info (Log, Message);
+      end if;
+   end Trace;
+
+   procedure Dump (Data : String)
+   is
+      function Digit (Value : Natural) return Character;
+      function Digit (Value : Natural) return Character
+      is
+         V : constant Natural := Value mod 16;
+      begin
+         if V <= 9 then
+            return Character'Val (V + Character'Pos ('0'));
+         elsif V <= 16 then
+            return Character'Val (V + Character'Pos ('A') - 16#A#);
+         end if;
+         return '*';
+      end Digit;
+
+      function Hex (Value : Character) return String;
+      function Hex (Value : Character) return String
+      is
+         Val : constant Natural := Natural (Character'Pos (Value));
+      begin
+         return Digit (Val / 16) & Digit (Val mod 16);
+      end Hex;
+
+      Pos : Natural := 1;
+      Buffer : String (1 .. 3 * Data'Length) := (others => ' ');
+   begin
+      for D of Data loop
+         Buffer (Pos .. Pos + 1) := Hex (D);
+         Pos := Pos + 3;
+      end loop;
+      Gneiss.Log.Client.Info (Log, Buffer);
+   end Dump;
 
    package FSM is
       procedure Reset;
@@ -54,8 +111,28 @@ is
 
    package body FSM is
 
-      type State_Type is (Initial, Reply, Data, Final, Fail);
+      type State_Type is (Initial, Reply, Data);
       State : State_Type := Initial;
+
+      type Reply_Kind is (R_Invalid, R_Status, R_Transaction);
+      type Reply_Type (Kind : Reply_Kind := R_Invalid) is record
+         case Kind is
+            when R_Invalid =>
+               null;
+            when R_Status =>
+               Status : Parpen.Protocol.Status;
+            when R_Transaction =>
+               Handle         : Parpen.Protocol.Handle;
+               Method         : Parpen.Protocol.Method;
+               Cookie         : Parpen.Protocol.Cookie;
+               Send_Offset    : Parpen.Protocol.Offset;
+               Send_Length    : Parpen.Protocol.Length;
+               Meta_Offset    : Parpen.Protocol.Offset;
+               Meta_Length    : Parpen.Protocol.Length;
+               Receive_Offset : Parpen.Protocol.Offset;
+               Receive_Length : Parpen.Protocol.Length;
+         end case;
+      end record;
 
       function "&" (Left : String; Right : Natural) return String is
          (Left & (1 => Character'Val (Right)));
@@ -63,8 +140,8 @@ is
       procedure Handle_Initial (State : in out State_Type)
       is
          package Request is new Parpen.Container (Types, Message_Buffer'Length);
-         Request_Context : Request_Package.Context := Request_Package.Create;
-         Transaction_Context: Transaction_Package.Context := Transaction_Package.Create;
+         Request_Context     : Request_Package.Context := Request_Package.Create;
+         Transaction_Context : Transaction_Package.Context := Transaction_Package.Create;
 
          Add_Service : constant String := String'(
             ""
@@ -90,12 +167,14 @@ is
 
          if not Message.Initialized (Msg)
          then
-            State := Fail;
+            Main.Vacate (Cap, Main.Failure);
             return;
          end if;
 
          Scratch.Ptr.all (1 .. Add_Service'Length) := Add_Service;
-         Scratch_Len := Add_Service'Length;
+         Modify_Operation := (Direction => Dir_Out,
+                              Start     => 1,
+                              Length    => Add_Service'Length);
          Memory_Client.Modify (Mem);
 
          Request.Ptr.all := (others => ASCII.NUL);
@@ -118,7 +197,7 @@ is
             and then not Transaction_Package.Valid_Message (Transaction_Context)
          then
             Gneiss.Log.Client.Error (Log, "Add transaction invalid");
-            State := Fail;
+            Main.Vacate (Cap, Main.Failure);
             return;
          end if;
 
@@ -127,22 +206,23 @@ is
          State := Reply;
       end Handle_Initial;
 
-      procedure Parse_Reply (Valid : out Boolean)
+      procedure Parse_Reply (Reply : out Reply_Type)
       is
-         package Reply is new Parpen.Container (Types, Message_Buffer'Length);
-         Reply_Context : Request_Package.Context := Request_Package.Create;
-         Status        : Parpen.Protocol.Status;
+         package Reply_Buffer is new Parpen.Container (Types, Message_Buffer'Length);
+         Reply_Context       : Request_Package.Context := Request_Package.Create;
+         Transaction_Context : Transaction_Package.Context := Transaction_Package.Create;
          use type Parpen.Protocol.Status;
       begin
-         Valid := False;
-         Message_Client.Read (Msg, Reply.Ptr.all);
+         Gneiss.Log.Client.Info (Log, "Parse_Reply called");
+         Message_Client.Read (Msg, Reply_Buffer.Ptr.all);
 
-         Request_Package.Initialize (Reply_Context, Reply.Ptr);
+         Request_Package.Initialize (Reply_Context, Reply_Buffer.Ptr);
          Request_Package.Verify_Message (Reply_Context);
-         if not Request_Package.Valid_Message (Reply_Context) then
+         if not Request_Package.Structural_Valid_Message (Reply_Context) then
             if Gneiss.Log.Initialized (Log) then
                Gneiss.Log.Client.Error (Log, "Invalid reply");
             end if;
+            Reply := (Kind => R_Invalid);
             return;
          end if;
 
@@ -151,18 +231,37 @@ is
                if Gneiss.Log.Initialized (Log) then
                   Gneiss.Log.Client.Info (Log, "Reply transaction received");
                end if;
-               Valid := True;
+               Contains_Package.Switch_To_Data (Reply_Context, Transaction_Context);
+               Transaction_Package.Verify_Message (Transaction_Context);
+               if not Transaction_Package.Valid_Message (Transaction_Context) then
+                  if Gneiss.Log.Initialized (Log) then
+                     Gneiss.Log.Client.Error (Log, "Invalid transaction");
+                  end if;
+                  Reply := (Kind => R_Invalid);
+                  return;
+               end if;
+               Reply := (Kind           => R_Transaction,
+                         Method         => Transaction_Package.Get_Method (Transaction_Context),
+                         Cookie         => Transaction_Package.Get_Cookie (Transaction_Context),
+                         Handle         => Transaction_Package.Get_Handle (Transaction_Context),
+                         Send_Offset    => Transaction_Package.Get_Send_Offset (Transaction_Context),
+                         Send_Length    => Transaction_Package.Get_Send_Length (Transaction_Context),
+                         Meta_Offset    => Transaction_Package.Get_Meta_Offset (Transaction_Context),
+                         Meta_Length    => Transaction_Package.Get_Meta_Length (Transaction_Context),
+                         Receive_Offset => Transaction_Package.Get_Receive_Offset (Transaction_Context),
+                         Receive_Length => Transaction_Package.Get_Receive_Length (Transaction_Context));
+
             when Parpen.Protocol.T_STATUS =>
-               Status := Request_Package.Get_Code (Reply_Context);
-               if Status = Parpen.Protocol.STATUS_OK then
-                  Valid := True;
+               Reply := (Kind   => R_Status,
+                         Status => Request_Package.Get_Code (Reply_Context));
+               if Reply.Status = Parpen.Protocol.STATUS_OK then
                   return;
                end if;
 
                if Gneiss.Log.Initialized (Log) then
                   Gneiss.Log.Client.Info
                      (Log, "ERROR: " &
-                           (case Status is
+                           (case Reply.Status is
                             when Parpen.Protocol.STATUS_OK                       => "OK (no error)",
                             when Parpen.Protocol.STATUS_UNKNOWN_ERROR            => "Unknown",
                             when Parpen.Protocol.STATUS_PROTOCOL_VIOLATION       => "Protocol violation",
@@ -185,35 +284,33 @@ is
 
          Request_Context     : Request_Package.Context := Request_Package.Create;
          Transaction_Context : Transaction_Package.Context := Transaction_Package.Create;
-         Success             : Boolean;
+         Reply               : Reply_Type;
 
-         Get_Service : String := String'(
+         Get_Service : constant String := String'(
             ""
             & 16#00# & 16#00# & 16#00# & 16#04# -- Len
             & "Test"                            -- Name
-            & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
-            & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
-            & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
-            & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
-            & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
-            & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
-            & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
          );
 
          use type Parpen.Protocol.Tag;
-         use type Parpen.Protocol.Length;
+         use type Parpen.Protocol.Status;
       begin
          if Gneiss.Log.Initialized (Log) then
             Gneiss.Log.Client.Info (Log, "Handle_Reply");
          end if;
 
          Scratch.Ptr.all (1 .. Get_Service'Length) := Get_Service;
-         Scratch_Len := Get_Service'Length;
+         Modify_Operation := (Direction => Dir_Out,
+                              Start     => 1,
+                              Length    => Get_SErvice'Length);
          Memory_Client.Modify (Mem);
 
-         Parse_Reply (Success);
-         if not Success then
-            State := Fail;
+         Parse_Reply (Reply);
+         if
+            Reply.Kind /= R_Status
+            and then Reply.Status = Parpen.Protocol.STATUS_OK
+         then
+            Main.Vacate (Cap, Main.Failure);
             return;
          end if;
 
@@ -226,18 +323,18 @@ is
          Transaction_Package.Set_Method (Transaction_Context, 1);
          Transaction_Package.Set_Cookie (Transaction_Context, 16#beef_dead_c0de#);
          Transaction_Package.Set_Send_Offset (Transaction_Context, 0);
-         Transaction_Package.Set_Send_Length (Transaction_Context, Get_Service'Size - 64);
+         Transaction_Package.Set_Send_Length (Transaction_Context, Get_Service'Size);
          Transaction_Package.Set_Meta_Offset (Transaction_Context, 0);
          Transaction_Package.Set_Meta_Length (Transaction_Context, 0);
          Transaction_Package.Set_Receive_Offset (Transaction_Context, 0);
-         Transaction_Package.Set_Receive_Length (Transaction_Context, Get_Service'Size - 64);
+         Transaction_Package.Set_Receive_Length (Transaction_Context, Scratch.Ptr.all'Length);
 
          if
             Gneiss.Log.Initialized (Log)
             and then not Transaction_Package.Valid_Message (Transaction_Context)
          then
             Gneiss.Log.Client.Error (Log, "Query transaction invalid");
-            State := Fail;
+            Main.Vacate (Cap, Main.Failure);
             return;
          end if;
 
@@ -248,37 +345,57 @@ is
 
       procedure Handle_Data (State : in out State_Type)
       is
-         Success : Boolean;
+         Reply    : Reply_Type;
+         Expected : constant String := String'(
+            ""
+            & "wb*" & 16#85#                    -- Weak binder
+            & 16#00# & 16#00# & 16#00# & 16#00# -- flat_binder_flags with accept_fds unset
+            & 16#01# & 16#00# & 16#00# & 16#00# -- binder (value: 100000000000001)
+            & 16#00# & 16#00# & 16#00# & 16#01# --
+            & 16#00# & 16#00# & 16#be# & 16#ef# -- cookie (part 1)
+            & 16#de# & 16#ad# & 16#c0# & 16#de# -- cookie (part 2)
+         );
+         use type Parpen.Protocol.Cookie;
       begin
          if Gneiss.Log.Initialized (Log) then
             Gneiss.Log.Client.Info (Log, "Handle_Data");
          end if;
 
-         Parse_Reply (Success);
-         if not Success then
-            State := Fail;
+         Parse_Reply (Reply);
+         if Reply.Kind /= R_Transaction then
+            Main.Vacate (Cap, Main.Failure);
          end if;
-      end Handle_Data;
 
-      procedure Handle_Final (State : in out State_Type)
-      is
-         pragma Unreferenced (State);
-      begin
-         if Gneiss.Log.Initialized (Log) then
-            Gneiss.Log.Client.Info (Log, "Handle_Final");
+         -- Use transaction
+         if Reply.Cookie /= 16#beef_dead_c0de# then
+            if Gneiss.Log.Initialized (Log) then
+               Gneiss.Log.Client.Info (Log, "Invalid cookie received");
+            end if;
+            return;
          end if;
+
+         Modify_Operation := (Direction => Dir_In,
+                              Start     => 1,
+                              Length    => Natural (Reply.Receive_Length));
+         Memory_Client.Modify (Mem);
+         if Scratch.Ptr (Scratch.Ptr'First + Natural (Reply.Receive_Offset)
+                         .. Scratch.Ptr'First + Natural (Reply.Receive_Offset) + Natural (Reply.Receive_Length) - 1)
+            /= Expected
+         then
+            if Gneiss.Log.Initialized (Log) then
+               Gneiss.Log.Client.Info (Log, "Unexpected result");
+               Dump (Scratch.Ptr (Scratch.Ptr'First + Natural (Reply.Receive_Offset)
+                                  .. Scratch.Ptr'First + Natural (Reply.Receive_Offset)
+                                     + Natural (Reply.Receive_Length) - 1));
+               Dump (Expected);
+            end if;
+            Main.Vacate (Cap, Main.Failure);
+            return;
+         end if;
+
+         Trace ("Success: Valid date received");
          Main.Vacate (Cap, Main.Success);
-      end Handle_Final;
-
-      procedure Handle_Fail (State : in out State_Type)
-      is
-         pragma Unreferenced (State);
-      begin
-         if Gneiss.Log.Initialized (Log) then
-            Gneiss.Log.Client.Info (Log, "Handle_Final");
-         end if;
-         Main.Vacate (Cap, Main.Failure);
-      end Handle_Fail;
+      end Handle_Data;
 
       procedure Reset is
       begin
@@ -291,8 +408,6 @@ is
             when Initial => Handle_Initial (State);
             when Reply   => Handle_Reply (State);
             when Data    => Handle_Data (State);
-            when Final   => Handle_Final (State);
-            when Fail    => Handle_Fail (State);
          end case;
       end Next;
 
@@ -350,18 +465,26 @@ is
    procedure Modify (Session : in out Memory.Client_Session;
                      Data    : in out String)
    is
+      pragma Unreferenced (Session);
    begin
-      if Gneiss.Log.Initialized (Log) then
-         Gneiss.Log.Client.Info (Log, "Modify");
-      end if;
       if Data'Length > Scratch.Ptr'Length then
-         if Gneiss.Log.Initialized (Log) then
-            Gneiss.Log.Client.Error (Log, "Scratch buffer overflow");
-         end if;
+         Trace ("Data overflows scratch buffer");
+         Data := (others => ASCII.NUL);
+         --  FIXME: How do we signal an error?
          return;
       end if;
-      Data (Data'First .. Data'First + (Scratch_Len - 1)) := Scratch.Ptr.all (1 .. Scratch_Len);
+      case Modify_Operation.Direction is
+         when Dir_In =>
+            Trace ("Modify: Copying shared memory to scratch area");
+            Scratch.Ptr.all (Scratch.Ptr'First .. Scratch.Ptr'First + Data'Length - 1) := Data;
+         when Dir_Out =>
+            Trace ("Modify: Copying scratch area to shared memory");
+            Data := Scratch.Ptr.all (Scratch.Ptr'First .. Scratch.Ptr'First + Data'Length - 1);
+         when Dir_Invalid =>
+            Trace ("Modify: Error - called with invalid operation");
+      end case;
    end Modify;
+
 
    --------------
    -- Destruct --

@@ -124,39 +124,6 @@ is
    package Message_Server is new Message.Server (Initialize, Finalize, Recv, Ready);
    package Message_Dispatcher is new Message.Dispatcher (Message_Server, Dispatch);
 
-   procedure Dump (Data : String)
-   is
-      function Digit (Value : Natural) return Character;
-      function Digit (Value : Natural) return Character
-      is
-         V : constant Natural := Value mod 16;
-      begin
-         if V <= 9 then
-            return Character'Val (V + Character'Pos ('0'));
-         elsif V <= 16 then
-            return Character'Val (V + Character'Pos ('A') - 16#A#);
-         end if;
-         return '*';
-      end Digit;
-
-      function Hex (Value : Character) return String;
-      function Hex (Value : Character) return String
-      is
-         Val : constant Natural := Natural (Character'Pos (Value));
-      begin
-         return Digit (Val / 16) & Digit (Val mod 16);
-      end Hex;
-
-      Pos : Natural := 1;
-      Buffer : String (1 .. 3 * Data'Length) := (others => ' ');
-   begin
-      for D of Data loop
-         Buffer (Pos .. Pos + 1) := Hex (D);
-         Pos := Pos + 3;
-      end loop;
-      Gneiss.Log.Client.Info (Log, Buffer);
-   end Dump;
-
    -----------------
    -- Send_Status --
    -----------------
@@ -280,12 +247,14 @@ is
          Transaction_Package.Set_Handle (Transaction_Context, Handle);
          Transaction_Package.Set_Method (Transaction_Context, Method);
          Transaction_Package.Set_Cookie (Transaction_Context, Cookie);
-         Transaction_Package.Set_Send_Offset (Transaction_Context, Parpen.Protocol.Offset (8 * Recv_First));
-         Transaction_Package.Set_Send_Length (Transaction_Context, Parpen.Protocol.Length (8 * Length));
+         Transaction_Package.Set_Send_Offset (Transaction_Context,
+                                              Parpen.Protocol.Offset (Positive'Val (Data_First) - 1));
+         Transaction_Package.Set_Send_Length (Transaction_Context, Parpen.Protocol.Length (Length));
          Transaction_Package.Set_Meta_Offset (Transaction_Context, 0);
          Transaction_Package.Set_Meta_Length (Transaction_Context, 0);
-         Transaction_Package.Set_Receive_Offset (Transaction_Context, 0);
-         Transaction_Package.Set_Receive_Length (Transaction_Context, 0);
+         Transaction_Package.Set_Receive_Offset (Transaction_Context,
+                                                 Parpen.Protocol.Offset (Positive'Val (Recv_First) - 1));
+         Transaction_Package.Set_Receive_Length (Transaction_Context, Parpen.Protocol.Length (Length));
 
          Transaction_Package.Take_Buffer (Transaction_Context, Reply.Ptr);
          Message_Server.Send (Servers (ID).Msg, Reply.Ptr.all);
