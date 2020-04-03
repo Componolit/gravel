@@ -10,19 +10,19 @@ is
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Protocol_Esc_Char return Protocol.Esc_Char is
-     (Protocol.Esc_Char'First)
+   function Unreachable_Protocol_Esc_Char return Parpen.Protocol.Esc_Char is
+     (Parpen.Protocol.Esc_Char'First)
     with
      Pre =>
        False;
 
    pragma Warnings (On, "precondition is statically false");
 
-   function Valid (Val : Protocol.Esc_Char_Base) return Boolean is
+   function Valid (Val : Parpen.Protocol.Esc_Char_Base) return Boolean is
      (Val >= 27
       and Val <= 27);
 
-   function Convert (Val : Protocol.Esc_Char_Base) return Protocol.Esc_Char is
+   function Convert (Val : Parpen.Protocol.Esc_Char_Base) return Parpen.Protocol.Esc_Char is
      (Val)
     with
      Pre =>
@@ -36,19 +36,66 @@ is
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Protocol_Connection_ID return Protocol.Connection_ID is
-     (Protocol.Connection_ID'First)
+   function Unreachable_Protocol_Connection_ID return Parpen.Protocol.Connection_ID is
+     (Parpen.Protocol.Connection_ID'First)
     with
      Pre =>
        False;
 
    pragma Warnings (On, "precondition is statically false");
 
-   function Valid (Val : Protocol.Connection_ID_Base) return Boolean is
+   function Valid (Val : Parpen.Protocol.Connection_ID_Base) return Boolean is
      (Val >= 1);
 
-   function Convert (Val : Protocol.Connection_ID_Base) return Protocol.Connection_ID is
+   function Convert (Val : Parpen.Protocol.Connection_ID_Base) return Parpen.Protocol.Connection_ID is
      (Val)
+    with
+     Pre =>
+       Valid (Val);
+
+   type Tag_Base is mod 2**8;
+
+   type Tag is (T_HANDLE, T_BINDER, T_STATUS) with
+     Size =>
+       8;
+   for Tag use (T_HANDLE => 0, T_BINDER => 1, T_STATUS => 2);
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Tag return Parpen.Protocol.Tag is
+     (Parpen.Protocol.Tag'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   function Valid (Val : Parpen.Protocol.Tag_Base) return Boolean is
+     ((case Val is
+         when 0 | 1 | 2 =>
+            True,
+         when others =>
+            False));
+
+   function Convert (Enum : Parpen.Protocol.Tag) return Parpen.Protocol.Tag_Base is
+     ((case Enum is
+         when T_HANDLE =>
+            0,
+         when T_BINDER =>
+            1,
+         when T_STATUS =>
+            2));
+
+   function Convert (Val : Parpen.Protocol.Tag_Base) return Parpen.Protocol.Tag is
+     ((case Val is
+         when 0 =>
+            T_HANDLE,
+         when 1 =>
+            T_BINDER,
+         when 2 =>
+            T_STATUS,
+         when others =>
+            Unreachable_Protocol_Tag))
     with
      Pre =>
        Valid (Val);
@@ -61,54 +108,29 @@ is
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Protocol_Handle return Protocol.Handle is
-     (Protocol.Handle'First)
+   function Unreachable_Protocol_Handle return Parpen.Protocol.Handle is
+     (Parpen.Protocol.Handle'First)
     with
      Pre =>
        False;
 
    pragma Warnings (On, "precondition is statically false");
 
-   function Valid (Val : Protocol.Handle_Base) return Boolean is
+   function Valid (Val : Parpen.Protocol.Handle_Base) return Boolean is
      (True);
 
-   function Convert (Val : Protocol.Handle_Base) return Protocol.Handle is
+   function Convert (Val : Parpen.Protocol.Handle_Base) return Parpen.Protocol.Handle is
      (Val)
     with
      Pre =>
        Valid (Val);
 
-   type Method_Base is range 0 .. 2**32 - 1 with
-     Size =>
-       32;
-
-   subtype Method is Method_Base range 0 .. 2**32 - 1;
+   type Binder is mod 2**64;
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Protocol_Method return Protocol.Method is
-     (Protocol.Method'First)
-    with
-     Pre =>
-       False;
-
-   pragma Warnings (On, "precondition is statically false");
-
-   function Valid (Val : Protocol.Method_Base) return Boolean is
-     (True);
-
-   function Convert (Val : Protocol.Method_Base) return Protocol.Method is
-     (Val)
-    with
-     Pre =>
-       Valid (Val);
-
-   type Cookie is mod 2**64;
-
-   pragma Warnings (Off, "precondition is statically false");
-
-   function Unreachable_Protocol_Cookie return Protocol.Cookie is
-     (Protocol.Cookie'First)
+   function Unreachable_Protocol_Binder return Parpen.Protocol.Binder is
+     (Parpen.Protocol.Binder'First)
     with
      Pre =>
        False;
@@ -117,106 +139,13 @@ is
 
    pragma Warnings (Off, "unused variable ""Val""");
 
-   function Valid (Val : Protocol.Cookie) return Boolean is
+   function Valid (Val : Parpen.Protocol.Binder) return Boolean is
      (True);
 
    pragma Warnings (On, "unused variable ""Val""");
 
-   function Convert (Val : Protocol.Cookie) return Protocol.Cookie is
+   function Convert (Val : Parpen.Protocol.Binder) return Parpen.Protocol.Binder is
      (Val)
-    with
-     Pre =>
-       Valid (Val);
-
-   type Offset is mod 2**64;
-
-   pragma Warnings (Off, "precondition is statically false");
-
-   function Unreachable_Protocol_Offset return Protocol.Offset is
-     (Protocol.Offset'First)
-    with
-     Pre =>
-       False;
-
-   pragma Warnings (On, "precondition is statically false");
-
-   pragma Warnings (Off, "unused variable ""Val""");
-
-   function Valid (Val : Protocol.Offset) return Boolean is
-     (True);
-
-   pragma Warnings (On, "unused variable ""Val""");
-
-   function Convert (Val : Protocol.Offset) return Protocol.Offset is
-     (Val)
-    with
-     Pre =>
-       Valid (Val);
-
-   type Length_Base is range 0 .. 2**32 - 1 with
-     Size =>
-       32;
-
-   subtype Length is Length_Base range 0 .. 2**32 - 1;
-
-   pragma Warnings (Off, "precondition is statically false");
-
-   function Unreachable_Protocol_Length return Protocol.Length is
-     (Protocol.Length'First)
-    with
-     Pre =>
-       False;
-
-   pragma Warnings (On, "precondition is statically false");
-
-   function Valid (Val : Protocol.Length_Base) return Boolean is
-     (True);
-
-   function Convert (Val : Protocol.Length_Base) return Protocol.Length is
-     (Val)
-    with
-     Pre =>
-       Valid (Val);
-
-   type Tag_Base is mod 2**8;
-
-   type Tag is (T_TRANSACTION, T_STATUS) with
-     Size =>
-       8;
-   for Tag use (T_TRANSACTION => 0, T_STATUS => 1);
-
-   pragma Warnings (Off, "precondition is statically false");
-
-   function Unreachable_Protocol_Tag return Protocol.Tag is
-     (Protocol.Tag'First)
-    with
-     Pre =>
-       False;
-
-   pragma Warnings (On, "precondition is statically false");
-
-   function Valid (Val : Protocol.Tag_Base) return Boolean is
-     ((case Val is
-         when 0 | 1 =>
-            True,
-         when others =>
-            False));
-
-   function Convert (Enum : Protocol.Tag) return Protocol.Tag_Base is
-     ((case Enum is
-         when T_TRANSACTION =>
-            0,
-         when T_STATUS =>
-            1));
-
-   function Convert (Val : Protocol.Tag_Base) return Protocol.Tag is
-     ((case Val is
-         when 0 =>
-            T_TRANSACTION,
-         when 1 =>
-            T_STATUS,
-         when others =>
-            Unreachable_Protocol_Tag))
     with
      Pre =>
        Valid (Val);
@@ -230,22 +159,22 @@ is
 
    pragma Warnings (Off, "precondition is statically false");
 
-   function Unreachable_Protocol_Status return Protocol.Status is
-     (Protocol.Status'First)
+   function Unreachable_Protocol_Status return Parpen.Protocol.Status is
+     (Parpen.Protocol.Status'First)
     with
      Pre =>
        False;
 
    pragma Warnings (On, "precondition is statically false");
 
-   function Valid (Val : Protocol.Status_Base) return Boolean is
+   function Valid (Val : Parpen.Protocol.Status_Base) return Boolean is
      ((case Val is
          when 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 =>
             True,
          when others =>
             False));
 
-   function Convert (Enum : Protocol.Status) return Protocol.Status_Base is
+   function Convert (Enum : Parpen.Protocol.Status) return Parpen.Protocol.Status_Base is
      ((case Enum is
          when STATUS_OK =>
             0,
@@ -270,7 +199,7 @@ is
          when STATUS_OVERFLOW =>
             10));
 
-   function Convert (Val : Protocol.Status_Base) return Protocol.Status is
+   function Convert (Val : Parpen.Protocol.Status_Base) return Parpen.Protocol.Status is
      ((case Val is
          when 0 =>
             STATUS_OK,
@@ -296,6 +225,106 @@ is
             STATUS_OVERFLOW,
          when others =>
             Unreachable_Protocol_Status))
+    with
+     Pre =>
+       Valid (Val);
+
+   type Method_Base is range 0 .. 2**32 - 1 with
+     Size =>
+       32;
+
+   subtype Method is Method_Base range 0 .. 2**32 - 1;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Method return Parpen.Protocol.Method is
+     (Parpen.Protocol.Method'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   function Valid (Val : Parpen.Protocol.Method_Base) return Boolean is
+     (True);
+
+   function Convert (Val : Parpen.Protocol.Method_Base) return Parpen.Protocol.Method is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
+   type Cookie is mod 2**64;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Cookie return Parpen.Protocol.Cookie is
+     (Parpen.Protocol.Cookie'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   pragma Warnings (Off, "unused variable ""Val""");
+
+   function Valid (Val : Parpen.Protocol.Cookie) return Boolean is
+     (True);
+
+   pragma Warnings (On, "unused variable ""Val""");
+
+   function Convert (Val : Parpen.Protocol.Cookie) return Parpen.Protocol.Cookie is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
+   type Offset is mod 2**64;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Offset return Parpen.Protocol.Offset is
+     (Parpen.Protocol.Offset'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   pragma Warnings (Off, "unused variable ""Val""");
+
+   function Valid (Val : Parpen.Protocol.Offset) return Boolean is
+     (True);
+
+   pragma Warnings (On, "unused variable ""Val""");
+
+   function Convert (Val : Parpen.Protocol.Offset) return Parpen.Protocol.Offset is
+     (Val)
+    with
+     Pre =>
+       Valid (Val);
+
+   type Length_Base is range 0 .. 2**32 - 1 with
+     Size =>
+       32;
+
+   subtype Length is Length_Base range 0 .. 2**32 - 1;
+
+   pragma Warnings (Off, "precondition is statically false");
+
+   function Unreachable_Protocol_Length return Parpen.Protocol.Length is
+     (Parpen.Protocol.Length'First)
+    with
+     Pre =>
+       False;
+
+   pragma Warnings (On, "precondition is statically false");
+
+   function Valid (Val : Parpen.Protocol.Length_Base) return Boolean is
+     (True);
+
+   function Convert (Val : Parpen.Protocol.Length_Base) return Parpen.Protocol.Length is
+     (Val)
     with
      Pre =>
        Valid (Val);

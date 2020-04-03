@@ -30,7 +30,7 @@ is
             when F_Initial | F_Name | F_Final =>
                null;
             when F_Len =>
-               Len_Value : Service_Manager.Len;
+               Len_Value : Parpen.Service_Manager.Len;
          end case;
       end record;
 
@@ -198,7 +198,7 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   function Get_Len (Ctx : Context) return Service_Manager.Len with
+   function Get_Len (Ctx : Context) return Parpen.Service_Manager.Len with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Len);
@@ -211,7 +211,7 @@ is
           and Has_Buffer (Ctx)
           and Present (Ctx, F_Name);
 
-   procedure Set_Len (Ctx : in out Context; Val : Service_Manager.Len) with
+   procedure Set_Len (Ctx : in out Context; Val : Parpen.Service_Manager.Len) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -355,7 +355,7 @@ private
       and then ((if Invalid (Cursors (F_Len)) then
            Invalid (Cursors (F_Name))))
       and then (if Structural_Valid (Cursors (F_Len)) then
-         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Service_Manager.Len'Size
+         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Parpen.Service_Manager.Len'Size
            and then Cursors (F_Len).Predecessor = F_Initial
            and then Cursors (F_Len).First = First
            and then (if Structural_Valid (Cursors (F_Name)) then

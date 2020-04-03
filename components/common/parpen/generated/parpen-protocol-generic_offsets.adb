@@ -61,7 +61,7 @@ is
          when F_Initial =>
             (case Fld is
                   when F_Data =>
-                     Protocol.Offset'Size,
+                     Parpen.Protocol.Offset'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Data | F_Final =>
@@ -176,7 +176,7 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      function Extract is new Types.Extract (Protocol.Offset);
+      function Extract is new Types.Extract (Parpen.Protocol.Offset);
    begin
       return ((case Fld is
             when F_Data =>
@@ -200,7 +200,7 @@ is
                   Ctx.Cursors (Fld) := (State => S_Valid, First => Field_First (Ctx, Fld), Last => Field_Last (Ctx, Fld), Value => Value, Predecessor => Ctx.Cursors (Fld).Predecessor);
                end if;
                pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Data)) then
-                   (Ctx.Cursors (F_Data).Last - Ctx.Cursors (F_Data).First + 1) = Protocol.Offset'Size
+                   (Ctx.Cursors (F_Data).Last - Ctx.Cursors (F_Data).First + 1) = Parpen.Protocol.Offset'Size
                      and then Ctx.Cursors (F_Data).Predecessor = F_Initial
                      and then Ctx.Cursors (F_Data).First = Ctx.First));
                if Fld = F_Data then
@@ -248,7 +248,7 @@ is
    function Incomplete_Message (Ctx : Context) return Boolean is
      (Incomplete (Ctx, F_Data));
 
-   function Get_Data (Ctx : Context) return Protocol.Offset is
+   function Get_Data (Ctx : Context) return Parpen.Protocol.Offset is
      (Ctx.Cursors (F_Data).Value.Data_Value);
 
    procedure Set_Field_Value (Ctx : in out Context; Val : Field_Dependent_Value; Fst, Lst : out Types.Bit_Index) with
@@ -284,7 +284,7 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      procedure Insert is new Types.Insert (Protocol.Offset);
+      procedure Insert is new Types.Insert (Parpen.Protocol.Offset);
    begin
       Fst := First;
       Lst := Last;
@@ -298,7 +298,7 @@ is
       end case;
    end Set_Field_Value;
 
-   procedure Set_Data (Ctx : in out Context; Val : Protocol.Offset) is
+   procedure Set_Data (Ctx : in out Context; Val : Parpen.Protocol.Offset) is
       Field_Value : constant Field_Dependent_Value := (F_Data, Val);
       First, Last : Types.Bit_Index;
    begin

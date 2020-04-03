@@ -21,3 +21,4 @@ test_genode:
 generate:
 	@rm -f generated/*
 	@rflx generate -d generated -p Parpen -r specs/binder.rflx specs/protocol.rflx specs/service_manager.rflx
+	@git checkout generated/parpen-generic_types.adb

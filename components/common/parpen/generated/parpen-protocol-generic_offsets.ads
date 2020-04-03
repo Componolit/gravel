@@ -30,7 +30,7 @@ is
             when F_Initial | F_Final =>
                null;
             when F_Data =>
-               Data_Value : Protocol.Offset;
+               Data_Value : Parpen.Protocol.Offset;
          end case;
       end record;
 
@@ -198,12 +198,12 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   function Get_Data (Ctx : Context) return Protocol.Offset with
+   function Get_Data (Ctx : Context) return Parpen.Protocol.Offset with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Data);
 
-   procedure Set_Data (Ctx : in out Context; Val : Protocol.Offset) with
+   procedure Set_Data (Ctx : in out Context; Val : Parpen.Protocol.Offset) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -297,7 +297,7 @@ private
       and then (True)
       and then (True)
       and then (if Structural_Valid (Cursors (F_Data)) then
-         (Cursors (F_Data).Last - Cursors (F_Data).First + 1) = Protocol.Offset'Size
+         (Cursors (F_Data).Last - Cursors (F_Data).First + 1) = Parpen.Protocol.Offset'Size
            and then Cursors (F_Data).Predecessor = F_Initial
            and then Cursors (F_Data).First = First));
 

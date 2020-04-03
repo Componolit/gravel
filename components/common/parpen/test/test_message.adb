@@ -67,7 +67,7 @@ package body Test_Message is
       use type Message.Status;
 
       procedure Send_Message (ID         : Client_ID;
-                              Handle     : Parpen.Protocol.Handle;
+                              BH         : Message.BH_Option;
                               Method     : Parpen.Protocol.Method;
                               Cookie     : Parpen.Protocol.Cookie;
                               Data       : String_Ptr;
@@ -76,7 +76,7 @@ package body Test_Message is
                               Length     : Natural);
 
       procedure Send_Message (ID         : Client_ID;
-                              Handle     : Parpen.Protocol.Handle;
+                              BH         : Message.BH_Option;
                               Method     : Parpen.Protocol.Method;
                               Cookie     : Parpen.Protocol.Cookie;
                               Data       : String_Ptr;
@@ -84,12 +84,12 @@ package body Test_Message is
                               Recv_First : Positive;
                               Length     : Natural)
       is
-         pragma Unreferenced (ID, Handle, Method, Cookie, Data, Data_First, Recv_First);
+         pragma Unreferenced (ID, BH, Method, Cookie, Data, Data_First, Recv_First);
       begin
          Assert (Length = 0, "Send phase in one-way transaction");
       end Send_Message;
 
-      procedure Dispatch is new Message.Dispatch (Send => Send_Message);
+      procedure Dispatch is new Message.Dispatch (Send_Message);
    begin
       Message.Initialize (Name_Service_ID => NS_ID, Status => Status);
       Assert (Status = Message.Status_Valid, "Error initializing Message: " & Status'Img);
@@ -134,7 +134,7 @@ package body Test_Message is
       use type Message.Status;
 
       procedure No_Reply (ID         : Client_ID;
-                          Handle     : Parpen.Protocol.Handle;
+                          BH         : Message.BH_Option;
                           Method     : Parpen.Protocol.Method;
                           Cookie     : Parpen.Protocol.Cookie;
                           Data       : String_Ptr;
@@ -143,7 +143,7 @@ package body Test_Message is
                           Length     : Natural);
 
       procedure No_Reply (ID         : Client_ID;
-                          Handle     : Parpen.Protocol.Handle;
+                          BH         : Message.BH_Option;
                           Method     : Parpen.Protocol.Method;
                           Cookie     : Parpen.Protocol.Cookie;
                           Data       : String_Ptr;
@@ -151,7 +151,7 @@ package body Test_Message is
                           Recv_First : Positive;
                           Length     : Natural)
       is
-         pragma Unreferenced (ID, Handle, Method, Cookie, Data, Data_First, Recv_First);
+         pragma Unreferenced (ID, BH, Method, Cookie, Data, Data_First, Recv_First);
       begin
          Assert (Length = 0, "Send phase in one-way transaction");
       end No_Reply;
@@ -171,7 +171,7 @@ package body Test_Message is
       Reply_Checked : Boolean := False;
 
       procedure Check_Reply (ID         : Client_ID;
-                             Handle     : Parpen.Protocol.Handle;
+                             BH         : Message.BH_Option;
                              Method     : Parpen.Protocol.Method;
                              Cookie     : Parpen.Protocol.Cookie;
                              Data       : String_Ptr;
@@ -180,7 +180,7 @@ package body Test_Message is
                              Length     : Natural);
 
       procedure Check_Reply (ID         : Client_ID;
-                             Handle     : Parpen.Protocol.Handle;
+                             BH         : Message.BH_Option;
                              Method     : Parpen.Protocol.Method;
                              Cookie     : Parpen.Protocol.Cookie;
                              Data       : String_Ptr;
@@ -200,9 +200,10 @@ package body Test_Message is
          use type Parpen.Protocol.Handle;
          use type Parpen.Protocol.Method;
          use type Parpen.Protocol.Cookie;
+         use type Message.BH_Kind;
       begin
          Assert (ID = Client_2, "Invalid client");
-         Assert (Handle = 0, "Invalid handle");
+         Assert (BH.Kind = Message.BH_Handle and then BH.Handle = 0, "Invalid handle");
          Assert (Method = 1, "Invalid method");
          Assert (Cookie = 16#beef_dead_c0de#, "Invalid cookie");
          Assert (Data_First in Data'Range, "Data_First out of range");
@@ -293,7 +294,7 @@ package body Test_Message is
       Handle_Parsed   : Boolean := False;
 
       procedure Parse_Handle (ID         : Client_ID;
-                              Handle     : Parpen.Protocol.Handle;
+                              BH         : Message.BH_Option;
                               Method     : Parpen.Protocol.Method;
                               Cookie     : Parpen.Protocol.Cookie;
                               Data       : String_Ptr;
@@ -302,7 +303,7 @@ package body Test_Message is
                               Length     : Natural);
 
       procedure Parse_Handle (ID         : Client_ID;
-                              Handle     : Parpen.Protocol.Handle;
+                              BH         : Message.BH_Option;
                               Method     : Parpen.Protocol.Method;
                               Cookie     : Parpen.Protocol.Cookie;
                               Data       : String_Ptr;
@@ -310,7 +311,7 @@ package body Test_Message is
                               Recv_First : Positive;
                               Length     : Natural)
       is
-         pragma Unreferenced (ID, Handle, Method, Cookie, Recv_First);
+         pragma Unreferenced (ID, BH, Method, Cookie, Recv_First);
          Binder_Context : IBinder_Package.Context := IBinder_Package.Create;
          package Binder_Buffer is new Parpen.Container (Types, 24);
          use type Parpen.Binder.Binder_Kind;
@@ -332,7 +333,7 @@ package body Test_Message is
       Transaction_Done : Boolean := False;
 
       procedure Check_Transaction (ID         : Client_ID;
-                                   Handle     : Parpen.Protocol.Handle;
+                                   BH         : Message.BH_Option;
                                    Method     : Parpen.Protocol.Method;
                                    Cookie     : Parpen.Protocol.Cookie;
                                    Data       : String_Ptr;
@@ -341,7 +342,7 @@ package body Test_Message is
                                    Length     : Natural);
 
       procedure Check_Transaction (ID         : Client_ID;
-                                   Handle     : Parpen.Protocol.Handle;
+                                   BH         : Message.BH_Option;
                                    Method     : Parpen.Protocol.Method;
                                    Cookie     : Parpen.Protocol.Cookie;
                                    Data       : String_Ptr;
@@ -349,7 +350,7 @@ package body Test_Message is
                                    Recv_First : Positive;
                                    Length     : Natural)
       is
-         pragma Unreferenced (Handle);
+         pragma Unreferenced (BH);
          use type Parpen.Protocol.Cookie;
          use type Parpen.Protocol.Method;
       begin
@@ -501,7 +502,7 @@ package body Test_Message is
       use type Message.Status;
 
       procedure Check_Callback (ID         : Client_ID;
-                                Handle     : Parpen.Protocol.Handle;
+                                BH         : Message.BH_Option;
                                 Method     : Parpen.Protocol.Method;
                                 Cookie     : Parpen.Protocol.Cookie;
                                 Data       : String_Ptr;
@@ -510,7 +511,7 @@ package body Test_Message is
                                 Length     : Natural);
 
       procedure Check_Callback (ID         : Client_ID;
-                                Handle     : Parpen.Protocol.Handle;
+                                BH         : Message.BH_Option;
                                 Method     : Parpen.Protocol.Method;
                                 Cookie     : Parpen.Protocol.Cookie;
                                 Data       : String_Ptr;
@@ -518,7 +519,7 @@ package body Test_Message is
                                 Recv_First : Positive;
                                 Length     : Natural)
       is
-         pragma Unreferenced (Handle);
+         pragma Unreferenced (BH);
          use type Parpen.Protocol.Cookie;
          use type Parpen.Protocol.Method;
       begin
@@ -532,7 +533,7 @@ package body Test_Message is
       end Check_Callback;
 
       procedure Check_Reply (ID         : Client_ID;
-                             Handle     : Parpen.Protocol.Handle;
+                             BH         : Message.BH_Option;
                              Method     : Parpen.Protocol.Method;
                              Cookie     : Parpen.Protocol.Cookie;
                              Data       : String_Ptr;
@@ -541,7 +542,7 @@ package body Test_Message is
                              Length     : Natural);
 
       procedure Check_Reply (ID         : Client_ID;
-                             Handle     : Parpen.Protocol.Handle;
+                             BH         : Message.BH_Option;
                              Method     : Parpen.Protocol.Method;
                              Cookie     : Parpen.Protocol.Cookie;
                              Data       : String_Ptr;
@@ -549,7 +550,7 @@ package body Test_Message is
                              Recv_First : Positive;
                              Length     : Natural)
       is
-         pragma Unreferenced (Handle);
+         pragma Unreferenced (BH);
          use type Parpen.Protocol.Cookie;
          use type Parpen.Protocol.Method;
       begin

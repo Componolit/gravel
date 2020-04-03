@@ -11,6 +11,7 @@ package Protocol is
    --  We should reuse Binder.Handle, but this does not work right now
    --  Ref. Componolit/RecordFlux#186
    type Handle is range 0 .. 2**32-1 with Size => 32;
+   type Binder is mod 2**64;
 
    type Label is
       message
@@ -18,20 +19,8 @@ package Protocol is
          Connection_ID : Connection_ID;
       end message;
 
-   type Transaction is
-      message
-         Handle         : Handle;
-         Method         : Method;
-         Cookie         : Cookie;
-         Send_Offset    : Offset;
-         Send_Length    : Length;
-         Meta_Offset    : Offset;
-         Meta_Length    : Length;
-         Receive_Offset : Offset;
-         Receive_Length : Length;
-      end message;
-
-   type Tag is (T_TRANSACTION,
+   type Tag is (T_HANDLE,
+                T_BINDER,
                 T_STATUS) with Size => 8;
 
    type Status is (STATUS_OK,
@@ -46,20 +35,26 @@ package Protocol is
                    STATUS_RECEIVE_BUFFER_TOO_SMALL,
                    STATUS_OVERFLOW) with Size => 8;
 
-   type Request is
+   type Transaction is
       message
          Tag  : Tag
-            then Data
-               with Length => Message'Last - Tag'Last
-                  if Tag = T_TRANSACTION,
-            then Code
-               if Tag = T_STATUS;
+            then Handle if Tag = T_HANDLE,
+            then Binder if Tag = T_BINDER,
+            then Code   if Tag = T_STATUS;
          Code : Status
             then null;
-         Data : Opaque;
+         Handle         : Handle
+            then Method;
+         Binder      : Binder;
+         Method      : Method;
+         Cookie      : Cookie;
+         Send_Offset : Offset;
+         Send_Length : Length;
+         Meta_Offset : Offset;
+         Meta_Length : Length;
+         Recv_Offset : Offset;
+         Recv_Length : Length;
       end message;
-
-   for Request use (Data => Transaction) if Tag = T_TRANSACTION;
 
    --  Offset lists without explicit length field do not work at the moment (cf. Componolit/RecordFlux#184)
    --  Just use the message below for retrieving the numeric value and parse the sequence manually.

@@ -216,99 +216,99 @@ is
          when F_Initial =>
             (case Fld is
                   when F_Kind =>
-                     Binder.Binder_Kind_Base'Size,
+                     Parpen.Binder.Binder_Kind_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Kind =>
             (case Fld is
                   when F_Arity =>
-                     Binder.Binder_Arity_Base'Size,
+                     Parpen.Binder.Binder_Arity_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Arity =>
             (case Fld is
                   when F_Tag =>
-                     Binder.Binder_Tag_Base'Size,
+                     Parpen.Binder.Binder_Tag_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Tag =>
             (case Fld is
                   when F_Legacy_Flags =>
-                     Binder.MBZ32_Base'Size,
+                     Parpen.Binder.MBZ32_Base'Size,
                   when F_Has_Parent =>
-                     Builtin_Types.Boolean_Base'Size,
+                     Parpen.Builtin_Types.Boolean_Base'Size,
                   when F_Flags =>
-                     Binder.Flat_Binder_Flags_Base'Size,
+                     Parpen.Binder.Flat_Binder_Flags_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Legacy_Flags =>
             (case Fld is
                   when F_FD =>
-                     Binder.Handle_Base'Size,
+                     Parpen.Binder.Handle_Base'Size,
                   when F_Num_FDs =>
-                     Binder.Count'Size,
+                     Parpen.Binder.Count'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Has_Parent =>
             (case Fld is
                   when F_Padding =>
-                     Binder.MBZ31_Base'Size,
+                     Parpen.Binder.MBZ31_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Flags =>
             (case Fld is
                   when F_Binder =>
-                     Binder.Value'Size,
+                     Parpen.Binder.Value'Size,
                   when F_Handle =>
-                     Binder.Handle_Base'Size,
+                     Parpen.Binder.Handle_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_FD =>
             (case Fld is
                   when F_Cookie =>
-                     Binder.Cookie'Size,
+                     Parpen.Binder.Cookie'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Num_FDs =>
             (case Fld is
                   when F_Parent =>
-                     Binder.Index'Size,
+                     Parpen.Binder.Index'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Padding =>
             (case Fld is
                   when F_Buffer =>
-                     Binder.Index'Size,
+                     Parpen.Binder.Index'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Binder =>
             (case Fld is
                   when F_Cookie =>
-                     Binder.Cookie'Size,
+                     Parpen.Binder.Cookie'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Handle =>
             (case Fld is
                   when F_Unused_Padding =>
-                     Binder.MBZ32_Base'Size,
+                     Parpen.Binder.MBZ32_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Parent =>
             (case Fld is
                   when F_Parent_Offset =>
-                     Binder.Offset'Size,
+                     Parpen.Binder.Offset'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Buffer =>
             (case Fld is
                   when F_Length =>
-                     Binder.Length_Base'Size,
+                     Parpen.Binder.Length_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Unused_Padding =>
             (case Fld is
                   when F_Cookie =>
-                     Binder.Cookie'Size,
+                     Parpen.Binder.Cookie'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Parent_Offset =>
@@ -316,7 +316,7 @@ is
          when F_Length =>
             (case Fld is
                   when F_Index =>
-                     Binder.Index'Size,
+                     Parpen.Binder.Index'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Cookie | F_Index | F_Final =>
@@ -1248,20 +1248,20 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      function Extract is new Types.Extract (Binder.Binder_Kind_Base);
-      function Extract is new Types.Extract (Binder.Binder_Arity_Base);
-      function Extract is new Types.Extract (Binder.Binder_Tag_Base);
-      function Extract is new Types.Extract (Binder.MBZ32_Base);
-      function Extract is new Types.Extract (Builtin_Types.Boolean_Base);
-      function Extract is new Types.Extract (Binder.Flat_Binder_Flags_Base);
-      function Extract is new Types.Extract (Binder.Handle_Base);
-      function Extract is new Types.Extract (Binder.Count);
-      function Extract is new Types.Extract (Binder.MBZ31_Base);
-      function Extract is new Types.Extract (Binder.Value);
-      function Extract is new Types.Extract (Binder.Index);
-      function Extract is new Types.Extract (Binder.Offset);
-      function Extract is new Types.Extract (Binder.Length_Base);
-      function Extract is new Types.Extract (Binder.Cookie);
+      function Extract is new Types.Extract (Parpen.Binder.Binder_Kind_Base);
+      function Extract is new Types.Extract (Parpen.Binder.Binder_Arity_Base);
+      function Extract is new Types.Extract (Parpen.Binder.Binder_Tag_Base);
+      function Extract is new Types.Extract (Parpen.Binder.MBZ32_Base);
+      function Extract is new Types.Extract (Parpen.Builtin_Types.Boolean_Base);
+      function Extract is new Types.Extract (Parpen.Binder.Flat_Binder_Flags_Base);
+      function Extract is new Types.Extract (Parpen.Binder.Handle_Base);
+      function Extract is new Types.Extract (Parpen.Binder.Count);
+      function Extract is new Types.Extract (Parpen.Binder.MBZ31_Base);
+      function Extract is new Types.Extract (Parpen.Binder.Value);
+      function Extract is new Types.Extract (Parpen.Binder.Index);
+      function Extract is new Types.Extract (Parpen.Binder.Offset);
+      function Extract is new Types.Extract (Parpen.Binder.Length_Base);
+      function Extract is new Types.Extract (Parpen.Binder.Cookie);
    begin
       return ((case Fld is
             when F_Kind =>
@@ -1319,97 +1319,97 @@ is
                   Ctx.Cursors (Fld) := (State => S_Valid, First => Field_First (Ctx, Fld), Last => Field_Last (Ctx, Fld), Value => Value, Predecessor => Ctx.Cursors (Fld).Predecessor);
                end if;
                pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Kind)) then
-                   (Ctx.Cursors (F_Kind).Last - Ctx.Cursors (F_Kind).First + 1) = Binder.Binder_Kind_Base'Size
+                   (Ctx.Cursors (F_Kind).Last - Ctx.Cursors (F_Kind).First + 1) = Parpen.Binder.Binder_Kind_Base'Size
                      and then Ctx.Cursors (F_Kind).Predecessor = F_Initial
                      and then Ctx.Cursors (F_Kind).First = Ctx.First
                      and then (if Structural_Valid (Ctx.Cursors (F_Arity)) then
-                        (Ctx.Cursors (F_Arity).Last - Ctx.Cursors (F_Arity).First + 1) = Binder.Binder_Arity_Base'Size
+                        (Ctx.Cursors (F_Arity).Last - Ctx.Cursors (F_Arity).First + 1) = Parpen.Binder.Binder_Arity_Base'Size
                           and then Ctx.Cursors (F_Arity).Predecessor = F_Kind
                           and then Ctx.Cursors (F_Arity).First = (Ctx.Cursors (F_Kind).Last + 1)
                           and then (if Structural_Valid (Ctx.Cursors (F_Tag))
                                and then (Types.Bit_Length (Ctx.Cursors (F_Arity).Value.Arity_Value) = Types.Bit_Length (Convert (BA_SINGLE))
                                  or (Types.Bit_Length (Ctx.Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_FD))
                                    and Types.Bit_Length (Ctx.Cursors (F_Arity).Value.Arity_Value) = Types.Bit_Length (Convert (BA_ARRAY)))) then
-                             (Ctx.Cursors (F_Tag).Last - Ctx.Cursors (F_Tag).First + 1) = Binder.Binder_Tag_Base'Size
+                             (Ctx.Cursors (F_Tag).Last - Ctx.Cursors (F_Tag).First + 1) = Parpen.Binder.Binder_Tag_Base'Size
                                and then Ctx.Cursors (F_Tag).Predecessor = F_Arity
                                and then Ctx.Cursors (F_Tag).First = (Ctx.Cursors (F_Arity).Last + 1)
                                and then (if Structural_Valid (Ctx.Cursors (F_Legacy_Flags))
                                     and then Types.Bit_Length (Ctx.Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_FD)) then
-                                  (Ctx.Cursors (F_Legacy_Flags).Last - Ctx.Cursors (F_Legacy_Flags).First + 1) = Binder.MBZ32_Base'Size
+                                  (Ctx.Cursors (F_Legacy_Flags).Last - Ctx.Cursors (F_Legacy_Flags).First + 1) = Parpen.Binder.MBZ32_Base'Size
                                     and then Ctx.Cursors (F_Legacy_Flags).Predecessor = F_Tag
                                     and then Ctx.Cursors (F_Legacy_Flags).First = (Ctx.Cursors (F_Tag).Last + 1)
                                     and then (if Structural_Valid (Ctx.Cursors (F_FD))
                                          and then Types.Bit_Length (Ctx.Cursors (F_Arity).Value.Arity_Value) = Types.Bit_Length (Convert (BA_SINGLE)) then
-                                       (Ctx.Cursors (F_FD).Last - Ctx.Cursors (F_FD).First + 1) = Binder.Handle_Base'Size
+                                       (Ctx.Cursors (F_FD).Last - Ctx.Cursors (F_FD).First + 1) = Parpen.Binder.Handle_Base'Size
                                          and then Ctx.Cursors (F_FD).Predecessor = F_Legacy_Flags
                                          and then Ctx.Cursors (F_FD).First = (Ctx.Cursors (F_Legacy_Flags).Last + 1)
                                          and then (if Structural_Valid (Ctx.Cursors (F_Cookie)) then
-                                            (Ctx.Cursors (F_Cookie).Last - Ctx.Cursors (F_Cookie).First + 1) = Binder.Cookie'Size
+                                            (Ctx.Cursors (F_Cookie).Last - Ctx.Cursors (F_Cookie).First + 1) = Parpen.Binder.Cookie'Size
                                               and then Ctx.Cursors (F_Cookie).Predecessor = F_FD
                                               and then Ctx.Cursors (F_Cookie).First = (Ctx.Cursors (F_FD).Last + 1)))
                                     and then (if Structural_Valid (Ctx.Cursors (F_Num_FDs))
                                          and then Types.Bit_Length (Ctx.Cursors (F_Arity).Value.Arity_Value) = Types.Bit_Length (Convert (BA_ARRAY)) then
-                                       (Ctx.Cursors (F_Num_FDs).Last - Ctx.Cursors (F_Num_FDs).First + 1) = Binder.Count'Size
+                                       (Ctx.Cursors (F_Num_FDs).Last - Ctx.Cursors (F_Num_FDs).First + 1) = Parpen.Binder.Count'Size
                                          and then Ctx.Cursors (F_Num_FDs).Predecessor = F_Legacy_Flags
                                          and then Ctx.Cursors (F_Num_FDs).First = (Ctx.Cursors (F_Legacy_Flags).Last + 1)
                                          and then (if Structural_Valid (Ctx.Cursors (F_Parent)) then
-                                            (Ctx.Cursors (F_Parent).Last - Ctx.Cursors (F_Parent).First + 1) = Binder.Index'Size
+                                            (Ctx.Cursors (F_Parent).Last - Ctx.Cursors (F_Parent).First + 1) = Parpen.Binder.Index'Size
                                               and then Ctx.Cursors (F_Parent).Predecessor = F_Num_FDs
                                               and then Ctx.Cursors (F_Parent).First = (Ctx.Cursors (F_Num_FDs).Last + 1)
                                               and then (if Structural_Valid (Ctx.Cursors (F_Parent_Offset)) then
-                                                 (Ctx.Cursors (F_Parent_Offset).Last - Ctx.Cursors (F_Parent_Offset).First + 1) = Binder.Offset'Size
+                                                 (Ctx.Cursors (F_Parent_Offset).Last - Ctx.Cursors (F_Parent_Offset).First + 1) = Parpen.Binder.Offset'Size
                                                    and then Ctx.Cursors (F_Parent_Offset).Predecessor = F_Parent
                                                    and then Ctx.Cursors (F_Parent_Offset).First = (Ctx.Cursors (F_Parent).Last + 1)))))
                                and then (if Structural_Valid (Ctx.Cursors (F_Has_Parent))
                                     and then Types.Bit_Length (Ctx.Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_POINTER)) then
-                                  (Ctx.Cursors (F_Has_Parent).Last - Ctx.Cursors (F_Has_Parent).First + 1) = Builtin_Types.Boolean_Base'Size
+                                  (Ctx.Cursors (F_Has_Parent).Last - Ctx.Cursors (F_Has_Parent).First + 1) = Parpen.Builtin_Types.Boolean_Base'Size
                                     and then Ctx.Cursors (F_Has_Parent).Predecessor = F_Tag
                                     and then Ctx.Cursors (F_Has_Parent).First = (Ctx.Cursors (F_Tag).Last + 1)
                                     and then (if Structural_Valid (Ctx.Cursors (F_Padding)) then
-                                       (Ctx.Cursors (F_Padding).Last - Ctx.Cursors (F_Padding).First + 1) = Binder.MBZ31_Base'Size
+                                       (Ctx.Cursors (F_Padding).Last - Ctx.Cursors (F_Padding).First + 1) = Parpen.Binder.MBZ31_Base'Size
                                          and then Ctx.Cursors (F_Padding).Predecessor = F_Has_Parent
                                          and then Ctx.Cursors (F_Padding).First = (Ctx.Cursors (F_Has_Parent).Last + 1)
                                          and then (if Structural_Valid (Ctx.Cursors (F_Buffer)) then
-                                            (Ctx.Cursors (F_Buffer).Last - Ctx.Cursors (F_Buffer).First + 1) = Binder.Index'Size
+                                            (Ctx.Cursors (F_Buffer).Last - Ctx.Cursors (F_Buffer).First + 1) = Parpen.Binder.Index'Size
                                               and then Ctx.Cursors (F_Buffer).Predecessor = F_Padding
                                               and then Ctx.Cursors (F_Buffer).First = (Ctx.Cursors (F_Padding).Last + 1)
                                               and then (if Structural_Valid (Ctx.Cursors (F_Length)) then
-                                                 (Ctx.Cursors (F_Length).Last - Ctx.Cursors (F_Length).First + 1) = Binder.Length_Base'Size
+                                                 (Ctx.Cursors (F_Length).Last - Ctx.Cursors (F_Length).First + 1) = Parpen.Binder.Length_Base'Size
                                                    and then Ctx.Cursors (F_Length).Predecessor = F_Buffer
                                                    and then Ctx.Cursors (F_Length).First = (Ctx.Cursors (F_Buffer).Last + 1)
                                                    and then (if Structural_Valid (Ctx.Cursors (F_Index))
                                                         and then Types.Bit_Length (Ctx.Cursors (F_Has_Parent).Value.Has_Parent_Value) = Types.Bit_Length (Convert (True)) then
-                                                      (Ctx.Cursors (F_Index).Last - Ctx.Cursors (F_Index).First + 1) = Binder.Index'Size
+                                                      (Ctx.Cursors (F_Index).Last - Ctx.Cursors (F_Index).First + 1) = Parpen.Binder.Index'Size
                                                         and then Ctx.Cursors (F_Index).Predecessor = F_Length
                                                         and then Ctx.Cursors (F_Index).First = (Ctx.Cursors (F_Length).Last + 1))))))
                                and then (if Structural_Valid (Ctx.Cursors (F_Flags))
                                     and then (Types.Bit_Length (Ctx.Cursors (F_Kind).Value.Kind_Value) /= Types.Bit_Length (Convert (BK_POINTER))
                                       and Types.Bit_Length (Ctx.Cursors (F_Kind).Value.Kind_Value) /= Types.Bit_Length (Convert (BK_FD))) then
-                                  (Ctx.Cursors (F_Flags).Last - Ctx.Cursors (F_Flags).First + 1) = Binder.Flat_Binder_Flags_Base'Size
+                                  (Ctx.Cursors (F_Flags).Last - Ctx.Cursors (F_Flags).First + 1) = Parpen.Binder.Flat_Binder_Flags_Base'Size
                                     and then Ctx.Cursors (F_Flags).Predecessor = F_Tag
                                     and then Ctx.Cursors (F_Flags).First = (Ctx.Cursors (F_Tag).Last + 1)
                                     and then (if Structural_Valid (Ctx.Cursors (F_Binder))
                                          and then (Types.Bit_Length (Ctx.Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_STRONG_BINDER))
                                            or Types.Bit_Length (Ctx.Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_WEAK_BINDER))) then
-                                       (Ctx.Cursors (F_Binder).Last - Ctx.Cursors (F_Binder).First + 1) = Binder.Value'Size
+                                       (Ctx.Cursors (F_Binder).Last - Ctx.Cursors (F_Binder).First + 1) = Parpen.Binder.Value'Size
                                          and then Ctx.Cursors (F_Binder).Predecessor = F_Flags
                                          and then Ctx.Cursors (F_Binder).First = (Ctx.Cursors (F_Flags).Last + 1)
                                          and then (if Structural_Valid (Ctx.Cursors (F_Cookie)) then
-                                            (Ctx.Cursors (F_Cookie).Last - Ctx.Cursors (F_Cookie).First + 1) = Binder.Cookie'Size
+                                            (Ctx.Cursors (F_Cookie).Last - Ctx.Cursors (F_Cookie).First + 1) = Parpen.Binder.Cookie'Size
                                               and then Ctx.Cursors (F_Cookie).Predecessor = F_Binder
                                               and then Ctx.Cursors (F_Cookie).First = (Ctx.Cursors (F_Binder).Last + 1)))
                                     and then (if Structural_Valid (Ctx.Cursors (F_Handle))
                                          and then (Types.Bit_Length (Ctx.Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_STRONG_HANDLE))
                                            or Types.Bit_Length (Ctx.Cursors (F_Kind).Value.Kind_Value) = Types.Bit_Length (Convert (BK_WEAK_HANDLE))) then
-                                       (Ctx.Cursors (F_Handle).Last - Ctx.Cursors (F_Handle).First + 1) = Binder.Handle_Base'Size
+                                       (Ctx.Cursors (F_Handle).Last - Ctx.Cursors (F_Handle).First + 1) = Parpen.Binder.Handle_Base'Size
                                          and then Ctx.Cursors (F_Handle).Predecessor = F_Flags
                                          and then Ctx.Cursors (F_Handle).First = (Ctx.Cursors (F_Flags).Last + 1)
                                          and then (if Structural_Valid (Ctx.Cursors (F_Unused_Padding)) then
-                                            (Ctx.Cursors (F_Unused_Padding).Last - Ctx.Cursors (F_Unused_Padding).First + 1) = Binder.MBZ32_Base'Size
+                                            (Ctx.Cursors (F_Unused_Padding).Last - Ctx.Cursors (F_Unused_Padding).First + 1) = Parpen.Binder.MBZ32_Base'Size
                                               and then Ctx.Cursors (F_Unused_Padding).Predecessor = F_Handle
                                               and then Ctx.Cursors (F_Unused_Padding).First = (Ctx.Cursors (F_Handle).Last + 1)
                                               and then (if Structural_Valid (Ctx.Cursors (F_Cookie)) then
-                                                 (Ctx.Cursors (F_Cookie).Last - Ctx.Cursors (F_Cookie).First + 1) = Binder.Cookie'Size
+                                                 (Ctx.Cursors (F_Cookie).Last - Ctx.Cursors (F_Cookie).First + 1) = Parpen.Binder.Cookie'Size
                                                    and then Ctx.Cursors (F_Cookie).Predecessor = F_Unused_Padding
                                                    and then Ctx.Cursors (F_Cookie).First = (Ctx.Cursors (F_Unused_Padding).Last + 1)))))))));
                if Fld = F_Kind then
@@ -1593,58 +1593,58 @@ is
       or Incomplete (Ctx, F_Cookie)
       or Incomplete (Ctx, F_Index));
 
-   function Get_Kind (Ctx : Context) return Binder.Binder_Kind is
+   function Get_Kind (Ctx : Context) return Parpen.Binder.Binder_Kind is
      (Convert (Ctx.Cursors (F_Kind).Value.Kind_Value));
 
-   function Get_Arity (Ctx : Context) return Binder.Binder_Arity is
+   function Get_Arity (Ctx : Context) return Parpen.Binder.Binder_Arity is
      (Convert (Ctx.Cursors (F_Arity).Value.Arity_Value));
 
-   function Get_Tag (Ctx : Context) return Binder.Binder_Tag is
+   function Get_Tag (Ctx : Context) return Parpen.Binder.Binder_Tag is
      (Ctx.Cursors (F_Tag).Value.Tag_Value);
 
-   function Get_Legacy_Flags (Ctx : Context) return Binder.MBZ32 is
+   function Get_Legacy_Flags (Ctx : Context) return Parpen.Binder.MBZ32 is
      (Ctx.Cursors (F_Legacy_Flags).Value.Legacy_Flags_Value);
 
    function Get_Has_Parent (Ctx : Context) return Boolean is
      (Convert (Ctx.Cursors (F_Has_Parent).Value.Has_Parent_Value));
 
-   function Get_Flags (Ctx : Context) return Binder.Flat_Binder_Flags is
+   function Get_Flags (Ctx : Context) return Parpen.Binder.Flat_Binder_Flags is
      (Convert (Ctx.Cursors (F_Flags).Value.Flags_Value));
 
-   function Get_FD (Ctx : Context) return Binder.Handle is
+   function Get_FD (Ctx : Context) return Parpen.Binder.Handle is
      (Ctx.Cursors (F_FD).Value.FD_Value);
 
-   function Get_Num_FDs (Ctx : Context) return Binder.Count is
+   function Get_Num_FDs (Ctx : Context) return Parpen.Binder.Count is
      (Ctx.Cursors (F_Num_FDs).Value.Num_FDs_Value);
 
-   function Get_Padding (Ctx : Context) return Binder.MBZ31 is
+   function Get_Padding (Ctx : Context) return Parpen.Binder.MBZ31 is
      (Ctx.Cursors (F_Padding).Value.Padding_Value);
 
-   function Get_Binder (Ctx : Context) return Binder.Value is
+   function Get_Binder (Ctx : Context) return Parpen.Binder.Value is
      (Ctx.Cursors (F_Binder).Value.Binder_Value);
 
-   function Get_Handle (Ctx : Context) return Binder.Handle is
+   function Get_Handle (Ctx : Context) return Parpen.Binder.Handle is
      (Ctx.Cursors (F_Handle).Value.Handle_Value);
 
-   function Get_Parent (Ctx : Context) return Binder.Index is
+   function Get_Parent (Ctx : Context) return Parpen.Binder.Index is
      (Ctx.Cursors (F_Parent).Value.Parent_Value);
 
-   function Get_Buffer (Ctx : Context) return Binder.Index is
+   function Get_Buffer (Ctx : Context) return Parpen.Binder.Index is
      (Ctx.Cursors (F_Buffer).Value.Buffer_Value);
 
-   function Get_Unused_Padding (Ctx : Context) return Binder.MBZ32 is
+   function Get_Unused_Padding (Ctx : Context) return Parpen.Binder.MBZ32 is
      (Ctx.Cursors (F_Unused_Padding).Value.Unused_Padding_Value);
 
-   function Get_Parent_Offset (Ctx : Context) return Binder.Offset is
+   function Get_Parent_Offset (Ctx : Context) return Parpen.Binder.Offset is
      (Ctx.Cursors (F_Parent_Offset).Value.Parent_Offset_Value);
 
-   function Get_Length (Ctx : Context) return Binder.Length is
+   function Get_Length (Ctx : Context) return Parpen.Binder.Length is
      (Ctx.Cursors (F_Length).Value.Length_Value);
 
-   function Get_Cookie (Ctx : Context) return Binder.Cookie is
+   function Get_Cookie (Ctx : Context) return Parpen.Binder.Cookie is
      (Ctx.Cursors (F_Cookie).Value.Cookie_Value);
 
-   function Get_Index (Ctx : Context) return Binder.Index is
+   function Get_Index (Ctx : Context) return Parpen.Binder.Index is
      (Ctx.Cursors (F_Index).Value.Index_Value);
 
    procedure Set_Field_Value (Ctx : in out Context; Val : Field_Dependent_Value; Fst, Lst : out Types.Bit_Index) with
@@ -1680,20 +1680,20 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      procedure Insert is new Types.Insert (Binder.Binder_Kind_Base);
-      procedure Insert is new Types.Insert (Binder.Binder_Arity_Base);
-      procedure Insert is new Types.Insert (Binder.Binder_Tag_Base);
-      procedure Insert is new Types.Insert (Binder.MBZ32_Base);
-      procedure Insert is new Types.Insert (Builtin_Types.Boolean_Base);
-      procedure Insert is new Types.Insert (Binder.Flat_Binder_Flags_Base);
-      procedure Insert is new Types.Insert (Binder.Handle_Base);
-      procedure Insert is new Types.Insert (Binder.Count);
-      procedure Insert is new Types.Insert (Binder.MBZ31_Base);
-      procedure Insert is new Types.Insert (Binder.Value);
-      procedure Insert is new Types.Insert (Binder.Index);
-      procedure Insert is new Types.Insert (Binder.Offset);
-      procedure Insert is new Types.Insert (Binder.Length_Base);
-      procedure Insert is new Types.Insert (Binder.Cookie);
+      procedure Insert is new Types.Insert (Parpen.Binder.Binder_Kind_Base);
+      procedure Insert is new Types.Insert (Parpen.Binder.Binder_Arity_Base);
+      procedure Insert is new Types.Insert (Parpen.Binder.Binder_Tag_Base);
+      procedure Insert is new Types.Insert (Parpen.Binder.MBZ32_Base);
+      procedure Insert is new Types.Insert (Parpen.Builtin_Types.Boolean_Base);
+      procedure Insert is new Types.Insert (Parpen.Binder.Flat_Binder_Flags_Base);
+      procedure Insert is new Types.Insert (Parpen.Binder.Handle_Base);
+      procedure Insert is new Types.Insert (Parpen.Binder.Count);
+      procedure Insert is new Types.Insert (Parpen.Binder.MBZ31_Base);
+      procedure Insert is new Types.Insert (Parpen.Binder.Value);
+      procedure Insert is new Types.Insert (Parpen.Binder.Index);
+      procedure Insert is new Types.Insert (Parpen.Binder.Offset);
+      procedure Insert is new Types.Insert (Parpen.Binder.Length_Base);
+      procedure Insert is new Types.Insert (Parpen.Binder.Cookie);
    begin
       Fst := First;
       Lst := Last;
@@ -1741,7 +1741,7 @@ is
       end case;
    end Set_Field_Value;
 
-   procedure Set_Kind (Ctx : in out Context; Val : Binder.Binder_Kind) is
+   procedure Set_Kind (Ctx : in out Context; Val : Parpen.Binder.Binder_Kind) is
       Field_Value : constant Field_Dependent_Value := (F_Kind, Convert (Val));
       First, Last : Types.Bit_Index;
    begin
@@ -1752,7 +1752,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Kind)) := (State => S_Invalid, Predecessor => F_Kind);
    end Set_Kind;
 
-   procedure Set_Arity (Ctx : in out Context; Val : Binder.Binder_Arity) is
+   procedure Set_Arity (Ctx : in out Context; Val : Parpen.Binder.Binder_Arity) is
       Field_Value : constant Field_Dependent_Value := (F_Arity, Convert (Val));
       First, Last : Types.Bit_Index;
    begin
@@ -1763,7 +1763,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Arity)) := (State => S_Invalid, Predecessor => F_Arity);
    end Set_Arity;
 
-   procedure Set_Tag (Ctx : in out Context; Val : Binder.Binder_Tag) is
+   procedure Set_Tag (Ctx : in out Context; Val : Parpen.Binder.Binder_Tag) is
       Field_Value : constant Field_Dependent_Value := (F_Tag, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1774,7 +1774,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Tag)) := (State => S_Invalid, Predecessor => F_Tag);
    end Set_Tag;
 
-   procedure Set_Legacy_Flags (Ctx : in out Context; Val : Binder.MBZ32) is
+   procedure Set_Legacy_Flags (Ctx : in out Context; Val : Parpen.Binder.MBZ32) is
       Field_Value : constant Field_Dependent_Value := (F_Legacy_Flags, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1796,7 +1796,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Has_Parent)) := (State => S_Invalid, Predecessor => F_Has_Parent);
    end Set_Has_Parent;
 
-   procedure Set_Flags (Ctx : in out Context; Val : Binder.Flat_Binder_Flags) is
+   procedure Set_Flags (Ctx : in out Context; Val : Parpen.Binder.Flat_Binder_Flags) is
       Field_Value : constant Field_Dependent_Value := (F_Flags, Convert (Val));
       First, Last : Types.Bit_Index;
    begin
@@ -1807,7 +1807,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Flags)) := (State => S_Invalid, Predecessor => F_Flags);
    end Set_Flags;
 
-   procedure Set_FD (Ctx : in out Context; Val : Binder.Handle) is
+   procedure Set_FD (Ctx : in out Context; Val : Parpen.Binder.Handle) is
       Field_Value : constant Field_Dependent_Value := (F_FD, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1818,7 +1818,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_FD)) := (State => S_Invalid, Predecessor => F_FD);
    end Set_FD;
 
-   procedure Set_Num_FDs (Ctx : in out Context; Val : Binder.Count) is
+   procedure Set_Num_FDs (Ctx : in out Context; Val : Parpen.Binder.Count) is
       Field_Value : constant Field_Dependent_Value := (F_Num_FDs, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1829,7 +1829,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Num_FDs)) := (State => S_Invalid, Predecessor => F_Num_FDs);
    end Set_Num_FDs;
 
-   procedure Set_Padding (Ctx : in out Context; Val : Binder.MBZ31) is
+   procedure Set_Padding (Ctx : in out Context; Val : Parpen.Binder.MBZ31) is
       Field_Value : constant Field_Dependent_Value := (F_Padding, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1840,7 +1840,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Padding)) := (State => S_Invalid, Predecessor => F_Padding);
    end Set_Padding;
 
-   procedure Set_Binder (Ctx : in out Context; Val : Binder.Value) is
+   procedure Set_Binder (Ctx : in out Context; Val : Parpen.Binder.Value) is
       Field_Value : constant Field_Dependent_Value := (F_Binder, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1851,7 +1851,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Binder)) := (State => S_Invalid, Predecessor => F_Binder);
    end Set_Binder;
 
-   procedure Set_Handle (Ctx : in out Context; Val : Binder.Handle) is
+   procedure Set_Handle (Ctx : in out Context; Val : Parpen.Binder.Handle) is
       Field_Value : constant Field_Dependent_Value := (F_Handle, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1862,7 +1862,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Handle)) := (State => S_Invalid, Predecessor => F_Handle);
    end Set_Handle;
 
-   procedure Set_Parent (Ctx : in out Context; Val : Binder.Index) is
+   procedure Set_Parent (Ctx : in out Context; Val : Parpen.Binder.Index) is
       Field_Value : constant Field_Dependent_Value := (F_Parent, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1873,7 +1873,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Parent)) := (State => S_Invalid, Predecessor => F_Parent);
    end Set_Parent;
 
-   procedure Set_Buffer (Ctx : in out Context; Val : Binder.Index) is
+   procedure Set_Buffer (Ctx : in out Context; Val : Parpen.Binder.Index) is
       Field_Value : constant Field_Dependent_Value := (F_Buffer, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1884,7 +1884,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Buffer)) := (State => S_Invalid, Predecessor => F_Buffer);
    end Set_Buffer;
 
-   procedure Set_Unused_Padding (Ctx : in out Context; Val : Binder.MBZ32) is
+   procedure Set_Unused_Padding (Ctx : in out Context; Val : Parpen.Binder.MBZ32) is
       Field_Value : constant Field_Dependent_Value := (F_Unused_Padding, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1895,7 +1895,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Unused_Padding)) := (State => S_Invalid, Predecessor => F_Unused_Padding);
    end Set_Unused_Padding;
 
-   procedure Set_Parent_Offset (Ctx : in out Context; Val : Binder.Offset) is
+   procedure Set_Parent_Offset (Ctx : in out Context; Val : Parpen.Binder.Offset) is
       Field_Value : constant Field_Dependent_Value := (F_Parent_Offset, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1906,7 +1906,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Parent_Offset)) := (State => S_Invalid, Predecessor => F_Parent_Offset);
    end Set_Parent_Offset;
 
-   procedure Set_Length (Ctx : in out Context; Val : Binder.Length) is
+   procedure Set_Length (Ctx : in out Context; Val : Parpen.Binder.Length) is
       Field_Value : constant Field_Dependent_Value := (F_Length, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1917,7 +1917,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Length)) := (State => S_Invalid, Predecessor => F_Length);
    end Set_Length;
 
-   procedure Set_Cookie (Ctx : in out Context; Val : Binder.Cookie) is
+   procedure Set_Cookie (Ctx : in out Context; Val : Parpen.Binder.Cookie) is
       Field_Value : constant Field_Dependent_Value := (F_Cookie, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -1928,7 +1928,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Cookie)) := (State => S_Invalid, Predecessor => F_Cookie);
    end Set_Cookie;
 
-   procedure Set_Index (Ctx : in out Context; Val : Binder.Index) is
+   procedure Set_Index (Ctx : in out Context; Val : Parpen.Binder.Index) is
       Field_Value : constant Field_Dependent_Value := (F_Index, Val);
       First, Last : Types.Bit_Index;
    begin

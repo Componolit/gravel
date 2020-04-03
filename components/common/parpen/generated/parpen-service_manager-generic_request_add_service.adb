@@ -96,7 +96,7 @@ is
          when F_Initial =>
             (case Fld is
                   when F_Len =>
-                     Service_Manager.Len'Size,
+                     Parpen.Service_Manager.Len'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Len =>
@@ -114,19 +114,19 @@ is
          when F_Server =>
             (case Fld is
                   when F_Padding =>
-                     Service_Manager.MBZ_7_Base'Size,
+                     Parpen.Service_Manager.MBZ_7_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Padding =>
             (case Fld is
                   when F_Allow_Isolated =>
-                     Builtin_Types.Boolean_Base'Size,
+                     Parpen.Builtin_Types.Boolean_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Allow_Isolated =>
             (case Fld is
                   when F_Dump_Flags =>
-                     Service_Manager.Integer_Base'Size,
+                     Parpen.Service_Manager.Integer_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Dump_Flags | F_Final =>
@@ -386,10 +386,10 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      function Extract is new Types.Extract (Service_Manager.Len);
-      function Extract is new Types.Extract (Service_Manager.MBZ_7_Base);
-      function Extract is new Types.Extract (Builtin_Types.Boolean_Base);
-      function Extract is new Types.Extract (Service_Manager.Integer_Base);
+      function Extract is new Types.Extract (Parpen.Service_Manager.Len);
+      function Extract is new Types.Extract (Parpen.Service_Manager.MBZ_7_Base);
+      function Extract is new Types.Extract (Parpen.Builtin_Types.Boolean_Base);
+      function Extract is new Types.Extract (Parpen.Service_Manager.Integer_Base);
    begin
       return ((case Fld is
             when F_Len =>
@@ -423,7 +423,7 @@ is
                   Ctx.Cursors (Fld) := (State => S_Valid, First => Field_First (Ctx, Fld), Last => Field_Last (Ctx, Fld), Value => Value, Predecessor => Ctx.Cursors (Fld).Predecessor);
                end if;
                pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Len)) then
-                   (Ctx.Cursors (F_Len).Last - Ctx.Cursors (F_Len).First + 1) = Service_Manager.Len'Size
+                   (Ctx.Cursors (F_Len).Last - Ctx.Cursors (F_Len).First + 1) = Parpen.Service_Manager.Len'Size
                      and then Ctx.Cursors (F_Len).Predecessor = F_Initial
                      and then Ctx.Cursors (F_Len).First = Ctx.First
                      and then (if Structural_Valid (Ctx.Cursors (F_Name)) then
@@ -435,15 +435,15 @@ is
                                and then Ctx.Cursors (F_Server).Predecessor = F_Name
                                and then Ctx.Cursors (F_Server).First = (Ctx.Cursors (F_Name).Last + 1)
                                and then (if Structural_Valid (Ctx.Cursors (F_Padding)) then
-                                  (Ctx.Cursors (F_Padding).Last - Ctx.Cursors (F_Padding).First + 1) = Service_Manager.MBZ_7_Base'Size
+                                  (Ctx.Cursors (F_Padding).Last - Ctx.Cursors (F_Padding).First + 1) = Parpen.Service_Manager.MBZ_7_Base'Size
                                     and then Ctx.Cursors (F_Padding).Predecessor = F_Server
                                     and then Ctx.Cursors (F_Padding).First = (Ctx.Cursors (F_Server).Last + 1)
                                     and then (if Structural_Valid (Ctx.Cursors (F_Allow_Isolated)) then
-                                       (Ctx.Cursors (F_Allow_Isolated).Last - Ctx.Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
+                                       (Ctx.Cursors (F_Allow_Isolated).Last - Ctx.Cursors (F_Allow_Isolated).First + 1) = Parpen.Builtin_Types.Boolean_Base'Size
                                          and then Ctx.Cursors (F_Allow_Isolated).Predecessor = F_Padding
                                          and then Ctx.Cursors (F_Allow_Isolated).First = (Ctx.Cursors (F_Padding).Last + 1)
                                          and then (if Structural_Valid (Ctx.Cursors (F_Dump_Flags)) then
-                                            (Ctx.Cursors (F_Dump_Flags).Last - Ctx.Cursors (F_Dump_Flags).First + 1) = Service_Manager.Integer_Base'Size
+                                            (Ctx.Cursors (F_Dump_Flags).Last - Ctx.Cursors (F_Dump_Flags).First + 1) = Parpen.Service_Manager.Integer_Base'Size
                                               and then Ctx.Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
                                               and then Ctx.Cursors (F_Dump_Flags).First = (Ctx.Cursors (F_Allow_Isolated).Last + 1))))))));
                if Fld = F_Len then
@@ -521,16 +521,16 @@ is
       or Incomplete (Ctx, F_Allow_Isolated)
       or Incomplete (Ctx, F_Dump_Flags));
 
-   function Get_Len (Ctx : Context) return Service_Manager.Len is
+   function Get_Len (Ctx : Context) return Parpen.Service_Manager.Len is
      (Ctx.Cursors (F_Len).Value.Len_Value);
 
-   function Get_Padding (Ctx : Context) return Service_Manager.MBZ_7 is
+   function Get_Padding (Ctx : Context) return Parpen.Service_Manager.MBZ_7 is
      (Ctx.Cursors (F_Padding).Value.Padding_Value);
 
    function Get_Allow_Isolated (Ctx : Context) return Boolean is
      (Convert (Ctx.Cursors (F_Allow_Isolated).Value.Allow_Isolated_Value));
 
-   function Get_Dump_Flags (Ctx : Context) return Service_Manager.Integer is
+   function Get_Dump_Flags (Ctx : Context) return Parpen.Service_Manager.Integer is
      (Ctx.Cursors (F_Dump_Flags).Value.Dump_Flags_Value);
 
    procedure Get_Name (Ctx : Context) is
@@ -580,10 +580,10 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      procedure Insert is new Types.Insert (Service_Manager.Len);
-      procedure Insert is new Types.Insert (Service_Manager.MBZ_7_Base);
-      procedure Insert is new Types.Insert (Builtin_Types.Boolean_Base);
-      procedure Insert is new Types.Insert (Service_Manager.Integer_Base);
+      procedure Insert is new Types.Insert (Parpen.Service_Manager.Len);
+      procedure Insert is new Types.Insert (Parpen.Service_Manager.MBZ_7_Base);
+      procedure Insert is new Types.Insert (Parpen.Builtin_Types.Boolean_Base);
+      procedure Insert is new Types.Insert (Parpen.Service_Manager.Integer_Base);
    begin
       Fst := First;
       Lst := Last;
@@ -605,7 +605,7 @@ is
       end case;
    end Set_Field_Value;
 
-   procedure Set_Len (Ctx : in out Context; Val : Service_Manager.Len) is
+   procedure Set_Len (Ctx : in out Context; Val : Parpen.Service_Manager.Len) is
       Field_Value : constant Field_Dependent_Value := (F_Len, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -616,7 +616,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Len)) := (State => S_Invalid, Predecessor => F_Len);
    end Set_Len;
 
-   procedure Set_Padding (Ctx : in out Context; Val : Service_Manager.MBZ_7) is
+   procedure Set_Padding (Ctx : in out Context; Val : Parpen.Service_Manager.MBZ_7) is
       Field_Value : constant Field_Dependent_Value := (F_Padding, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -638,7 +638,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Allow_Isolated)) := (State => S_Invalid, Predecessor => F_Allow_Isolated);
    end Set_Allow_Isolated;
 
-   procedure Set_Dump_Flags (Ctx : in out Context; Val : Service_Manager.Integer) is
+   procedure Set_Dump_Flags (Ctx : in out Context; Val : Parpen.Service_Manager.Integer) is
       Field_Value : constant Field_Dependent_Value := (F_Dump_Flags, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -680,7 +680,7 @@ is
       Reset_Dependent_Fields (Ctx, F_Name);
       Ctx := (Ctx.Buffer_First, Ctx.Buffer_Last, Ctx.First, Last, Ctx.Buffer, Ctx.Cursors);
       pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Len)) then
-          (Ctx.Cursors (F_Len).Last - Ctx.Cursors (F_Len).First + 1) = Service_Manager.Len'Size
+          (Ctx.Cursors (F_Len).Last - Ctx.Cursors (F_Len).First + 1) = Parpen.Service_Manager.Len'Size
             and then Ctx.Cursors (F_Len).Predecessor = F_Initial
             and then Ctx.Cursors (F_Len).First = Ctx.First
             and then (if Structural_Valid (Ctx.Cursors (F_Name)) then
@@ -692,15 +692,15 @@ is
                       and then Ctx.Cursors (F_Server).Predecessor = F_Name
                       and then Ctx.Cursors (F_Server).First = (Ctx.Cursors (F_Name).Last + 1)
                       and then (if Structural_Valid (Ctx.Cursors (F_Padding)) then
-                         (Ctx.Cursors (F_Padding).Last - Ctx.Cursors (F_Padding).First + 1) = Service_Manager.MBZ_7_Base'Size
+                         (Ctx.Cursors (F_Padding).Last - Ctx.Cursors (F_Padding).First + 1) = Parpen.Service_Manager.MBZ_7_Base'Size
                            and then Ctx.Cursors (F_Padding).Predecessor = F_Server
                            and then Ctx.Cursors (F_Padding).First = (Ctx.Cursors (F_Server).Last + 1)
                            and then (if Structural_Valid (Ctx.Cursors (F_Allow_Isolated)) then
-                              (Ctx.Cursors (F_Allow_Isolated).Last - Ctx.Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
+                              (Ctx.Cursors (F_Allow_Isolated).Last - Ctx.Cursors (F_Allow_Isolated).First + 1) = Parpen.Builtin_Types.Boolean_Base'Size
                                 and then Ctx.Cursors (F_Allow_Isolated).Predecessor = F_Padding
                                 and then Ctx.Cursors (F_Allow_Isolated).First = (Ctx.Cursors (F_Padding).Last + 1)
                                 and then (if Structural_Valid (Ctx.Cursors (F_Dump_Flags)) then
-                                   (Ctx.Cursors (F_Dump_Flags).Last - Ctx.Cursors (F_Dump_Flags).First + 1) = Service_Manager.Integer_Base'Size
+                                   (Ctx.Cursors (F_Dump_Flags).Last - Ctx.Cursors (F_Dump_Flags).First + 1) = Parpen.Service_Manager.Integer_Base'Size
                                      and then Ctx.Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
                                      and then Ctx.Cursors (F_Dump_Flags).First = (Ctx.Cursors (F_Allow_Isolated).Last + 1))))))));
       Ctx.Cursors (F_Name) := (State => S_Structural_Valid, First => First, Last => Last, Value => (Fld => F_Name), Predecessor => Ctx.Cursors (F_Name).Predecessor);
@@ -714,7 +714,7 @@ is
       Reset_Dependent_Fields (Ctx, F_Server);
       Ctx := (Ctx.Buffer_First, Ctx.Buffer_Last, Ctx.First, Last, Ctx.Buffer, Ctx.Cursors);
       pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Len)) then
-          (Ctx.Cursors (F_Len).Last - Ctx.Cursors (F_Len).First + 1) = Service_Manager.Len'Size
+          (Ctx.Cursors (F_Len).Last - Ctx.Cursors (F_Len).First + 1) = Parpen.Service_Manager.Len'Size
             and then Ctx.Cursors (F_Len).Predecessor = F_Initial
             and then Ctx.Cursors (F_Len).First = Ctx.First
             and then (if Structural_Valid (Ctx.Cursors (F_Name)) then
@@ -726,15 +726,15 @@ is
                       and then Ctx.Cursors (F_Server).Predecessor = F_Name
                       and then Ctx.Cursors (F_Server).First = (Ctx.Cursors (F_Name).Last + 1)
                       and then (if Structural_Valid (Ctx.Cursors (F_Padding)) then
-                         (Ctx.Cursors (F_Padding).Last - Ctx.Cursors (F_Padding).First + 1) = Service_Manager.MBZ_7_Base'Size
+                         (Ctx.Cursors (F_Padding).Last - Ctx.Cursors (F_Padding).First + 1) = Parpen.Service_Manager.MBZ_7_Base'Size
                            and then Ctx.Cursors (F_Padding).Predecessor = F_Server
                            and then Ctx.Cursors (F_Padding).First = (Ctx.Cursors (F_Server).Last + 1)
                            and then (if Structural_Valid (Ctx.Cursors (F_Allow_Isolated)) then
-                              (Ctx.Cursors (F_Allow_Isolated).Last - Ctx.Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
+                              (Ctx.Cursors (F_Allow_Isolated).Last - Ctx.Cursors (F_Allow_Isolated).First + 1) = Parpen.Builtin_Types.Boolean_Base'Size
                                 and then Ctx.Cursors (F_Allow_Isolated).Predecessor = F_Padding
                                 and then Ctx.Cursors (F_Allow_Isolated).First = (Ctx.Cursors (F_Padding).Last + 1)
                                 and then (if Structural_Valid (Ctx.Cursors (F_Dump_Flags)) then
-                                   (Ctx.Cursors (F_Dump_Flags).Last - Ctx.Cursors (F_Dump_Flags).First + 1) = Service_Manager.Integer_Base'Size
+                                   (Ctx.Cursors (F_Dump_Flags).Last - Ctx.Cursors (F_Dump_Flags).First + 1) = Parpen.Service_Manager.Integer_Base'Size
                                      and then Ctx.Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
                                      and then Ctx.Cursors (F_Dump_Flags).First = (Ctx.Cursors (F_Allow_Isolated).Last + 1))))))));
       Ctx.Cursors (F_Server) := (State => S_Structural_Valid, First => First, Last => Last, Value => (Fld => F_Server), Predecessor => Ctx.Cursors (F_Server).Predecessor);

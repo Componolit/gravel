@@ -7,9 +7,7 @@ with Gneiss.Memory.Dispatcher;
 
 with Parpen.Generic_Types;
 with Parpen.Protocol.Generic_Label;
-with Parpen.Protocol.Generic_Request;
 with Parpen.Protocol.Generic_Transaction;
-with Parpen.Protocol.Generic_Contains;
 with Parpen.Container;
 
 with Parpen.Message;
@@ -42,9 +40,7 @@ is
                                               Bit_Length => Bit_Length);
 
    package Label_Package is new Parpen.Protocol.Generic_Label (Types);
-   package Request_Package is new Parpen.Protocol.Generic_Request (Types);
    package Transaction_Package is new Parpen.Protocol.Generic_Transaction (Types);
-   package Contains_Package is new Parpen.Protocol.Generic_Contains (Types, Request_Package, Transaction_Package);
 
    procedure Trace (Message : String);
 
@@ -131,14 +127,14 @@ is
    procedure Send_Status (ID   : Client_ID;
                           Code : Parpen.Protocol.Status)
    is
-      Request_Context : Request_Package.Context := Request_Package.Create;
-      package Reply is new Parpen.Container (Types, Message_Buffer'Length);
+      Transaction_Context : Transaction_Package.Context := Transaction_Package.Create;
+      package Buffer is new Parpen.Container (Types, Message_Buffer'Length);
    begin
-      Request_Package.Initialize (Request_Context, Reply.Ptr);
-      Request_Package.Set_Tag (Request_Context, Parpen.Protocol.T_STATUS);
-      Request_Package.Set_Code (Request_Context, Code);
-      Request_Package.Take_Buffer (Request_Context, Reply.Ptr);
-      Message_Server.Send (Servers (ID).Msg, Reply.Ptr.all);
+      Transaction_Package.Initialize (Transaction_Context, Buffer.Ptr);
+      Transaction_Package.Set_Tag (Transaction_Context, Parpen.Protocol.T_STATUS);
+      Transaction_Package.Set_Code (Transaction_Context, Code);
+      Transaction_Package.Take_Buffer (Transaction_Context, Buffer.Ptr);
+      Message_Server.Send (Servers (ID).Msg, Buffer.Ptr.all);
    end Send_Status;
 
    ----------------
@@ -206,15 +202,8 @@ is
    procedure Handle_Message (Session : in out Message.Server_Session;
                              Data    :        Message_Buffer)
    is
-      package Request is new Parpen.Container (Types, Message_Buffer'Length);
-      Request_Context     : Request_Package.Context := Request_Package.Create;
-      Transaction_Context : Transaction_Package.Context := Transaction_Package.Create;
-      Transaction         : Message_Package.Transaction;
-      Status              : Message_Package.Status;
-      use type Parpen.Protocol.Tag;
-
       procedure Send (ID         : Client_ID;
-                      Handle     : Parpen.Protocol.Handle;
+                      BH         : Message_Package.BH_Option;
                       Method     : Parpen.Protocol.Method;
                       Cookie     : Parpen.Protocol.Cookie;
                       Data       : String_Ptr;
@@ -222,8 +211,7 @@ is
                       Recv_First : Positive;
                       Length     : Natural)
       is
-         Request_Context : Request_Package.Context := Request_Package.Create;
-         Transaction_Context: Transaction_Package.Context := Transaction_Package.Create;
+         Context : Transaction_Package.Context := Transaction_Package.Create;
          package Reply is new Parpen.Container (Types, Message_Buffer'Length);
       begin
          Trace ("Send: called");
@@ -240,89 +228,94 @@ is
                               Length    => Length);
          Memory_Server.Modify (Servers (ID).Mem);
 
-         Request_Package.Initialize (Request_Context, Reply.Ptr);
-         Request_Package.Set_Tag (Request_Context, Parpen.Protocol.T_TRANSACTION);
-         Contains_Package.Switch_To_Data (Request_Context, Transaction_Context);
+         Transaction_Package.Initialize (Context, Reply.Ptr);
 
-         Transaction_Package.Set_Handle (Transaction_Context, Handle);
-         Transaction_Package.Set_Method (Transaction_Context, Method);
-         Transaction_Package.Set_Cookie (Transaction_Context, Cookie);
-         Transaction_Package.Set_Send_Offset (Transaction_Context,
-                                              Parpen.Protocol.Offset (Positive'Val (Data_First) - 1));
-         Transaction_Package.Set_Send_Length (Transaction_Context, Parpen.Protocol.Length (Length));
-         Transaction_Package.Set_Meta_Offset (Transaction_Context, 0);
-         Transaction_Package.Set_Meta_Length (Transaction_Context, 0);
-         Transaction_Package.Set_Receive_Offset (Transaction_Context,
-                                                 Parpen.Protocol.Offset (Positive'Val (Recv_First) - 1));
-         Transaction_Package.Set_Receive_Length (Transaction_Context, Parpen.Protocol.Length (Length));
+         case BH.Kind is
+            when Message_Package.BH_Handle =>
+               Transaction_Package.Set_Tag (Context, Parpen.Protocol.T_HANDLE);
+               Transaction_Package.Set_Handle (Context, BH.Handle);
+            when Message_Package.BH_Binder =>
+               Transaction_Package.Set_Tag (Context, Parpen.Protocol.T_BINDER);
+               Transaction_Package.Set_Binder (Context, BH.Binder);
+         end case;
 
-         Transaction_Package.Take_Buffer (Transaction_Context, Reply.Ptr);
+         Transaction_Package.Set_Method (Context, Method);
+         Transaction_Package.Set_Cookie (Context, Cookie);
+         Transaction_Package.Set_Send_Offset (Context, Parpen.Protocol.Offset (Positive'Val (Data_First) - 1));
+         Transaction_Package.Set_Send_Length (Context, Parpen.Protocol.Length (Length));
+         Transaction_Package.Set_Meta_Offset (Context, 0);
+         Transaction_Package.Set_Meta_Length (Context, 0);
+         Transaction_Package.Set_Recv_Offset (Context, Parpen.Protocol.Offset (Positive'Val (Recv_First) - 1));
+         Transaction_Package.Set_Recv_Length (Context, Parpen.Protocol.Length (Length));
+         Transaction_Package.Take_Buffer (Context, Reply.Ptr);
+
          Message_Server.Send (Servers (ID).Msg, Reply.Ptr.all);
       end Send;
 
       procedure Dispatch is new Message_Package.Dispatch (Send);
 
+      package Request is new Parpen.Container (Types, Message_Buffer'Length);
+
+      Context     : Transaction_Package.Context := Transaction_Package.Create;
+      Transaction : Message_Package.Transaction;
+      Status      : Message_Package.Status;
+
+      use type Parpen.Protocol.Tag;
       use type Message_Package.Status;
    begin
       Trace ("Handle_Message: Message received");
       Request.Ptr.all := (others => ASCII.NUL);
       Request.Ptr.all (1 .. Data'Length) := Data;
-      Request_Package.Initialize (Request_Context, Request.Ptr);
-      Request_Package.Verify_Message (Request_Context);
-      if Request_Package.Structural_Valid_Message (Request_Context) then
-         if Request_Package.Get_Tag (Request_Context) = Parpen.Protocol.T_TRANSACTION then
-            if Contains_Package.Transaction_In_Request_Data (Request_Context) then
-               Contains_Package.Switch_To_Data (Request_Context, Transaction_Context);
-               Transaction_Package.Verify_Message (Transaction_Context);
-               if Transaction_Package.Valid_Message (Transaction_Context) then
-                  Trace ("Handle_Message: Unpacking transaction");
-                  Transaction :=
-                     (Handle         => Transaction_Package.Get_Handle (Transaction_Context),
-                      Method         => Transaction_Package.Get_Method (Transaction_Context),
-                      Cookie         => Transaction_Package.Get_Cookie (Transaction_Context),
-                      Send_Offset    => Bit_Length (Transaction_Package.Get_Send_Offset (Transaction_Context)),
-                      Send_Length    => Bit_Length (Transaction_Package.Get_Send_Length (Transaction_Context)),
-                      Offsets_Offset => Bit_Length (Transaction_Package.Get_Meta_Offset (Transaction_Context)),
-                      Offsets_Length => Bit_Length (Transaction_Package.Get_Meta_Length (Transaction_Context)),
-                      Recv_Offset    => Bit_Length (Transaction_Package.Get_Receive_Offset (Transaction_Context)),
-                      Recv_Length    => Bit_Length (Transaction_Package.Get_Receive_Length (Transaction_Context)));
+      Transaction_Package.Initialize (Context, Request.Ptr);
+      Transaction_Package.Verify_Message (Context);
+      if Transaction_Package.Valid_Message (Context) then
+         if Transaction_Package.Get_Tag (Context) = Parpen.Protocol.T_HANDLE then
+            Trace ("Handle_Message: Unpacking transaction");
+            Transaction :=
+               (Handle         => Transaction_Package.Get_Handle (Context),
+                Method         => Transaction_Package.Get_Method (Context),
+                Cookie         => Transaction_Package.Get_Cookie (Context),
+                Send_Offset    => Bit_Length (Transaction_Package.Get_Send_Offset (Context)),
+                Send_Length    => Bit_Length (Transaction_Package.Get_Send_Length (Context)),
+                Offsets_Offset => Bit_Length (Transaction_Package.Get_Meta_Offset (Context)),
+                Offsets_Length => Bit_Length (Transaction_Package.Get_Meta_Length (Context)),
+                Recv_Offset    => Bit_Length (Transaction_Package.Get_Recv_Offset (Context)),
+                Recv_Length    => Bit_Length (Transaction_Package.Get_Recv_Length (Context)));
 
-                  Trace ("Handle_Message: Copy data to scratch buffer");
-                  Modify_Operation := (Direction => Dir_In,
-                                       Start     => Positive (1 + Transaction.Send_Offset / 8),
-                                       Length    => Natural (Transaction.Send_Length / 8));
-                  Memory_Server.Modify (Servers (Message.Index (Session).Value).Mem);
+            Trace ("Handle_Message: Copy data to scratch buffer");
+            Modify_Operation := (Direction => Dir_In,
+                                 Start     => Positive (1 + Transaction.Send_Offset / 8),
+                                 Length    => Natural (Transaction.Send_Length / 8));
+            Memory_Server.Modify (Servers (Message.Index (Session).Value).Mem);
 
-                  Trace ("Handle_Message: Dispatching transaction");
-                  Dispatch (Sender      => Message.Index (Session).Value,
-                            Transaction => Transaction,
-                            Data        => Scratch.Ptr,
-                            Status      => Status);
+            Trace ("Handle_Message: Dispatching transaction");
+            Dispatch (Sender      => Message.Index (Session).Value,
+                      Transaction => Transaction,
+                      Data        => Scratch.Ptr,
+                      Status      => Status);
 
-                  if Status /= Message_Package.Status_Valid then
-                     Trace ("ERROR: Handle_Message: Sending error");
-                     Send_Status (ID   => Message.Index (Session).Value,
-                                  Code => (case Status is
-                                           when Message_Package.Status_Invalid_Handle
-                                              => Parpen.Protocol.STATUS_INVALID_HANDLE,
-                                           when Message_Package.Status_Invalid_Method
-                                              => Parpen.Protocol.STATUS_INVALID_METHOD,
-                                           when Message_Package.Status_Invalid_Binder
-                                              => Parpen.Protocol.STATUS_INVALID_BINDER,
-                                           when Message_Package.Status_Offset_Out_Of_Range
-                                              => Parpen.Protocol.STATUS_OFFSET_OUT_OF_RANGE,
-                                           when Message_Package.Status_Receiver_Not_Ready
-                                              => Parpen.Protocol.STATUS_RECEIVER_NOT_READY,
-                                           when Message_Package.Status_Receive_Buffer_Too_Small
-                                              => Parpen.Protocol.STATUS_RECEIVE_BUFFER_TOO_SMALL,
-                                           when Message_Package.Status_Overflow
-                                              => Parpen.Protocol.STATUS_OVERFLOW,
-                                           when others
-                                              => Parpen.Protocol.STATUS_UNKNOWN_ERROR));
-                  end if;
-                  return;
-               end if;
+            if Status /= Message_Package.Status_Valid then
+               Trace ("ERROR: Handle_Message: Sending error");
+               Send_Status (ID   => Message.Index (Session).Value,
+                            Code => (case Status is
+                                     when Message_Package.Status_Invalid_Handle
+                                        => Parpen.Protocol.STATUS_INVALID_HANDLE,
+                                     when Message_Package.Status_Invalid_Method
+                                        => Parpen.Protocol.STATUS_INVALID_METHOD,
+                                     when Message_Package.Status_Invalid_Binder
+                                        => Parpen.Protocol.STATUS_INVALID_BINDER,
+                                     when Message_Package.Status_Offset_Out_Of_Range
+                                        => Parpen.Protocol.STATUS_OFFSET_OUT_OF_RANGE,
+                                     when Message_Package.Status_Receiver_Not_Ready
+                                        => Parpen.Protocol.STATUS_RECEIVER_NOT_READY,
+                                     when Message_Package.Status_Receive_Buffer_Too_Small
+                                        => Parpen.Protocol.STATUS_RECEIVE_BUFFER_TOO_SMALL,
+                                     when Message_Package.Status_Overflow
+                                        => Parpen.Protocol.STATUS_OVERFLOW,
+                                     when others
+                                        => Parpen.Protocol.STATUS_UNKNOWN_ERROR));
             end if;
+            return;
          end if;
       end if;
 
@@ -340,9 +333,9 @@ is
    is
       Idx   : constant Gneiss.Session_Index := Message.Index (Session).Value;
       package Reply is new Parpen.Container (Types, Message_Buffer'Length);
-      Context : Request_Package.Context := Request_Package.Create;
+      Context : Transaction_Package.Context := Transaction_Package.Create;
    begin
-      Request_Package.Initialize (Context, Reply.Ptr);
+      Transaction_Package.Initialize (Context, Reply.Ptr);
       if Gneiss.Log.Initialized (Log) then
          if Idx in Servers'Range then
             case Servers_Data (Idx).State is

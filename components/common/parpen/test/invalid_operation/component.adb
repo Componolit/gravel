@@ -3,7 +3,7 @@ with Gneiss.Message.Client;
 with Gneiss.Memory.Client;
 
 with Parpen.Generic_Types;
-with Parpen.Protocol.Generic_Request;
+with Parpen.Protocol.Generic_Transaction;
 
 with Parpen.Container;
 
@@ -23,7 +23,7 @@ is
                                               Length     => Natural,
                                               Bit_Length => Bit_Length);
 
-   package Request_Package is new Parpen.Protocol.Generic_Request (Types);
+   package Request_Package is new Parpen.Protocol.Generic_Transaction (Types);
 
    procedure Event;
 

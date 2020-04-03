@@ -292,7 +292,7 @@ package body Parpen.Message is
          end if;
 
          Send (ID         => Sender,
-               Handle     => Transaction.Handle,
+               BH         => (Kind => BH_Handle, Handle => Transaction.Handle),
                Method     => Transaction.Method,
                Cookie     => Transaction.Cookie,
                Data       => Data,
@@ -316,7 +316,7 @@ package body Parpen.Message is
          end if;
 
          Send (ID          => Receiver,
-               Handle      => Transaction.Handle,
+               BH          => (Kind => BH_Handle, Handle => Transaction.Handle),
                Method      => Transaction.Method,
                Cookie      => Transaction.Cookie,
                Data        => Data,
@@ -388,7 +388,7 @@ package body Parpen.Message is
    ------------
 
    procedure Ignore (ID         : Client_ID;
-                     Handle     : Parpen.Protocol.Handle;
+                     BH         : BH_Option;
                      Method     : Parpen.Protocol.Method;
                      Cookie     : Parpen.Protocol.Cookie;
                      Data       : Types.Bytes_Ptr;
@@ -397,7 +397,7 @@ package body Parpen.Message is
                      Length     : Natural)
    is
       pragma Unreferenced
-         (ID, Handle, Method, Cookie, Data, Data_First, Recv_First, Length);
+         (ID, BH, Method, Cookie, Data, Data_First, Recv_First, Length);
    begin
       null;
    end Ignore;

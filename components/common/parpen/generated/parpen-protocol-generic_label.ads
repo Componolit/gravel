@@ -30,9 +30,9 @@ is
             when F_Initial | F_Final =>
                null;
             when F_Delimiter =>
-               Delimiter_Value : Protocol.Esc_Char_Base;
+               Delimiter_Value : Parpen.Protocol.Esc_Char_Base;
             when F_Connection_ID =>
-               Connection_ID_Value : Protocol.Connection_ID_Base;
+               Connection_ID_Value : Parpen.Protocol.Connection_ID_Base;
          end case;
       end record;
 
@@ -200,17 +200,17 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   function Get_Delimiter (Ctx : Context) return Protocol.Esc_Char with
+   function Get_Delimiter (Ctx : Context) return Parpen.Protocol.Esc_Char with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Delimiter);
 
-   function Get_Connection_ID (Ctx : Context) return Protocol.Connection_ID with
+   function Get_Connection_ID (Ctx : Context) return Parpen.Protocol.Connection_ID with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Connection_ID);
 
-   procedure Set_Delimiter (Ctx : in out Context; Val : Protocol.Esc_Char) with
+   procedure Set_Delimiter (Ctx : in out Context; Val : Parpen.Protocol.Esc_Char) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -234,7 +234,7 @@ is
           and Predecessor (Ctx, F_Delimiter) = Predecessor (Ctx, F_Delimiter)'Old
           and Valid_Next (Ctx, F_Delimiter) = Valid_Next (Ctx, F_Delimiter)'Old;
 
-   procedure Set_Connection_ID (Ctx : in out Context; Val : Protocol.Connection_ID) with
+   procedure Set_Connection_ID (Ctx : in out Context; Val : Parpen.Protocol.Connection_ID) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -335,11 +335,11 @@ private
       and then ((if Invalid (Cursors (F_Delimiter)) then
            Invalid (Cursors (F_Connection_ID))))
       and then (if Structural_Valid (Cursors (F_Delimiter)) then
-         (Cursors (F_Delimiter).Last - Cursors (F_Delimiter).First + 1) = Protocol.Esc_Char_Base'Size
+         (Cursors (F_Delimiter).Last - Cursors (F_Delimiter).First + 1) = Parpen.Protocol.Esc_Char_Base'Size
            and then Cursors (F_Delimiter).Predecessor = F_Initial
            and then Cursors (F_Delimiter).First = First
            and then (if Structural_Valid (Cursors (F_Connection_ID)) then
-              (Cursors (F_Connection_ID).Last - Cursors (F_Connection_ID).First + 1) = Protocol.Connection_ID_Base'Size
+              (Cursors (F_Connection_ID).Last - Cursors (F_Connection_ID).First + 1) = Parpen.Protocol.Connection_ID_Base'Size
                 and then Cursors (F_Connection_ID).Predecessor = F_Delimiter
                 and then Cursors (F_Connection_ID).First = (Cursors (F_Delimiter).Last + 1))));
 

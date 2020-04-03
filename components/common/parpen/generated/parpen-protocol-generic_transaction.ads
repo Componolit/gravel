@@ -10,9 +10,9 @@ is
 
    use type Types.Bytes, Types.Bytes_Ptr, Types.Index, Types.Length, Types.Bit_Index, Types.Bit_Length;
 
-   type Virtual_Field is (F_Initial, F_Handle, F_Method, F_Cookie, F_Send_Offset, F_Send_Length, F_Meta_Offset, F_Meta_Length, F_Receive_Offset, F_Receive_Length, F_Final);
+   type Virtual_Field is (F_Initial, F_Tag, F_Handle, F_Binder, F_Code, F_Method, F_Cookie, F_Send_Offset, F_Send_Length, F_Meta_Offset, F_Meta_Length, F_Recv_Offset, F_Recv_Length, F_Final);
 
-   subtype Field is Virtual_Field range F_Handle .. F_Receive_Length;
+   subtype Field is Virtual_Field range F_Tag .. F_Recv_Length;
 
    type Field_Cursor is private with
      Default_Initial_Condition =>
@@ -29,24 +29,30 @@ is
          case Fld is
             when F_Initial | F_Final =>
                null;
+            when F_Tag =>
+               Tag_Value : Parpen.Protocol.Tag_Base;
             when F_Handle =>
-               Handle_Value : Protocol.Handle_Base;
+               Handle_Value : Parpen.Protocol.Handle_Base;
+            when F_Binder =>
+               Binder_Value : Parpen.Protocol.Binder;
+            when F_Code =>
+               Code_Value : Parpen.Protocol.Status_Base;
             when F_Method =>
-               Method_Value : Protocol.Method_Base;
+               Method_Value : Parpen.Protocol.Method_Base;
             when F_Cookie =>
-               Cookie_Value : Protocol.Cookie;
+               Cookie_Value : Parpen.Protocol.Cookie;
             when F_Send_Offset =>
-               Send_Offset_Value : Protocol.Offset;
+               Send_Offset_Value : Parpen.Protocol.Offset;
             when F_Send_Length =>
-               Send_Length_Value : Protocol.Length_Base;
+               Send_Length_Value : Parpen.Protocol.Length_Base;
             when F_Meta_Offset =>
-               Meta_Offset_Value : Protocol.Offset;
+               Meta_Offset_Value : Parpen.Protocol.Offset;
             when F_Meta_Length =>
-               Meta_Length_Value : Protocol.Length_Base;
-            when F_Receive_Offset =>
-               Receive_Offset_Value : Protocol.Offset;
-            when F_Receive_Length =>
-               Receive_Length_Value : Protocol.Length_Base;
+               Meta_Length_Value : Parpen.Protocol.Length_Base;
+            when F_Recv_Offset =>
+               Recv_Offset_Value : Parpen.Protocol.Offset;
+            when F_Recv_Length =>
+               Recv_Length_Value : Parpen.Protocol.Length_Base;
          end case;
       end record;
 
@@ -214,52 +220,108 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   function Get_Handle (Ctx : Context) return Protocol.Handle with
+   function Get_Tag (Ctx : Context) return Parpen.Protocol.Tag with
+     Pre =>
+       Valid_Context (Ctx)
+          and Valid (Ctx, F_Tag);
+
+   function Get_Handle (Ctx : Context) return Parpen.Protocol.Handle with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Handle);
 
-   function Get_Method (Ctx : Context) return Protocol.Method with
+   function Get_Binder (Ctx : Context) return Parpen.Protocol.Binder with
+     Pre =>
+       Valid_Context (Ctx)
+          and Valid (Ctx, F_Binder);
+
+   function Get_Code (Ctx : Context) return Parpen.Protocol.Status with
+     Pre =>
+       Valid_Context (Ctx)
+          and Valid (Ctx, F_Code);
+
+   function Get_Method (Ctx : Context) return Parpen.Protocol.Method with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Method);
 
-   function Get_Cookie (Ctx : Context) return Protocol.Cookie with
+   function Get_Cookie (Ctx : Context) return Parpen.Protocol.Cookie with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Cookie);
 
-   function Get_Send_Offset (Ctx : Context) return Protocol.Offset with
+   function Get_Send_Offset (Ctx : Context) return Parpen.Protocol.Offset with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Send_Offset);
 
-   function Get_Send_Length (Ctx : Context) return Protocol.Length with
+   function Get_Send_Length (Ctx : Context) return Parpen.Protocol.Length with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Send_Length);
 
-   function Get_Meta_Offset (Ctx : Context) return Protocol.Offset with
+   function Get_Meta_Offset (Ctx : Context) return Parpen.Protocol.Offset with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Meta_Offset);
 
-   function Get_Meta_Length (Ctx : Context) return Protocol.Length with
+   function Get_Meta_Length (Ctx : Context) return Parpen.Protocol.Length with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Meta_Length);
 
-   function Get_Receive_Offset (Ctx : Context) return Protocol.Offset with
+   function Get_Recv_Offset (Ctx : Context) return Parpen.Protocol.Offset with
      Pre =>
        Valid_Context (Ctx)
-          and Valid (Ctx, F_Receive_Offset);
+          and Valid (Ctx, F_Recv_Offset);
 
-   function Get_Receive_Length (Ctx : Context) return Protocol.Length with
+   function Get_Recv_Length (Ctx : Context) return Parpen.Protocol.Length with
      Pre =>
        Valid_Context (Ctx)
-          and Valid (Ctx, F_Receive_Length);
+          and Valid (Ctx, F_Recv_Length);
 
-   procedure Set_Handle (Ctx : in out Context; Val : Protocol.Handle) with
+   procedure Set_Tag (Ctx : in out Context; Val : Parpen.Protocol.Tag) with
+     Pre =>
+       Valid_Context (Ctx)
+          and then not Ctx'Constrained
+          and then Has_Buffer (Ctx)
+          and then Valid_Next (Ctx, F_Tag)
+          and then Field_Last (Ctx, F_Tag) <= Types.Bit_Index'Last / 2
+          and then Field_Condition (Ctx, (F_Tag, Convert (Val)))
+          and then True
+          and then Available_Space (Ctx, F_Tag) >= Field_Length (Ctx, F_Tag),
+     Post =>
+       Valid_Context (Ctx)
+          and Has_Buffer (Ctx)
+          and Valid (Ctx, F_Tag)
+          and Get_Tag (Ctx) = Val
+          and Invalid (Ctx, F_Handle)
+          and Invalid (Ctx, F_Binder)
+          and Invalid (Ctx, F_Code)
+          and Invalid (Ctx, F_Method)
+          and Invalid (Ctx, F_Cookie)
+          and Invalid (Ctx, F_Send_Offset)
+          and Invalid (Ctx, F_Send_Length)
+          and Invalid (Ctx, F_Meta_Offset)
+          and Invalid (Ctx, F_Meta_Length)
+          and Invalid (Ctx, F_Recv_Offset)
+          and Invalid (Ctx, F_Recv_Length)
+          and (if Types.Bit_Length (Convert (Get_Tag (Ctx))) = Types.Bit_Length (Convert (T_HANDLE)) then
+             Predecessor (Ctx, F_Handle) = F_Tag
+               and Valid_Next (Ctx, F_Handle))
+          and (if Types.Bit_Length (Convert (Get_Tag (Ctx))) = Types.Bit_Length (Convert (T_BINDER)) then
+             Predecessor (Ctx, F_Binder) = F_Tag
+               and Valid_Next (Ctx, F_Binder))
+          and (if Types.Bit_Length (Convert (Get_Tag (Ctx))) = Types.Bit_Length (Convert (T_STATUS)) then
+             Predecessor (Ctx, F_Code) = F_Tag
+               and Valid_Next (Ctx, F_Code))
+          and Ctx.Buffer_First = Ctx.Buffer_First'Old
+          and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
+          and Ctx.First = Ctx.First'Old
+          and Predecessor (Ctx, F_Tag) = Predecessor (Ctx, F_Tag)'Old
+          and Valid_Next (Ctx, F_Tag) = Valid_Next (Ctx, F_Tag)'Old;
+
+   procedure Set_Handle (Ctx : in out Context; Val : Parpen.Protocol.Handle) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -274,23 +336,95 @@ is
           and Has_Buffer (Ctx)
           and Valid (Ctx, F_Handle)
           and Get_Handle (Ctx) = Val
+          and Invalid (Ctx, F_Binder)
+          and Invalid (Ctx, F_Code)
           and Invalid (Ctx, F_Method)
           and Invalid (Ctx, F_Cookie)
           and Invalid (Ctx, F_Send_Offset)
           and Invalid (Ctx, F_Send_Length)
           and Invalid (Ctx, F_Meta_Offset)
           and Invalid (Ctx, F_Meta_Length)
-          and Invalid (Ctx, F_Receive_Offset)
-          and Invalid (Ctx, F_Receive_Length)
+          and Invalid (Ctx, F_Recv_Offset)
+          and Invalid (Ctx, F_Recv_Length)
           and (Predecessor (Ctx, F_Method) = F_Handle
             and Valid_Next (Ctx, F_Method))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
           and Predecessor (Ctx, F_Handle) = Predecessor (Ctx, F_Handle)'Old
-          and Valid_Next (Ctx, F_Handle) = Valid_Next (Ctx, F_Handle)'Old;
+          and Valid_Next (Ctx, F_Handle) = Valid_Next (Ctx, F_Handle)'Old
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old;
 
-   procedure Set_Method (Ctx : in out Context; Val : Protocol.Method) with
+   procedure Set_Binder (Ctx : in out Context; Val : Parpen.Protocol.Binder) with
+     Pre =>
+       Valid_Context (Ctx)
+          and then not Ctx'Constrained
+          and then Has_Buffer (Ctx)
+          and then Valid_Next (Ctx, F_Binder)
+          and then Field_Last (Ctx, F_Binder) <= Types.Bit_Index'Last / 2
+          and then Field_Condition (Ctx, (F_Binder, Val))
+          and then Valid (Val)
+          and then Available_Space (Ctx, F_Binder) >= Field_Length (Ctx, F_Binder),
+     Post =>
+       Valid_Context (Ctx)
+          and Has_Buffer (Ctx)
+          and Valid (Ctx, F_Binder)
+          and Get_Binder (Ctx) = Val
+          and Invalid (Ctx, F_Code)
+          and Invalid (Ctx, F_Method)
+          and Invalid (Ctx, F_Cookie)
+          and Invalid (Ctx, F_Send_Offset)
+          and Invalid (Ctx, F_Send_Length)
+          and Invalid (Ctx, F_Meta_Offset)
+          and Invalid (Ctx, F_Meta_Length)
+          and Invalid (Ctx, F_Recv_Offset)
+          and Invalid (Ctx, F_Recv_Length)
+          and (Predecessor (Ctx, F_Method) = F_Binder
+            and Valid_Next (Ctx, F_Method))
+          and Ctx.Buffer_First = Ctx.Buffer_First'Old
+          and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
+          and Ctx.First = Ctx.First'Old
+          and Predecessor (Ctx, F_Binder) = Predecessor (Ctx, F_Binder)'Old
+          and Valid_Next (Ctx, F_Binder) = Valid_Next (Ctx, F_Binder)'Old
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
+          and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old;
+
+   procedure Set_Code (Ctx : in out Context; Val : Parpen.Protocol.Status) with
+     Pre =>
+       Valid_Context (Ctx)
+          and then not Ctx'Constrained
+          and then Has_Buffer (Ctx)
+          and then Valid_Next (Ctx, F_Code)
+          and then Field_Last (Ctx, F_Code) <= Types.Bit_Index'Last / 2
+          and then Field_Condition (Ctx, (F_Code, Convert (Val)))
+          and then True
+          and then Available_Space (Ctx, F_Code) >= Field_Length (Ctx, F_Code),
+     Post =>
+       Valid_Context (Ctx)
+          and Has_Buffer (Ctx)
+          and Valid (Ctx, F_Code)
+          and Get_Code (Ctx) = Val
+          and Invalid (Ctx, F_Method)
+          and Invalid (Ctx, F_Cookie)
+          and Invalid (Ctx, F_Send_Offset)
+          and Invalid (Ctx, F_Send_Length)
+          and Invalid (Ctx, F_Meta_Offset)
+          and Invalid (Ctx, F_Meta_Length)
+          and Invalid (Ctx, F_Recv_Offset)
+          and Invalid (Ctx, F_Recv_Length)
+          and Ctx.Buffer_First = Ctx.Buffer_First'Old
+          and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
+          and Ctx.First = Ctx.First'Old
+          and Predecessor (Ctx, F_Code) = Predecessor (Ctx, F_Code)'Old
+          and Valid_Next (Ctx, F_Code) = Valid_Next (Ctx, F_Code)'Old
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
+          and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old
+          and Cursor (Ctx, F_Binder) = Cursor (Ctx, F_Binder)'Old;
+
+   procedure Set_Method (Ctx : in out Context; Val : Parpen.Protocol.Method) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -310,8 +444,8 @@ is
           and Invalid (Ctx, F_Send_Length)
           and Invalid (Ctx, F_Meta_Offset)
           and Invalid (Ctx, F_Meta_Length)
-          and Invalid (Ctx, F_Receive_Offset)
-          and Invalid (Ctx, F_Receive_Length)
+          and Invalid (Ctx, F_Recv_Offset)
+          and Invalid (Ctx, F_Recv_Length)
           and (Predecessor (Ctx, F_Cookie) = F_Method
             and Valid_Next (Ctx, F_Cookie))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
@@ -319,10 +453,13 @@ is
           and Ctx.First = Ctx.First'Old
           and Predecessor (Ctx, F_Method) = Predecessor (Ctx, F_Method)'Old
           and Valid_Next (Ctx, F_Method) = Valid_Next (Ctx, F_Method)'Old
-          and Get_Handle (Ctx) = Get_Handle (Ctx)'Old
-          and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old;
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
+          and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old
+          and Cursor (Ctx, F_Binder) = Cursor (Ctx, F_Binder)'Old
+          and Cursor (Ctx, F_Code) = Cursor (Ctx, F_Code)'Old;
 
-   procedure Set_Cookie (Ctx : in out Context; Val : Protocol.Cookie) with
+   procedure Set_Cookie (Ctx : in out Context; Val : Parpen.Protocol.Cookie) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -341,8 +478,8 @@ is
           and Invalid (Ctx, F_Send_Length)
           and Invalid (Ctx, F_Meta_Offset)
           and Invalid (Ctx, F_Meta_Length)
-          and Invalid (Ctx, F_Receive_Offset)
-          and Invalid (Ctx, F_Receive_Length)
+          and Invalid (Ctx, F_Recv_Offset)
+          and Invalid (Ctx, F_Recv_Length)
           and (Predecessor (Ctx, F_Send_Offset) = F_Cookie
             and Valid_Next (Ctx, F_Send_Offset))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
@@ -350,12 +487,15 @@ is
           and Ctx.First = Ctx.First'Old
           and Predecessor (Ctx, F_Cookie) = Predecessor (Ctx, F_Cookie)'Old
           and Valid_Next (Ctx, F_Cookie) = Valid_Next (Ctx, F_Cookie)'Old
-          and Get_Handle (Ctx) = Get_Handle (Ctx)'Old
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
           and Get_Method (Ctx) = Get_Method (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
           and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old
+          and Cursor (Ctx, F_Binder) = Cursor (Ctx, F_Binder)'Old
+          and Cursor (Ctx, F_Code) = Cursor (Ctx, F_Code)'Old
           and Cursor (Ctx, F_Method) = Cursor (Ctx, F_Method)'Old;
 
-   procedure Set_Send_Offset (Ctx : in out Context; Val : Protocol.Offset) with
+   procedure Set_Send_Offset (Ctx : in out Context; Val : Parpen.Protocol.Offset) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -373,8 +513,8 @@ is
           and Invalid (Ctx, F_Send_Length)
           and Invalid (Ctx, F_Meta_Offset)
           and Invalid (Ctx, F_Meta_Length)
-          and Invalid (Ctx, F_Receive_Offset)
-          and Invalid (Ctx, F_Receive_Length)
+          and Invalid (Ctx, F_Recv_Offset)
+          and Invalid (Ctx, F_Recv_Length)
           and (Predecessor (Ctx, F_Send_Length) = F_Send_Offset
             and Valid_Next (Ctx, F_Send_Length))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
@@ -382,14 +522,17 @@ is
           and Ctx.First = Ctx.First'Old
           and Predecessor (Ctx, F_Send_Offset) = Predecessor (Ctx, F_Send_Offset)'Old
           and Valid_Next (Ctx, F_Send_Offset) = Valid_Next (Ctx, F_Send_Offset)'Old
-          and Get_Handle (Ctx) = Get_Handle (Ctx)'Old
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
           and Get_Method (Ctx) = Get_Method (Ctx)'Old
           and Get_Cookie (Ctx) = Get_Cookie (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
           and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old
+          and Cursor (Ctx, F_Binder) = Cursor (Ctx, F_Binder)'Old
+          and Cursor (Ctx, F_Code) = Cursor (Ctx, F_Code)'Old
           and Cursor (Ctx, F_Method) = Cursor (Ctx, F_Method)'Old
           and Cursor (Ctx, F_Cookie) = Cursor (Ctx, F_Cookie)'Old;
 
-   procedure Set_Send_Length (Ctx : in out Context; Val : Protocol.Length) with
+   procedure Set_Send_Length (Ctx : in out Context; Val : Parpen.Protocol.Length) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -406,8 +549,8 @@ is
           and Get_Send_Length (Ctx) = Val
           and Invalid (Ctx, F_Meta_Offset)
           and Invalid (Ctx, F_Meta_Length)
-          and Invalid (Ctx, F_Receive_Offset)
-          and Invalid (Ctx, F_Receive_Length)
+          and Invalid (Ctx, F_Recv_Offset)
+          and Invalid (Ctx, F_Recv_Length)
           and (Predecessor (Ctx, F_Meta_Offset) = F_Send_Length
             and Valid_Next (Ctx, F_Meta_Offset))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
@@ -415,16 +558,19 @@ is
           and Ctx.First = Ctx.First'Old
           and Predecessor (Ctx, F_Send_Length) = Predecessor (Ctx, F_Send_Length)'Old
           and Valid_Next (Ctx, F_Send_Length) = Valid_Next (Ctx, F_Send_Length)'Old
-          and Get_Handle (Ctx) = Get_Handle (Ctx)'Old
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
           and Get_Method (Ctx) = Get_Method (Ctx)'Old
           and Get_Cookie (Ctx) = Get_Cookie (Ctx)'Old
           and Get_Send_Offset (Ctx) = Get_Send_Offset (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
           and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old
+          and Cursor (Ctx, F_Binder) = Cursor (Ctx, F_Binder)'Old
+          and Cursor (Ctx, F_Code) = Cursor (Ctx, F_Code)'Old
           and Cursor (Ctx, F_Method) = Cursor (Ctx, F_Method)'Old
           and Cursor (Ctx, F_Cookie) = Cursor (Ctx, F_Cookie)'Old
           and Cursor (Ctx, F_Send_Offset) = Cursor (Ctx, F_Send_Offset)'Old;
 
-   procedure Set_Meta_Offset (Ctx : in out Context; Val : Protocol.Offset) with
+   procedure Set_Meta_Offset (Ctx : in out Context; Val : Parpen.Protocol.Offset) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -440,8 +586,8 @@ is
           and Valid (Ctx, F_Meta_Offset)
           and Get_Meta_Offset (Ctx) = Val
           and Invalid (Ctx, F_Meta_Length)
-          and Invalid (Ctx, F_Receive_Offset)
-          and Invalid (Ctx, F_Receive_Length)
+          and Invalid (Ctx, F_Recv_Offset)
+          and Invalid (Ctx, F_Recv_Length)
           and (Predecessor (Ctx, F_Meta_Length) = F_Meta_Offset
             and Valid_Next (Ctx, F_Meta_Length))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
@@ -449,18 +595,21 @@ is
           and Ctx.First = Ctx.First'Old
           and Predecessor (Ctx, F_Meta_Offset) = Predecessor (Ctx, F_Meta_Offset)'Old
           and Valid_Next (Ctx, F_Meta_Offset) = Valid_Next (Ctx, F_Meta_Offset)'Old
-          and Get_Handle (Ctx) = Get_Handle (Ctx)'Old
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
           and Get_Method (Ctx) = Get_Method (Ctx)'Old
           and Get_Cookie (Ctx) = Get_Cookie (Ctx)'Old
           and Get_Send_Offset (Ctx) = Get_Send_Offset (Ctx)'Old
           and Get_Send_Length (Ctx) = Get_Send_Length (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
           and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old
+          and Cursor (Ctx, F_Binder) = Cursor (Ctx, F_Binder)'Old
+          and Cursor (Ctx, F_Code) = Cursor (Ctx, F_Code)'Old
           and Cursor (Ctx, F_Method) = Cursor (Ctx, F_Method)'Old
           and Cursor (Ctx, F_Cookie) = Cursor (Ctx, F_Cookie)'Old
           and Cursor (Ctx, F_Send_Offset) = Cursor (Ctx, F_Send_Offset)'Old
           and Cursor (Ctx, F_Send_Length) = Cursor (Ctx, F_Send_Length)'Old;
 
-   procedure Set_Meta_Length (Ctx : in out Context; Val : Protocol.Length) with
+   procedure Set_Meta_Length (Ctx : in out Context; Val : Parpen.Protocol.Length) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -475,59 +624,65 @@ is
           and Has_Buffer (Ctx)
           and Valid (Ctx, F_Meta_Length)
           and Get_Meta_Length (Ctx) = Val
-          and Invalid (Ctx, F_Receive_Offset)
-          and Invalid (Ctx, F_Receive_Length)
-          and (Predecessor (Ctx, F_Receive_Offset) = F_Meta_Length
-            and Valid_Next (Ctx, F_Receive_Offset))
+          and Invalid (Ctx, F_Recv_Offset)
+          and Invalid (Ctx, F_Recv_Length)
+          and (Predecessor (Ctx, F_Recv_Offset) = F_Meta_Length
+            and Valid_Next (Ctx, F_Recv_Offset))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
           and Predecessor (Ctx, F_Meta_Length) = Predecessor (Ctx, F_Meta_Length)'Old
           and Valid_Next (Ctx, F_Meta_Length) = Valid_Next (Ctx, F_Meta_Length)'Old
-          and Get_Handle (Ctx) = Get_Handle (Ctx)'Old
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
           and Get_Method (Ctx) = Get_Method (Ctx)'Old
           and Get_Cookie (Ctx) = Get_Cookie (Ctx)'Old
           and Get_Send_Offset (Ctx) = Get_Send_Offset (Ctx)'Old
           and Get_Send_Length (Ctx) = Get_Send_Length (Ctx)'Old
           and Get_Meta_Offset (Ctx) = Get_Meta_Offset (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
           and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old
+          and Cursor (Ctx, F_Binder) = Cursor (Ctx, F_Binder)'Old
+          and Cursor (Ctx, F_Code) = Cursor (Ctx, F_Code)'Old
           and Cursor (Ctx, F_Method) = Cursor (Ctx, F_Method)'Old
           and Cursor (Ctx, F_Cookie) = Cursor (Ctx, F_Cookie)'Old
           and Cursor (Ctx, F_Send_Offset) = Cursor (Ctx, F_Send_Offset)'Old
           and Cursor (Ctx, F_Send_Length) = Cursor (Ctx, F_Send_Length)'Old
           and Cursor (Ctx, F_Meta_Offset) = Cursor (Ctx, F_Meta_Offset)'Old;
 
-   procedure Set_Receive_Offset (Ctx : in out Context; Val : Protocol.Offset) with
+   procedure Set_Recv_Offset (Ctx : in out Context; Val : Parpen.Protocol.Offset) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
           and then Has_Buffer (Ctx)
-          and then Valid_Next (Ctx, F_Receive_Offset)
-          and then Field_Last (Ctx, F_Receive_Offset) <= Types.Bit_Index'Last / 2
-          and then Field_Condition (Ctx, (F_Receive_Offset, Val))
+          and then Valid_Next (Ctx, F_Recv_Offset)
+          and then Field_Last (Ctx, F_Recv_Offset) <= Types.Bit_Index'Last / 2
+          and then Field_Condition (Ctx, (F_Recv_Offset, Val))
           and then Valid (Val)
-          and then Available_Space (Ctx, F_Receive_Offset) >= Field_Length (Ctx, F_Receive_Offset),
+          and then Available_Space (Ctx, F_Recv_Offset) >= Field_Length (Ctx, F_Recv_Offset),
      Post =>
        Valid_Context (Ctx)
           and Has_Buffer (Ctx)
-          and Valid (Ctx, F_Receive_Offset)
-          and Get_Receive_Offset (Ctx) = Val
-          and Invalid (Ctx, F_Receive_Length)
-          and (Predecessor (Ctx, F_Receive_Length) = F_Receive_Offset
-            and Valid_Next (Ctx, F_Receive_Length))
+          and Valid (Ctx, F_Recv_Offset)
+          and Get_Recv_Offset (Ctx) = Val
+          and Invalid (Ctx, F_Recv_Length)
+          and (Predecessor (Ctx, F_Recv_Length) = F_Recv_Offset
+            and Valid_Next (Ctx, F_Recv_Length))
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
-          and Predecessor (Ctx, F_Receive_Offset) = Predecessor (Ctx, F_Receive_Offset)'Old
-          and Valid_Next (Ctx, F_Receive_Offset) = Valid_Next (Ctx, F_Receive_Offset)'Old
-          and Get_Handle (Ctx) = Get_Handle (Ctx)'Old
+          and Predecessor (Ctx, F_Recv_Offset) = Predecessor (Ctx, F_Recv_Offset)'Old
+          and Valid_Next (Ctx, F_Recv_Offset) = Valid_Next (Ctx, F_Recv_Offset)'Old
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
           and Get_Method (Ctx) = Get_Method (Ctx)'Old
           and Get_Cookie (Ctx) = Get_Cookie (Ctx)'Old
           and Get_Send_Offset (Ctx) = Get_Send_Offset (Ctx)'Old
           and Get_Send_Length (Ctx) = Get_Send_Length (Ctx)'Old
           and Get_Meta_Offset (Ctx) = Get_Meta_Offset (Ctx)'Old
           and Get_Meta_Length (Ctx) = Get_Meta_Length (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
           and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old
+          and Cursor (Ctx, F_Binder) = Cursor (Ctx, F_Binder)'Old
+          and Cursor (Ctx, F_Code) = Cursor (Ctx, F_Code)'Old
           and Cursor (Ctx, F_Method) = Cursor (Ctx, F_Method)'Old
           and Cursor (Ctx, F_Cookie) = Cursor (Ctx, F_Cookie)'Old
           and Cursor (Ctx, F_Send_Offset) = Cursor (Ctx, F_Send_Offset)'Old
@@ -535,42 +690,45 @@ is
           and Cursor (Ctx, F_Meta_Offset) = Cursor (Ctx, F_Meta_Offset)'Old
           and Cursor (Ctx, F_Meta_Length) = Cursor (Ctx, F_Meta_Length)'Old;
 
-   procedure Set_Receive_Length (Ctx : in out Context; Val : Protocol.Length) with
+   procedure Set_Recv_Length (Ctx : in out Context; Val : Parpen.Protocol.Length) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
           and then Has_Buffer (Ctx)
-          and then Valid_Next (Ctx, F_Receive_Length)
-          and then Field_Last (Ctx, F_Receive_Length) <= Types.Bit_Index'Last / 2
-          and then Field_Condition (Ctx, (F_Receive_Length, Val))
+          and then Valid_Next (Ctx, F_Recv_Length)
+          and then Field_Last (Ctx, F_Recv_Length) <= Types.Bit_Index'Last / 2
+          and then Field_Condition (Ctx, (F_Recv_Length, Val))
           and then Valid (Val)
-          and then Available_Space (Ctx, F_Receive_Length) >= Field_Length (Ctx, F_Receive_Length),
+          and then Available_Space (Ctx, F_Recv_Length) >= Field_Length (Ctx, F_Recv_Length),
      Post =>
        Valid_Context (Ctx)
           and Has_Buffer (Ctx)
-          and Valid (Ctx, F_Receive_Length)
-          and Get_Receive_Length (Ctx) = Val
+          and Valid (Ctx, F_Recv_Length)
+          and Get_Recv_Length (Ctx) = Val
           and Ctx.Buffer_First = Ctx.Buffer_First'Old
           and Ctx.Buffer_Last = Ctx.Buffer_Last'Old
           and Ctx.First = Ctx.First'Old
-          and Predecessor (Ctx, F_Receive_Length) = Predecessor (Ctx, F_Receive_Length)'Old
-          and Valid_Next (Ctx, F_Receive_Length) = Valid_Next (Ctx, F_Receive_Length)'Old
-          and Get_Handle (Ctx) = Get_Handle (Ctx)'Old
+          and Predecessor (Ctx, F_Recv_Length) = Predecessor (Ctx, F_Recv_Length)'Old
+          and Valid_Next (Ctx, F_Recv_Length) = Valid_Next (Ctx, F_Recv_Length)'Old
+          and Get_Tag (Ctx) = Get_Tag (Ctx)'Old
           and Get_Method (Ctx) = Get_Method (Ctx)'Old
           and Get_Cookie (Ctx) = Get_Cookie (Ctx)'Old
           and Get_Send_Offset (Ctx) = Get_Send_Offset (Ctx)'Old
           and Get_Send_Length (Ctx) = Get_Send_Length (Ctx)'Old
           and Get_Meta_Offset (Ctx) = Get_Meta_Offset (Ctx)'Old
           and Get_Meta_Length (Ctx) = Get_Meta_Length (Ctx)'Old
-          and Get_Receive_Offset (Ctx) = Get_Receive_Offset (Ctx)'Old
+          and Get_Recv_Offset (Ctx) = Get_Recv_Offset (Ctx)'Old
+          and Cursor (Ctx, F_Tag) = Cursor (Ctx, F_Tag)'Old
           and Cursor (Ctx, F_Handle) = Cursor (Ctx, F_Handle)'Old
+          and Cursor (Ctx, F_Binder) = Cursor (Ctx, F_Binder)'Old
+          and Cursor (Ctx, F_Code) = Cursor (Ctx, F_Code)'Old
           and Cursor (Ctx, F_Method) = Cursor (Ctx, F_Method)'Old
           and Cursor (Ctx, F_Cookie) = Cursor (Ctx, F_Cookie)'Old
           and Cursor (Ctx, F_Send_Offset) = Cursor (Ctx, F_Send_Offset)'Old
           and Cursor (Ctx, F_Send_Length) = Cursor (Ctx, F_Send_Length)'Old
           and Cursor (Ctx, F_Meta_Offset) = Cursor (Ctx, F_Meta_Offset)'Old
           and Cursor (Ctx, F_Meta_Length) = Cursor (Ctx, F_Meta_Length)'Old
-          and Cursor (Ctx, F_Receive_Offset) = Cursor (Ctx, F_Receive_Offset)'Old;
+          and Cursor (Ctx, F_Recv_Offset) = Cursor (Ctx, F_Recv_Offset)'Old;
 
    function Valid_Context (Ctx : Context) return Boolean with
      Annotate =>
@@ -593,8 +751,14 @@ private
 
    function Valid_Value (Val : Field_Dependent_Value) return Boolean is
      ((case Val.Fld is
+         when F_Tag =>
+            Valid (Val.Tag_Value),
          when F_Handle =>
             Valid (Val.Handle_Value),
+         when F_Binder =>
+            Valid (Val.Binder_Value),
+         when F_Code =>
+            Valid (Val.Code_Value),
          when F_Method =>
             Valid (Val.Method_Value),
          when F_Cookie =>
@@ -607,10 +771,10 @@ private
             Valid (Val.Meta_Offset_Value),
          when F_Meta_Length =>
             Valid (Val.Meta_Length_Value),
-         when F_Receive_Offset =>
-            Valid (Val.Receive_Offset_Value),
-         when F_Receive_Length =>
-            Valid (Val.Receive_Length_Value),
+         when F_Recv_Offset =>
+            Valid (Val.Recv_Offset_Value),
+         when F_Recv_Length =>
+            Valid (Val.Recv_Length_Value),
          when F_Initial | F_Final =>
             False));
 
@@ -658,9 +822,23 @@ private
            and Cursors (F).Last <= Last
            and Cursors (F).First <= (Cursors (F).Last + 1)
            and Cursors (F).Value.Fld = F))
-      and then ((if Structural_Valid (Cursors (F_Method)) then
+      and then ((if Structural_Valid (Cursors (F_Handle)) then
+           (Valid (Cursors (F_Tag))
+               and then Cursors (F_Handle).Predecessor = F_Tag
+               and then Types.Bit_Length (Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_HANDLE))))
+        and then (if Structural_Valid (Cursors (F_Binder)) then
+           (Valid (Cursors (F_Tag))
+               and then Cursors (F_Binder).Predecessor = F_Tag
+               and then Types.Bit_Length (Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_BINDER))))
+        and then (if Structural_Valid (Cursors (F_Code)) then
+           (Valid (Cursors (F_Tag))
+               and then Cursors (F_Code).Predecessor = F_Tag
+               and then Types.Bit_Length (Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_STATUS))))
+        and then (if Structural_Valid (Cursors (F_Method)) then
            (Valid (Cursors (F_Handle))
-               and then Cursors (F_Method).Predecessor = F_Handle))
+               and then Cursors (F_Method).Predecessor = F_Handle)
+             or (Valid (Cursors (F_Binder))
+               and then Cursors (F_Method).Predecessor = F_Binder))
         and then (if Structural_Valid (Cursors (F_Cookie)) then
            (Valid (Cursors (F_Method))
                and then Cursors (F_Cookie).Predecessor = F_Method))
@@ -676,13 +854,20 @@ private
         and then (if Structural_Valid (Cursors (F_Meta_Length)) then
            (Valid (Cursors (F_Meta_Offset))
                and then Cursors (F_Meta_Length).Predecessor = F_Meta_Offset))
-        and then (if Structural_Valid (Cursors (F_Receive_Offset)) then
+        and then (if Structural_Valid (Cursors (F_Recv_Offset)) then
            (Valid (Cursors (F_Meta_Length))
-               and then Cursors (F_Receive_Offset).Predecessor = F_Meta_Length))
-        and then (if Structural_Valid (Cursors (F_Receive_Length)) then
-           (Valid (Cursors (F_Receive_Offset))
-               and then Cursors (F_Receive_Length).Predecessor = F_Receive_Offset)))
-      and then ((if Invalid (Cursors (F_Handle)) then
+               and then Cursors (F_Recv_Offset).Predecessor = F_Meta_Length))
+        and then (if Structural_Valid (Cursors (F_Recv_Length)) then
+           (Valid (Cursors (F_Recv_Offset))
+               and then Cursors (F_Recv_Length).Predecessor = F_Recv_Offset)))
+      and then ((if Invalid (Cursors (F_Tag)) then
+           Invalid (Cursors (F_Handle)))
+        and then (if Invalid (Cursors (F_Tag)) then
+           Invalid (Cursors (F_Binder)))
+        and then (if Invalid (Cursors (F_Tag)) then
+           Invalid (Cursors (F_Code)))
+        and then (if Invalid (Cursors (F_Handle))
+             and then Invalid (Cursors (F_Binder)) then
            Invalid (Cursors (F_Method)))
         and then (if Invalid (Cursors (F_Method)) then
            Invalid (Cursors (F_Cookie)))
@@ -695,45 +880,92 @@ private
         and then (if Invalid (Cursors (F_Meta_Offset)) then
            Invalid (Cursors (F_Meta_Length)))
         and then (if Invalid (Cursors (F_Meta_Length)) then
-           Invalid (Cursors (F_Receive_Offset)))
-        and then (if Invalid (Cursors (F_Receive_Offset)) then
-           Invalid (Cursors (F_Receive_Length))))
-      and then (if Structural_Valid (Cursors (F_Handle)) then
-         (Cursors (F_Handle).Last - Cursors (F_Handle).First + 1) = Protocol.Handle_Base'Size
-           and then Cursors (F_Handle).Predecessor = F_Initial
-           and then Cursors (F_Handle).First = First
-           and then (if Structural_Valid (Cursors (F_Method)) then
-              (Cursors (F_Method).Last - Cursors (F_Method).First + 1) = Protocol.Method_Base'Size
-                and then Cursors (F_Method).Predecessor = F_Handle
-                and then Cursors (F_Method).First = (Cursors (F_Handle).Last + 1)
-                and then (if Structural_Valid (Cursors (F_Cookie)) then
-                   (Cursors (F_Cookie).Last - Cursors (F_Cookie).First + 1) = Protocol.Cookie'Size
-                     and then Cursors (F_Cookie).Predecessor = F_Method
-                     and then Cursors (F_Cookie).First = (Cursors (F_Method).Last + 1)
-                     and then (if Structural_Valid (Cursors (F_Send_Offset)) then
-                        (Cursors (F_Send_Offset).Last - Cursors (F_Send_Offset).First + 1) = Protocol.Offset'Size
-                          and then Cursors (F_Send_Offset).Predecessor = F_Cookie
-                          and then Cursors (F_Send_Offset).First = (Cursors (F_Cookie).Last + 1)
-                          and then (if Structural_Valid (Cursors (F_Send_Length)) then
-                             (Cursors (F_Send_Length).Last - Cursors (F_Send_Length).First + 1) = Protocol.Length_Base'Size
-                               and then Cursors (F_Send_Length).Predecessor = F_Send_Offset
-                               and then Cursors (F_Send_Length).First = (Cursors (F_Send_Offset).Last + 1)
-                               and then (if Structural_Valid (Cursors (F_Meta_Offset)) then
-                                  (Cursors (F_Meta_Offset).Last - Cursors (F_Meta_Offset).First + 1) = Protocol.Offset'Size
-                                    and then Cursors (F_Meta_Offset).Predecessor = F_Send_Length
-                                    and then Cursors (F_Meta_Offset).First = (Cursors (F_Send_Length).Last + 1)
-                                    and then (if Structural_Valid (Cursors (F_Meta_Length)) then
-                                       (Cursors (F_Meta_Length).Last - Cursors (F_Meta_Length).First + 1) = Protocol.Length_Base'Size
-                                         and then Cursors (F_Meta_Length).Predecessor = F_Meta_Offset
-                                         and then Cursors (F_Meta_Length).First = (Cursors (F_Meta_Offset).Last + 1)
-                                         and then (if Structural_Valid (Cursors (F_Receive_Offset)) then
-                                            (Cursors (F_Receive_Offset).Last - Cursors (F_Receive_Offset).First + 1) = Protocol.Offset'Size
-                                              and then Cursors (F_Receive_Offset).Predecessor = F_Meta_Length
-                                              and then Cursors (F_Receive_Offset).First = (Cursors (F_Meta_Length).Last + 1)
-                                              and then (if Structural_Valid (Cursors (F_Receive_Length)) then
-                                                 (Cursors (F_Receive_Length).Last - Cursors (F_Receive_Length).First + 1) = Protocol.Length_Base'Size
-                                                   and then Cursors (F_Receive_Length).Predecessor = F_Receive_Offset
-                                                   and then Cursors (F_Receive_Length).First = (Cursors (F_Receive_Offset).Last + 1)))))))))));
+           Invalid (Cursors (F_Recv_Offset)))
+        and then (if Invalid (Cursors (F_Recv_Offset)) then
+           Invalid (Cursors (F_Recv_Length))))
+      and then (if Structural_Valid (Cursors (F_Tag)) then
+         (Cursors (F_Tag).Last - Cursors (F_Tag).First + 1) = Parpen.Protocol.Tag_Base'Size
+           and then Cursors (F_Tag).Predecessor = F_Initial
+           and then Cursors (F_Tag).First = First
+           and then (if Structural_Valid (Cursors (F_Handle))
+                and then Types.Bit_Length (Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_HANDLE)) then
+              (Cursors (F_Handle).Last - Cursors (F_Handle).First + 1) = Parpen.Protocol.Handle_Base'Size
+                and then Cursors (F_Handle).Predecessor = F_Tag
+                and then Cursors (F_Handle).First = (Cursors (F_Tag).Last + 1)
+                and then (if Structural_Valid (Cursors (F_Method)) then
+                   (Cursors (F_Method).Last - Cursors (F_Method).First + 1) = Parpen.Protocol.Method_Base'Size
+                     and then Cursors (F_Method).Predecessor = F_Handle
+                     and then Cursors (F_Method).First = (Cursors (F_Handle).Last + 1)
+                     and then (if Structural_Valid (Cursors (F_Cookie)) then
+                        (Cursors (F_Cookie).Last - Cursors (F_Cookie).First + 1) = Parpen.Protocol.Cookie'Size
+                          and then Cursors (F_Cookie).Predecessor = F_Method
+                          and then Cursors (F_Cookie).First = (Cursors (F_Method).Last + 1)
+                          and then (if Structural_Valid (Cursors (F_Send_Offset)) then
+                             (Cursors (F_Send_Offset).Last - Cursors (F_Send_Offset).First + 1) = Parpen.Protocol.Offset'Size
+                               and then Cursors (F_Send_Offset).Predecessor = F_Cookie
+                               and then Cursors (F_Send_Offset).First = (Cursors (F_Cookie).Last + 1)
+                               and then (if Structural_Valid (Cursors (F_Send_Length)) then
+                                  (Cursors (F_Send_Length).Last - Cursors (F_Send_Length).First + 1) = Parpen.Protocol.Length_Base'Size
+                                    and then Cursors (F_Send_Length).Predecessor = F_Send_Offset
+                                    and then Cursors (F_Send_Length).First = (Cursors (F_Send_Offset).Last + 1)
+                                    and then (if Structural_Valid (Cursors (F_Meta_Offset)) then
+                                       (Cursors (F_Meta_Offset).Last - Cursors (F_Meta_Offset).First + 1) = Parpen.Protocol.Offset'Size
+                                         and then Cursors (F_Meta_Offset).Predecessor = F_Send_Length
+                                         and then Cursors (F_Meta_Offset).First = (Cursors (F_Send_Length).Last + 1)
+                                         and then (if Structural_Valid (Cursors (F_Meta_Length)) then
+                                            (Cursors (F_Meta_Length).Last - Cursors (F_Meta_Length).First + 1) = Parpen.Protocol.Length_Base'Size
+                                              and then Cursors (F_Meta_Length).Predecessor = F_Meta_Offset
+                                              and then Cursors (F_Meta_Length).First = (Cursors (F_Meta_Offset).Last + 1)
+                                              and then (if Structural_Valid (Cursors (F_Recv_Offset)) then
+                                                 (Cursors (F_Recv_Offset).Last - Cursors (F_Recv_Offset).First + 1) = Parpen.Protocol.Offset'Size
+                                                   and then Cursors (F_Recv_Offset).Predecessor = F_Meta_Length
+                                                   and then Cursors (F_Recv_Offset).First = (Cursors (F_Meta_Length).Last + 1)
+                                                   and then (if Structural_Valid (Cursors (F_Recv_Length)) then
+                                                      (Cursors (F_Recv_Length).Last - Cursors (F_Recv_Length).First + 1) = Parpen.Protocol.Length_Base'Size
+                                                        and then Cursors (F_Recv_Length).Predecessor = F_Recv_Offset
+                                                        and then Cursors (F_Recv_Length).First = (Cursors (F_Recv_Offset).Last + 1))))))))))
+           and then (if Structural_Valid (Cursors (F_Binder))
+                and then Types.Bit_Length (Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_BINDER)) then
+              (Cursors (F_Binder).Last - Cursors (F_Binder).First + 1) = Parpen.Protocol.Binder'Size
+                and then Cursors (F_Binder).Predecessor = F_Tag
+                and then Cursors (F_Binder).First = (Cursors (F_Tag).Last + 1)
+                and then (if Structural_Valid (Cursors (F_Method)) then
+                   (Cursors (F_Method).Last - Cursors (F_Method).First + 1) = Parpen.Protocol.Method_Base'Size
+                     and then Cursors (F_Method).Predecessor = F_Binder
+                     and then Cursors (F_Method).First = (Cursors (F_Binder).Last + 1)
+                     and then (if Structural_Valid (Cursors (F_Cookie)) then
+                        (Cursors (F_Cookie).Last - Cursors (F_Cookie).First + 1) = Parpen.Protocol.Cookie'Size
+                          and then Cursors (F_Cookie).Predecessor = F_Method
+                          and then Cursors (F_Cookie).First = (Cursors (F_Method).Last + 1)
+                          and then (if Structural_Valid (Cursors (F_Send_Offset)) then
+                             (Cursors (F_Send_Offset).Last - Cursors (F_Send_Offset).First + 1) = Parpen.Protocol.Offset'Size
+                               and then Cursors (F_Send_Offset).Predecessor = F_Cookie
+                               and then Cursors (F_Send_Offset).First = (Cursors (F_Cookie).Last + 1)
+                               and then (if Structural_Valid (Cursors (F_Send_Length)) then
+                                  (Cursors (F_Send_Length).Last - Cursors (F_Send_Length).First + 1) = Parpen.Protocol.Length_Base'Size
+                                    and then Cursors (F_Send_Length).Predecessor = F_Send_Offset
+                                    and then Cursors (F_Send_Length).First = (Cursors (F_Send_Offset).Last + 1)
+                                    and then (if Structural_Valid (Cursors (F_Meta_Offset)) then
+                                       (Cursors (F_Meta_Offset).Last - Cursors (F_Meta_Offset).First + 1) = Parpen.Protocol.Offset'Size
+                                         and then Cursors (F_Meta_Offset).Predecessor = F_Send_Length
+                                         and then Cursors (F_Meta_Offset).First = (Cursors (F_Send_Length).Last + 1)
+                                         and then (if Structural_Valid (Cursors (F_Meta_Length)) then
+                                            (Cursors (F_Meta_Length).Last - Cursors (F_Meta_Length).First + 1) = Parpen.Protocol.Length_Base'Size
+                                              and then Cursors (F_Meta_Length).Predecessor = F_Meta_Offset
+                                              and then Cursors (F_Meta_Length).First = (Cursors (F_Meta_Offset).Last + 1)
+                                              and then (if Structural_Valid (Cursors (F_Recv_Offset)) then
+                                                 (Cursors (F_Recv_Offset).Last - Cursors (F_Recv_Offset).First + 1) = Parpen.Protocol.Offset'Size
+                                                   and then Cursors (F_Recv_Offset).Predecessor = F_Meta_Length
+                                                   and then Cursors (F_Recv_Offset).First = (Cursors (F_Meta_Length).Last + 1)
+                                                   and then (if Structural_Valid (Cursors (F_Recv_Length)) then
+                                                      (Cursors (F_Recv_Length).Last - Cursors (F_Recv_Length).First + 1) = Parpen.Protocol.Length_Base'Size
+                                                        and then Cursors (F_Recv_Length).Predecessor = F_Recv_Offset
+                                                        and then Cursors (F_Recv_Length).First = (Cursors (F_Recv_Offset).Last + 1))))))))))
+           and then (if Structural_Valid (Cursors (F_Code))
+                and then Types.Bit_Length (Cursors (F_Tag).Value.Tag_Value) = Types.Bit_Length (Convert (T_STATUS)) then
+              (Cursors (F_Code).Last - Cursors (F_Code).First + 1) = Parpen.Protocol.Status_Base'Size
+                and then Cursors (F_Code).Predecessor = F_Tag
+                and then Cursors (F_Code).First = (Cursors (F_Tag).Last + 1))));
 
    type Context (Buffer_First, Buffer_Last : Types.Index := Types.Index'First; First, Last : Types.Bit_Index := Types.Bit_Index'First) is
       record

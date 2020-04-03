@@ -68,7 +68,7 @@ is
          when F_Initial =>
             (case Fld is
                   when F_Len =>
-                     Service_Manager.Len'Size,
+                     Parpen.Service_Manager.Len'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Len =>
@@ -218,7 +218,7 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      function Extract is new Types.Extract (Service_Manager.Len);
+      function Extract is new Types.Extract (Parpen.Service_Manager.Len);
    begin
       return ((case Fld is
             when F_Len =>
@@ -244,7 +244,7 @@ is
                   Ctx.Cursors (Fld) := (State => S_Valid, First => Field_First (Ctx, Fld), Last => Field_Last (Ctx, Fld), Value => Value, Predecessor => Ctx.Cursors (Fld).Predecessor);
                end if;
                pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Len)) then
-                   (Ctx.Cursors (F_Len).Last - Ctx.Cursors (F_Len).First + 1) = Service_Manager.Len'Size
+                   (Ctx.Cursors (F_Len).Last - Ctx.Cursors (F_Len).First + 1) = Parpen.Service_Manager.Len'Size
                      and then Ctx.Cursors (F_Len).Predecessor = F_Initial
                      and then Ctx.Cursors (F_Len).First = Ctx.First
                      and then (if Structural_Valid (Ctx.Cursors (F_Name)) then
@@ -302,7 +302,7 @@ is
      (Incomplete (Ctx, F_Len)
       or Incomplete (Ctx, F_Name));
 
-   function Get_Len (Ctx : Context) return Service_Manager.Len is
+   function Get_Len (Ctx : Context) return Parpen.Service_Manager.Len is
      (Ctx.Cursors (F_Len).Value.Len_Value);
 
    procedure Get_Name (Ctx : Context) is
@@ -345,7 +345,7 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      procedure Insert is new Types.Insert (Service_Manager.Len);
+      procedure Insert is new Types.Insert (Parpen.Service_Manager.Len);
    begin
       Fst := First;
       Lst := Last;
@@ -359,7 +359,7 @@ is
       end case;
    end Set_Field_Value;
 
-   procedure Set_Len (Ctx : in out Context; Val : Service_Manager.Len) is
+   procedure Set_Len (Ctx : in out Context; Val : Parpen.Service_Manager.Len) is
       Field_Value : constant Field_Dependent_Value := (F_Len, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -389,7 +389,7 @@ is
       Reset_Dependent_Fields (Ctx, F_Name);
       Ctx := (Ctx.Buffer_First, Ctx.Buffer_Last, Ctx.First, Last, Ctx.Buffer, Ctx.Cursors);
       pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Len)) then
-          (Ctx.Cursors (F_Len).Last - Ctx.Cursors (F_Len).First + 1) = Service_Manager.Len'Size
+          (Ctx.Cursors (F_Len).Last - Ctx.Cursors (F_Len).First + 1) = Parpen.Service_Manager.Len'Size
             and then Ctx.Cursors (F_Len).Predecessor = F_Initial
             and then Ctx.Cursors (F_Len).First = Ctx.First
             and then (if Structural_Valid (Ctx.Cursors (F_Name)) then

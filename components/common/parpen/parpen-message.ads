@@ -26,6 +26,17 @@ is
 
    type Database is private;
 
+   type BH_Kind is (BH_Binder, BH_Handle);
+   type BH_Option (Kind : BH_Kind) is
+      record
+         case Kind is
+            when BH_Binder =>
+               Binder : Parpen.Protocol.Binder;
+            when BH_Handle =>
+               Handle : Parpen.Protocol.Handle;
+         end case;
+      end record;
+
    type Client_State (Status    : Parpen.Message.Status := Status_Invalid;
                       Receiving : Boolean := False) is
       record
@@ -71,7 +82,7 @@ is
    --  Dispatch a transaction, call generic Send procedure to send data to receiver
    generic
       with procedure Send (ID         : Client_ID;
-                           Handle     : Parpen.Protocol.Handle;
+                           BH         : BH_Option;
                            Method     : Parpen.Protocol.Method;
                            Cookie     : Parpen.Protocol.Cookie;
                            Data       : Types.Bytes_Ptr;
@@ -84,7 +95,7 @@ is
                        Status      :    out Parpen.Message.Status);
 
    procedure Ignore (ID         : Client_ID;
-                     Handle     : Parpen.Protocol.Handle;
+                     BH         : BH_Option;
                      Method     : Parpen.Protocol.Method;
                      Cookie     : Parpen.Protocol.Cookie;
                      Data       : Types.Bytes_Ptr;

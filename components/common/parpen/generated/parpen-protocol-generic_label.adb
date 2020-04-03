@@ -68,13 +68,13 @@ is
          when F_Initial =>
             (case Fld is
                   when F_Delimiter =>
-                     Protocol.Esc_Char_Base'Size,
+                     Parpen.Protocol.Esc_Char_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Delimiter =>
             (case Fld is
                   when F_Connection_ID =>
-                     Protocol.Connection_ID_Base'Size,
+                     Parpen.Protocol.Connection_ID_Base'Size,
                   when others =>
                      Types.Unreachable_Bit_Length),
          when F_Connection_ID | F_Final =>
@@ -216,8 +216,8 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      function Extract is new Types.Extract (Protocol.Esc_Char_Base);
-      function Extract is new Types.Extract (Protocol.Connection_ID_Base);
+      function Extract is new Types.Extract (Parpen.Protocol.Esc_Char_Base);
+      function Extract is new Types.Extract (Parpen.Protocol.Connection_ID_Base);
    begin
       return ((case Fld is
             when F_Delimiter =>
@@ -243,11 +243,11 @@ is
                   Ctx.Cursors (Fld) := (State => S_Valid, First => Field_First (Ctx, Fld), Last => Field_Last (Ctx, Fld), Value => Value, Predecessor => Ctx.Cursors (Fld).Predecessor);
                end if;
                pragma Assert ((if Structural_Valid (Ctx.Cursors (F_Delimiter)) then
-                   (Ctx.Cursors (F_Delimiter).Last - Ctx.Cursors (F_Delimiter).First + 1) = Protocol.Esc_Char_Base'Size
+                   (Ctx.Cursors (F_Delimiter).Last - Ctx.Cursors (F_Delimiter).First + 1) = Parpen.Protocol.Esc_Char_Base'Size
                      and then Ctx.Cursors (F_Delimiter).Predecessor = F_Initial
                      and then Ctx.Cursors (F_Delimiter).First = Ctx.First
                      and then (if Structural_Valid (Ctx.Cursors (F_Connection_ID)) then
-                        (Ctx.Cursors (F_Connection_ID).Last - Ctx.Cursors (F_Connection_ID).First + 1) = Protocol.Connection_ID_Base'Size
+                        (Ctx.Cursors (F_Connection_ID).Last - Ctx.Cursors (F_Connection_ID).First + 1) = Parpen.Protocol.Connection_ID_Base'Size
                           and then Ctx.Cursors (F_Connection_ID).Predecessor = F_Delimiter
                           and then Ctx.Cursors (F_Connection_ID).First = (Ctx.Cursors (F_Delimiter).Last + 1))));
                if Fld = F_Delimiter then
@@ -301,10 +301,10 @@ is
      (Incomplete (Ctx, F_Delimiter)
       or Incomplete (Ctx, F_Connection_ID));
 
-   function Get_Delimiter (Ctx : Context) return Protocol.Esc_Char is
+   function Get_Delimiter (Ctx : Context) return Parpen.Protocol.Esc_Char is
      (Ctx.Cursors (F_Delimiter).Value.Delimiter_Value);
 
-   function Get_Connection_ID (Ctx : Context) return Protocol.Connection_ID is
+   function Get_Connection_ID (Ctx : Context) return Parpen.Protocol.Connection_ID is
      (Ctx.Cursors (F_Connection_ID).Value.Connection_ID_Value);
 
    procedure Set_Field_Value (Ctx : in out Context; Val : Field_Dependent_Value; Fst, Lst : out Types.Bit_Index) with
@@ -340,8 +340,8 @@ is
         (Types.Byte_Index (Last));
       function Offset return Types.Offset is
         (Types.Offset ((8 - Last mod 8) mod 8));
-      procedure Insert is new Types.Insert (Protocol.Esc_Char_Base);
-      procedure Insert is new Types.Insert (Protocol.Connection_ID_Base);
+      procedure Insert is new Types.Insert (Parpen.Protocol.Esc_Char_Base);
+      procedure Insert is new Types.Insert (Parpen.Protocol.Connection_ID_Base);
    begin
       Fst := First;
       Lst := Last;
@@ -357,7 +357,7 @@ is
       end case;
    end Set_Field_Value;
 
-   procedure Set_Delimiter (Ctx : in out Context; Val : Protocol.Esc_Char) is
+   procedure Set_Delimiter (Ctx : in out Context; Val : Parpen.Protocol.Esc_Char) is
       Field_Value : constant Field_Dependent_Value := (F_Delimiter, Val);
       First, Last : Types.Bit_Index;
    begin
@@ -368,7 +368,7 @@ is
       Ctx.Cursors (Successor (Ctx, F_Delimiter)) := (State => S_Invalid, Predecessor => F_Delimiter);
    end Set_Delimiter;
 
-   procedure Set_Connection_ID (Ctx : in out Context; Val : Protocol.Connection_ID) is
+   procedure Set_Connection_ID (Ctx : in out Context; Val : Parpen.Protocol.Connection_ID) is
       Field_Value : constant Field_Dependent_Value := (F_Connection_ID, Val);
       First, Last : Types.Bit_Index;
    begin

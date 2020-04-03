@@ -33,13 +33,13 @@ is
             when F_Initial | F_Name | F_Server | F_Final =>
                null;
             when F_Len =>
-               Len_Value : Service_Manager.Len;
+               Len_Value : Parpen.Service_Manager.Len;
             when F_Padding =>
-               Padding_Value : Service_Manager.MBZ_7_Base;
+               Padding_Value : Parpen.Service_Manager.MBZ_7_Base;
             when F_Allow_Isolated =>
-               Allow_Isolated_Value : Builtin_Types.Boolean_Base;
+               Allow_Isolated_Value : Parpen.Builtin_Types.Boolean_Base;
             when F_Dump_Flags =>
-               Dump_Flags_Value : Service_Manager.Integer_Base;
+               Dump_Flags_Value : Parpen.Service_Manager.Integer_Base;
          end case;
       end record;
 
@@ -207,12 +207,12 @@ is
      Pre =>
        Valid_Context (Ctx);
 
-   function Get_Len (Ctx : Context) return Service_Manager.Len with
+   function Get_Len (Ctx : Context) return Parpen.Service_Manager.Len with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Len);
 
-   function Get_Padding (Ctx : Context) return Service_Manager.MBZ_7 with
+   function Get_Padding (Ctx : Context) return Parpen.Service_Manager.MBZ_7 with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Padding);
@@ -222,7 +222,7 @@ is
        Valid_Context (Ctx)
           and Valid (Ctx, F_Allow_Isolated);
 
-   function Get_Dump_Flags (Ctx : Context) return Service_Manager.Integer with
+   function Get_Dump_Flags (Ctx : Context) return Parpen.Service_Manager.Integer with
      Pre =>
        Valid_Context (Ctx)
           and Valid (Ctx, F_Dump_Flags);
@@ -243,7 +243,7 @@ is
           and Has_Buffer (Ctx)
           and Present (Ctx, F_Server);
 
-   procedure Set_Len (Ctx : in out Context; Val : Service_Manager.Len) with
+   procedure Set_Len (Ctx : in out Context; Val : Parpen.Service_Manager.Len) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -271,7 +271,7 @@ is
           and Predecessor (Ctx, F_Len) = Predecessor (Ctx, F_Len)'Old
           and Valid_Next (Ctx, F_Len) = Valid_Next (Ctx, F_Len)'Old;
 
-   procedure Set_Padding (Ctx : in out Context; Val : Service_Manager.MBZ_7) with
+   procedure Set_Padding (Ctx : in out Context; Val : Parpen.Service_Manager.MBZ_7) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -330,7 +330,7 @@ is
           and Cursor (Ctx, F_Server) = Cursor (Ctx, F_Server)'Old
           and Cursor (Ctx, F_Padding) = Cursor (Ctx, F_Padding)'Old;
 
-   procedure Set_Dump_Flags (Ctx : in out Context; Val : Service_Manager.Integer) with
+   procedure Set_Dump_Flags (Ctx : in out Context; Val : Parpen.Service_Manager.Integer) with
      Pre =>
        Valid_Context (Ctx)
           and then not Ctx'Constrained
@@ -569,7 +569,7 @@ private
         and then (if Invalid (Cursors (F_Allow_Isolated)) then
            Invalid (Cursors (F_Dump_Flags))))
       and then (if Structural_Valid (Cursors (F_Len)) then
-         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Service_Manager.Len'Size
+         (Cursors (F_Len).Last - Cursors (F_Len).First + 1) = Parpen.Service_Manager.Len'Size
            and then Cursors (F_Len).Predecessor = F_Initial
            and then Cursors (F_Len).First = First
            and then (if Structural_Valid (Cursors (F_Name)) then
@@ -581,15 +581,15 @@ private
                      and then Cursors (F_Server).Predecessor = F_Name
                      and then Cursors (F_Server).First = (Cursors (F_Name).Last + 1)
                      and then (if Structural_Valid (Cursors (F_Padding)) then
-                        (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Service_Manager.MBZ_7_Base'Size
+                        (Cursors (F_Padding).Last - Cursors (F_Padding).First + 1) = Parpen.Service_Manager.MBZ_7_Base'Size
                           and then Cursors (F_Padding).Predecessor = F_Server
                           and then Cursors (F_Padding).First = (Cursors (F_Server).Last + 1)
                           and then (if Structural_Valid (Cursors (F_Allow_Isolated)) then
-                             (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Builtin_Types.Boolean_Base'Size
+                             (Cursors (F_Allow_Isolated).Last - Cursors (F_Allow_Isolated).First + 1) = Parpen.Builtin_Types.Boolean_Base'Size
                                and then Cursors (F_Allow_Isolated).Predecessor = F_Padding
                                and then Cursors (F_Allow_Isolated).First = (Cursors (F_Padding).Last + 1)
                                and then (if Structural_Valid (Cursors (F_Dump_Flags)) then
-                                  (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Service_Manager.Integer_Base'Size
+                                  (Cursors (F_Dump_Flags).Last - Cursors (F_Dump_Flags).First + 1) = Parpen.Service_Manager.Integer_Base'Size
                                     and then Cursors (F_Dump_Flags).Predecessor = F_Allow_Isolated
                                     and then Cursors (F_Dump_Flags).First = (Cursors (F_Allow_Isolated).Last + 1))))))));
 

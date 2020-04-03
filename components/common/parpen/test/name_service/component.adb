@@ -3,9 +3,7 @@ with Gneiss.Message.Client;
 with Gneiss.Memory.Client;
 
 with Parpen.Generic_Types;
-with Parpen.Protocol.Generic_Request;
 with Parpen.Protocol.Generic_Transaction;
-with Parpen.Protocol.Generic_Contains;
 
 with Parpen.Container;
 
@@ -25,9 +23,7 @@ is
                                               Length     => Natural,
                                               Bit_Length => Bit_Length);
 
-   package Request_Package is new Parpen.Protocol.Generic_Request (Types);
    package Transaction_Package is new Parpen.Protocol.Generic_Transaction (Types);
-   package Contains_Package is new Parpen.Protocol.Generic_Contains (Types, Request_Package, Transaction_Package);
 
    procedure Event;
 
@@ -114,23 +110,32 @@ is
       type State_Type is (Initial, Reply, Data);
       State : State_Type := Initial;
 
-      type Reply_Kind is (R_Invalid, R_Status, R_Transaction);
+      type Reply_Kind is (R_Invalid, R_Status, R_Binder, R_Handle);
       type Reply_Type (Kind : Reply_Kind := R_Invalid) is record
          case Kind is
             when R_Invalid =>
                null;
             when R_Status =>
                Status : Parpen.Protocol.Status;
-            when R_Transaction =>
-               Handle         : Parpen.Protocol.Handle;
-               Method         : Parpen.Protocol.Method;
-               Cookie         : Parpen.Protocol.Cookie;
-               Send_Offset    : Parpen.Protocol.Offset;
-               Send_Length    : Parpen.Protocol.Length;
-               Meta_Offset    : Parpen.Protocol.Offset;
-               Meta_Length    : Parpen.Protocol.Length;
-               Receive_Offset : Parpen.Protocol.Offset;
-               Receive_Length : Parpen.Protocol.Length;
+            when R_Handle =>
+               Handle        : Parpen.Protocol.Handle;
+               H_Method      : Parpen.Protocol.Method;
+               H_Cookie      : Parpen.Protocol.Cookie;
+               H_Send_Offset : Parpen.Protocol.Offset;
+               H_Send_Length : Parpen.Protocol.Length;
+               H_Meta_Offset : Parpen.Protocol.Offset;
+               H_Meta_Length : Parpen.Protocol.Length;
+               H_Recv_Offset : Parpen.Protocol.Offset;
+               H_Recv_Length : Parpen.Protocol.Length;
+            when R_Binder =>
+               Binder        : Parpen.Protocol.Binder;
+               B_Cookie      : Parpen.Protocol.Cookie;
+               B_Send_Offset : Parpen.Protocol.Offset;
+               B_Send_Length : Parpen.Protocol.Length;
+               B_Meta_Offset : Parpen.Protocol.Offset;
+               B_Meta_Length : Parpen.Protocol.Length;
+               B_Recv_Offset : Parpen.Protocol.Offset;
+               B_Recv_Length : Parpen.Protocol.Length;
          end case;
       end record;
 
@@ -140,8 +145,7 @@ is
       procedure Handle_Initial (State : in out State_Type)
       is
          package Request is new Parpen.Container (Types, Message_Buffer'Length);
-         Request_Context     : Request_Package.Context := Request_Package.Create;
-         Transaction_Context : Transaction_Package.Context := Transaction_Package.Create;
+         Context : Transaction_Package.Context := Transaction_Package.Create;
 
          Add_Service : constant String := String'(
             ""
@@ -178,30 +182,28 @@ is
          Memory_Client.Modify (Mem);
 
          Request.Ptr.all := (others => ASCII.NUL);
-         Request_Package.Initialize (Request_Context, Request.Ptr);
-         Request_Package.Set_Tag (Request_Context, Parpen.Protocol.T_TRANSACTION);
-         Contains_Package.Switch_To_Data (Request_Context, Transaction_Context);
-
-         Transaction_Package.Set_Handle (Transaction_Context, 0);
-         Transaction_Package.Set_Method (Transaction_Context, 3);
-         Transaction_Package.Set_Cookie (Transaction_Context, 16#dead_beef#);
-         Transaction_Package.Set_Send_Offset (Transaction_Context, 64);
-         Transaction_Package.Set_Send_Length (Transaction_Context, Add_Service'Size - 64);
-         Transaction_Package.Set_Meta_Offset (Transaction_Context, 0);
-         Transaction_Package.Set_Meta_Length (Transaction_Context, 64);
-         Transaction_Package.Set_Receive_Offset (Transaction_Context, 0);
-         Transaction_Package.Set_Receive_Length (Transaction_Context, 0);
+         Transaction_Package.Initialize (Context, Request.Ptr);
+         Transaction_Package.Set_Tag (Context, Parpen.Protocol.T_HANDLE);
+         Transaction_Package.Set_Handle (Context, 0);
+         Transaction_Package.Set_Method (Context, 3);
+         Transaction_Package.Set_Cookie (Context, 16#dead_beef#);
+         Transaction_Package.Set_Send_Offset (Context, 64);
+         Transaction_Package.Set_Send_Length (Context, Add_Service'Size - 64);
+         Transaction_Package.Set_Meta_Offset (Context, 0);
+         Transaction_Package.Set_Meta_Length (Context, 64);
+         Transaction_Package.Set_Recv_Offset (Context, 0);
+         Transaction_Package.Set_Recv_Length (Context, 0);
 
          if
             Gneiss.Log.Initialized (Log)
-            and then not Transaction_Package.Valid_Message (Transaction_Context)
+            and then not Transaction_Package.Valid_Message (Context)
          then
             Gneiss.Log.Client.Error (Log, "Add transaction invalid");
             Main.Vacate (Cap, Main.Failure);
             return;
          end if;
 
-         Transaction_Package.Take_Buffer (Transaction_Context, Request.Ptr);
+         Transaction_Package.Take_Buffer (Context, Request.Ptr);
          Message_Client.Write (Msg, Request.Ptr.all);
          State := Reply;
       end Handle_Initial;
@@ -209,16 +211,15 @@ is
       procedure Parse_Reply (Reply : out Reply_Type)
       is
          package Reply_Buffer is new Parpen.Container (Types, Message_Buffer'Length);
-         Reply_Context       : Request_Package.Context := Request_Package.Create;
-         Transaction_Context : Transaction_Package.Context := Transaction_Package.Create;
+         Context : Transaction_Package.Context := Transaction_Package.Create;
          use type Parpen.Protocol.Status;
       begin
          Gneiss.Log.Client.Info (Log, "Parse_Reply called");
          Message_Client.Read (Msg, Reply_Buffer.Ptr.all);
 
-         Request_Package.Initialize (Reply_Context, Reply_Buffer.Ptr);
-         Request_Package.Verify_Message (Reply_Context);
-         if not Request_Package.Structural_Valid_Message (Reply_Context) then
+         Transaction_Package.Initialize (Context, Reply_Buffer.Ptr);
+         Transaction_Package.Verify_Message (Context);
+         if not Transaction_Package.Valid_Message (Context) then
             if Gneiss.Log.Initialized (Log) then
                Gneiss.Log.Client.Error (Log, "Invalid reply");
             end if;
@@ -226,34 +227,40 @@ is
             return;
          end if;
 
-         case Request_Package.Get_Tag (Reply_Context) is
-            when Parpen.Protocol.T_TRANSACTION =>
+         case Transaction_Package.Get_Tag (Context) is
+            when Parpen.Protocol.T_BINDER =>
                if Gneiss.Log.Initialized (Log) then
-                  Gneiss.Log.Client.Info (Log, "Reply transaction received");
+                  Gneiss.Log.Client.Info (Log, "Reply binder transaction received");
                end if;
-               Contains_Package.Switch_To_Data (Reply_Context, Transaction_Context);
-               Transaction_Package.Verify_Message (Transaction_Context);
-               if not Transaction_Package.Valid_Message (Transaction_Context) then
-                  if Gneiss.Log.Initialized (Log) then
-                     Gneiss.Log.Client.Error (Log, "Invalid transaction");
-                  end if;
-                  Reply := (Kind => R_Invalid);
-                  return;
+               Reply := (Kind          => R_Binder,
+                         Binder        => Transaction_Package.Get_Binder (Context),
+                         B_Cookie      => Transaction_Package.Get_Cookie (Context),
+                         B_Send_Offset => Transaction_Package.Get_Send_Offset (Context),
+                         B_Send_Length => Transaction_Package.Get_Send_Length (Context),
+                         B_Meta_Offset => Transaction_Package.Get_Meta_Offset (Context),
+                         B_Meta_Length => Transaction_Package.Get_Meta_Length (Context),
+                         B_Recv_Offset => Transaction_Package.Get_Recv_Offset (Context),
+                         B_Recv_Length => Transaction_Package.Get_Recv_Length (Context));
+
+            when Parpen.Protocol.T_HANDLE =>
+               if Gneiss.Log.Initialized (Log) then
+                  Gneiss.Log.Client.Info (Log, "Reply handle transaction received");
                end if;
-               Reply := (Kind           => R_Transaction,
-                         Method         => Transaction_Package.Get_Method (Transaction_Context),
-                         Cookie         => Transaction_Package.Get_Cookie (Transaction_Context),
-                         Handle         => Transaction_Package.Get_Handle (Transaction_Context),
-                         Send_Offset    => Transaction_Package.Get_Send_Offset (Transaction_Context),
-                         Send_Length    => Transaction_Package.Get_Send_Length (Transaction_Context),
-                         Meta_Offset    => Transaction_Package.Get_Meta_Offset (Transaction_Context),
-                         Meta_Length    => Transaction_Package.Get_Meta_Length (Transaction_Context),
-                         Receive_Offset => Transaction_Package.Get_Receive_Offset (Transaction_Context),
-                         Receive_Length => Transaction_Package.Get_Receive_Length (Transaction_Context));
+               Reply := (Kind          => R_Handle,
+                         Handle        => Transaction_Package.Get_Handle (Context),
+                         H_Method      => Transaction_Package.Get_Method (Context),
+                         H_Cookie      => Transaction_Package.Get_Cookie (Context),
+                         H_Send_Offset => Transaction_Package.Get_Send_Offset (Context),
+                         H_Send_Length => Transaction_Package.Get_Send_Length (Context),
+                         H_Meta_Offset => Transaction_Package.Get_Meta_Offset (Context),
+                         H_Meta_Length => Transaction_Package.Get_Meta_Length (Context),
+                         H_Recv_Offset => Transaction_Package.Get_Recv_Offset (Context),
+                         H_Recv_Length => Transaction_Package.Get_Recv_Length (Context));
+               return;
 
             when Parpen.Protocol.T_STATUS =>
                Reply := (Kind   => R_Status,
-                         Status => Request_Package.Get_Code (Reply_Context));
+                         Status => Transaction_Package.Get_Code (Context));
                if Reply.Status = Parpen.Protocol.STATUS_OK then
                   return;
                end if;
@@ -282,9 +289,8 @@ is
       is
          package Request is new Parpen.Container (Types, Message_Buffer'Length);
 
-         Request_Context     : Request_Package.Context := Request_Package.Create;
-         Transaction_Context : Transaction_Package.Context := Transaction_Package.Create;
-         Reply               : Reply_Type;
+         Context : Transaction_Package.Context := Transaction_Package.Create;
+         Reply   : Reply_Type;
 
          Get_Service : constant String := String'(
             ""
@@ -315,36 +321,35 @@ is
          end if;
 
          Request.Ptr.all := (others => ASCII.NUL);
-         Request_Package.Initialize (Request_Context, Request.Ptr);
-         Request_Package.Set_Tag (Request_Context, Parpen.Protocol.T_TRANSACTION);
-         Contains_Package.Switch_To_Data (Request_Context, Transaction_Context);
-
-         Transaction_Package.Set_Handle (Transaction_Context, 0);
-         Transaction_Package.Set_Method (Transaction_Context, 1);
-         Transaction_Package.Set_Cookie (Transaction_Context, 16#beef_dead_c0de#);
-         Transaction_Package.Set_Send_Offset (Transaction_Context, 0);
-         Transaction_Package.Set_Send_Length (Transaction_Context, Get_Service'Size);
-         Transaction_Package.Set_Meta_Offset (Transaction_Context, 0);
-         Transaction_Package.Set_Meta_Length (Transaction_Context, 0);
-         Transaction_Package.Set_Receive_Offset (Transaction_Context, 0);
-         Transaction_Package.Set_Receive_Length (Transaction_Context, Scratch.Ptr.all'Length);
+         Transaction_Package.Initialize (Context, Request.Ptr);
+         Transaction_Package.Set_Tag (Context, Parpen.Protocol.T_HANDLE);
+         Transaction_Package.Set_Handle (Context, 0);
+         Transaction_Package.Set_Method (Context, 1);
+         Transaction_Package.Set_Cookie (Context, 16#beef_dead_c0de#);
+         Transaction_Package.Set_Send_Offset (Context, 0);
+         Transaction_Package.Set_Send_Length (Context, Get_Service'Size);
+         Transaction_Package.Set_Meta_Offset (Context, 0);
+         Transaction_Package.Set_Meta_Length (Context, 0);
+         Transaction_Package.Set_Recv_Offset (Context, 0);
+         Transaction_Package.Set_Recv_Length (Context, Scratch.Ptr.all'Length);
 
          if
             Gneiss.Log.Initialized (Log)
-            and then not Transaction_Package.Valid_Message (Transaction_Context)
+            and then not Transaction_Package.Valid_Message (Context)
          then
             Gneiss.Log.Client.Error (Log, "Query transaction invalid");
             Main.Vacate (Cap, Main.Failure);
             return;
          end if;
 
-         Transaction_Package.Take_Buffer (Transaction_Context, Request.Ptr);
+         Transaction_Package.Take_Buffer (Context, Request.Ptr);
          Message_Client.Write (Msg, Request.Ptr.all);
          State := Data;
       end Handle_Reply;
 
       procedure Handle_Data (State : in out State_Type)
       is
+         pragma Unreferenced (State);
          Reply    : Reply_Type;
          Expected : constant String := String'(
             ""
@@ -362,12 +367,14 @@ is
          end if;
 
          Parse_Reply (Reply);
-         if Reply.Kind /= R_Transaction then
+         if Reply.Kind /= R_Handle then
+            Trace ("Expected handle");
             Main.Vacate (Cap, Main.Failure);
+            return;
          end if;
 
          -- Use transaction
-         if Reply.Cookie /= 16#beef_dead_c0de# then
+         if Reply.H_Cookie /= 16#beef_dead_c0de# then
             if Gneiss.Log.Initialized (Log) then
                Gneiss.Log.Client.Info (Log, "Invalid cookie received");
             end if;
@@ -376,17 +383,18 @@ is
 
          Modify_Operation := (Direction => Dir_In,
                               Start     => 1,
-                              Length    => Natural (Reply.Receive_Length));
+                              Length    => Natural (Reply.H_Recv_Length));
          Memory_Client.Modify (Mem);
-         if Scratch.Ptr (Scratch.Ptr'First + Natural (Reply.Receive_Offset)
-                         .. Scratch.Ptr'First + Natural (Reply.Receive_Offset) + Natural (Reply.Receive_Length) - 1)
+         if Scratch.Ptr (Scratch.Ptr'First + Natural (Reply.H_Recv_Offset)
+                         .. Scratch.Ptr'First + Natural (Reply.H_Recv_Offset) + Natural (Reply.H_Recv_Length) - 1)
             /= Expected
          then
             if Gneiss.Log.Initialized (Log) then
-               Gneiss.Log.Client.Info (Log, "Unexpected result");
-               Dump (Scratch.Ptr (Scratch.Ptr'First + Natural (Reply.Receive_Offset)
-                                  .. Scratch.Ptr'First + Natural (Reply.Receive_Offset)
-                                     + Natural (Reply.Receive_Length) - 1));
+               Gneiss.Log.Client.Info (Log, "Unexpected result:");
+               Dump (Scratch.Ptr (Scratch.Ptr'First + Natural (Reply.H_Recv_Offset)
+                                  .. Scratch.Ptr'First + Natural (Reply.H_Recv_Offset)
+                                     + Natural (Reply.H_Recv_Length) - 1));
+               Gneiss.Log.Client.Info (Log, "Expected:");
                Dump (Expected);
             end if;
             Main.Vacate (Cap, Main.Failure);
