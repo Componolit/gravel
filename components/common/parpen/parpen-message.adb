@@ -160,9 +160,9 @@ package body Parpen.Message is
 
       Status := (case Name_Service_Status is
                  when Name_Service.Status_Valid          => Status_Valid,
-                 when Name_Service.Status_Not_Found      => Status_Not_Found,
                  when Name_Service.Status_Invalid_Binder => Status_Invalid_Binder,
                  when Name_Service.Status_Invalid        => Status_Invalid,
+                 when Name_Service.Status_Not_Found      => Status_Invalid,
                  when Name_Service.Status_Invalid_Method => Status_Invalid_Method);
 
       if Status /= Status_Valid

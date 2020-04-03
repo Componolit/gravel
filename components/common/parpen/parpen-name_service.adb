@@ -123,15 +123,24 @@ package body Parpen.Name_Service is
          Query_Name (GS_Context);
          Req_GS_Package.Take_Buffer (GS_Context, Data);
 
+         --  Set offsets to 0
+         Data.all (Data'First .. Data'First + 7) := (others => Types.Byte'Val (0));
+
          if Status = Status_Not_Found then
             Trace ("Parpen.Name_Service: Get service - not found");
+            Offsets_Offset := 0;
+            Offsets_Length := 0;
+            Data_Offset    := 0;
+            Data_Length    := 4 * 8;
+            Status         := Status_Valid;
             return;
          end if;
 
-         --  Set offsets to 0
-         Data.all (Data'First .. Data'First + 7) := (others => Types.Byte'Val (0));
          Offsets_Offset := 0;
          Offsets_Length := 64;
+         Data_Offset    := 64;
+         Data_Length    := 24 * 8;
+         Status := Status_Valid;
 
          IBinder_Package.Initialize (Ctx    => B_Context,
                                      Buffer => Data,
@@ -147,9 +156,6 @@ package body Parpen.Name_Service is
          IBinder_Package.Set_Cookie (B_Context, Parpen.Binder.Cookie'Val (Parpen.Protocol.Cookie'Pos (Cookie)));
          IBinder_Package.Take_Buffer (B_Context, Data);
 
-         Data_Offset := 64;
-         Data_Length := 24 * 8;
-         Status      := Status_Valid;
          return;
 
       --  Add service

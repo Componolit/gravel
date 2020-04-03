@@ -254,6 +254,87 @@ package body Test_Message is
       Assert (Reply_Checked, "Reply not checked");
    end Test_Query_Service;
 
+   procedure Test_Query_Nonexistent_Service (T : in out AUnit.Test_Cases.Test_Case'Class)
+   is
+      pragma Unreferenced (T);
+
+      Status : Message.Status;
+      use type Message.Status;
+
+      Get_Service : String_Ptr := new String'(
+         ""
+         & 16#00# & 16#00# & 16#00# & 16#04# -- Len
+         & "Test"                            -- Name
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+         & 16#00# & 16#00# & 16#00# & 16#00# -- Buffer for reply
+      );
+      Reply_Checked : Boolean := False;
+
+      procedure Check_Reply (ID         : Client_ID;
+                             BH         : Message.BH_Option;
+                             Method     : Parpen.Protocol.Method;
+                             Cookie     : Parpen.Protocol.Cookie;
+                             Data       : String_Ptr;
+                             Data_First : Positive;
+                             Recv_First : Positive;
+                             Length     : Natural);
+
+      procedure Check_Reply (ID         : Client_ID;
+                             BH         : Message.BH_Option;
+                             Method     : Parpen.Protocol.Method;
+                             Cookie     : Parpen.Protocol.Cookie;
+                             Data       : String_Ptr;
+                             Data_First : Positive;
+                             Recv_First : Positive;
+                             Length     : Natural)
+      is
+         Expected : constant String_Ptr := new String'(
+            "" & 16#00# & 16#00# & 16#00# & 16#00#
+         );
+         use type Parpen.Protocol.Handle;
+         use type Message.BH_Kind;
+         pragma Unreferenced (Method, Cookie);
+      begin
+         Assert (ID = Client_2, "Invalid client");
+         Assert (BH.Kind = Message.BH_Handle and then BH.Handle = 0, "Invalid handle");
+         Assert (Data_First in Data'Range, "Data_First out of range");
+         Assert (Data_First + Length - 1 in Data'Range, "Length out of range");
+         Assert (Data (Data_First .. Data_First + Length - 1) = Expected.all, "Invalid reply");
+         Assert (Recv_First = 1, "Recv_First invalid");
+         Assert (Length = Expected.all'Size / 8, "Length invalid:" & Length'Img);
+         Reply_Checked := True;
+      end Check_Reply;
+
+      procedure Dispatch_Get is new Message.Dispatch (Check_Reply);
+   begin
+      Message.Initialize (Name_Service_ID => NS_ID, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error initializing Message: " & Status'Img);
+      Message.Add_Client (ID => Client_1, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error adding client 1: " & Status'Img);
+      Message.Add_Client (ID => Client_2, Status => Status);
+      Assert (Status = Message.Status_Valid, "Error adding client 2: " & Status'Img);
+
+      Dispatch_Get (Sender         => Client_2,
+                    Transaction    => (Handle         => 0,
+                                       Method         => 1,
+                                       Cookie         => 16#beef_dead_c0de#,
+                                       Send_Offset    => 0,
+                                       Send_Length    => Get_Service.all'Size,
+                                       Recv_Offset    => 0,
+                                       Recv_Length    => Get_Service.all'Size,
+                                       Offsets_Offset => 0,
+                                       Offsets_Length => 0),
+                    Data           => Get_Service,
+                    Status         => Status);
+      Assert (Status = Message.Status_Valid, "Quering service failed: " & Status'Img);
+      Assert (Reply_Checked, "Reply not checked");
+   end Test_Query_Nonexistent_Service;
+
    procedure Test_Oneway (T : in out AUnit.Test_Cases.Test_Case'Class)
    is
       pragma Unreferenced (T);
@@ -687,6 +768,7 @@ package body Test_Message is
    begin
       Register_Routine (T, Test_Register_Service'Access, "Register service");
       Register_Routine (T, Test_Query_Service'Access, "Query service");
+      Register_Routine (T, Test_Query_Nonexistent_Service'Access, "Query nonexistent service");
       Register_Routine (T, Test_Oneway'Access, "Oneway interaction");
       Register_Routine (T, Test_Twoway'Access, "Twoway interaction");
       Register_Routine (T, Test_Client_State'Access, "Client state");
