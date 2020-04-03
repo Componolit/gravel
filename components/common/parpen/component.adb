@@ -411,6 +411,9 @@ is
       package L is new Parpen.Container (Types, Label_Length);
       use type Message_Package.Status;
    begin
+      if Name'Length = 0 then
+         return;
+      end if;
       if L.Ptr.all'Length < Label'Length then
          Trace ("Label too long");
          return;
@@ -462,7 +465,10 @@ is
       package L is new Parpen.Container (Types, Label_Length);
       use type Parpen.Protocol.Connection_ID_Base;
   begin
-      if L.Ptr.all'Length < Label'Length then
+      if
+         Name'Length = 0
+         or else L.Ptr.all'Length < Label'Length
+      then
          return;
       end if;
       L.Ptr.all (1 .. Label'Length) := Label;

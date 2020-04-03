@@ -316,7 +316,8 @@ package body Parpen.Message is
          end if;
 
          Send (ID          => Receiver,
-               BH          => (Kind => BH_Handle, Handle => Transaction.Handle),
+               BH          => (Kind   => BH_Binder,
+                               Binder => Parpen.Protocol.Binder (Resolve.Get_Value (Node))),
                Method      => Transaction.Method,
                Cookie      => Transaction.Cookie,
                Data        => Data,
