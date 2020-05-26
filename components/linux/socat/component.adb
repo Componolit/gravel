@@ -6,6 +6,9 @@ with Gneiss.Rom;
 with Gneiss.Rom.Client;
 with Gneiss.Log;
 with Gneiss.Log.Client;
+with SXML;
+with SXML.Parser;
+with SXML.Query;
 
 package body Component with
    SPARK_Mode
@@ -29,7 +32,8 @@ is
 
    type Server_Meta is record
       Slots       : Server_Slots;
-      Destination : String (1 .. 1024);
+      Destination : String (1 .. 1024) := (others => Character'First);
+      Last        : Natural := 0;
    end record;
 
    function Rom_Contract (S : Server_Meta) return Boolean is (True);
@@ -115,6 +119,12 @@ is
          return;
       end if;
       Configure (Config, Server_Data);
+      if Server_Data.Last < Server_Data.Destination'First then
+         Log_Client.Error (Logger, "Failed to parse arguments.");
+         Main.Vacate (Capability, Main.Failure);
+         return;
+      end if;
+      Log_Client.Info (Logger, Server_Data.Destination (Server_Data.Destination'First .. Server_Data.Last));
    end Construct;
 
    procedure Event
@@ -202,9 +212,37 @@ is
                         Ctx     : in out Server_Meta)
    is
       pragma Unreferenced (Session);
-      pragma Unreferenced (Data);
+      use type SXML.Result_Type;
+      use type SXML.Parser.Match_Type;
+      Document   : SXML.Document_Type (1 .. 128) := (others => SXML.Null_Node);
+      Success    : Boolean;
+      State      : SXML.Query.State_Type;
+      Result     : SXML.Result_Type;
+      Match      : SXML.Parser.Match_Type;
+      Ignore_Pos : Natural;
    begin
-      Log_Client.Info (Logger, Data);
+      if not SXML.Valid_Content (Data'First, Data'Last) then
+         return;
+      end if;
+      SXML.Parser.Parse (Data, Document, Ignore_Pos, Match);
+      if Match /= SXML.Parser.Match_OK then
+         return;
+      end if;
+      State := SXML.Query.Init (Document);
+      if not SXML.Query.Is_Open (State, Document) then
+         return;
+      end if;
+      State := SXML.Query.Path (State, Document, "/socat");
+      if
+         SXML.Query.State_Result (State) /= SXML.Result_Ok
+         or else not SXML.Query.Is_Open (State, Document)
+      then
+         return;
+      end if;
+      SXML.Query.Attribute (State, Document, "arg", Result, Ctx.Destination, Ctx.Last);
+      if Result /= SXML.Result_OK then
+         Ctx.Last := 0;
+      end if;
    end Configure;
 
 end Component;
