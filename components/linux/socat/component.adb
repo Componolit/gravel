@@ -1,7 +1,9 @@
 
+with Basalt.Strings;
 with Gneiss.Packet;
 with Gneiss.Packet.Dispatcher;
 with Gneiss.Packet.Server;
+with Gneiss.Packet.Server.Linux;
 with Gneiss.Rom;
 with Gneiss.Rom.Client;
 with Gneiss.Log;
@@ -82,7 +84,19 @@ is
       Post   => Packet.Initialized (Session)
                 and then Packet.Registered (Session);
 
+   procedure Fork (Pid : out Integer) with
+      Import,
+      Convention    => C,
+      External_Name => "socat_fork";
+
+   procedure Exec (Dest : String;
+                   Src  : String) with
+      Import,
+      Convention    => C,
+      External_Name => "socat_exec";
+
    package Packet_Server is new Packet.Server (Server_Meta, Initialize, Finalize, Event, Ready, Update, Read);
+   package Linux_Server is new Packet_Server.Linux;
    package Packet_Dispatcher is new Packet.Dispatcher (Packet_Server, Dispatch);
    package Rom_Client is new Rom.Client (Server_Meta, Configure);
    package Log_Client is new Log.Client;
@@ -125,6 +139,7 @@ is
          return;
       end if;
       Log_Client.Info (Logger, Server_Data.Destination (Server_Data.Destination'First .. Server_Data.Last));
+      Packet_Dispatcher.Register (Dispatcher);
    end Construct;
 
    procedure Event
@@ -160,7 +175,19 @@ is
    procedure Initialize (Session : in out Packet.Server_Session;
                          Context : in out Server_Meta)
    is
+      Pid : Integer;
    begin
+      Log_Client.Info (Logger, "FD: " & Basalt.Strings.Image (Linux_Server.Get_Fd (Session)));
+      Fork (Pid);
+      if Pid = 0 then
+         Exec (Context.Destination (Context.Destination'First .. Context.Last) & ASCII.NUL,
+               "FD:" & Basalt.Strings.Image (Linux_Server.Get_Fd (Session)) & ASCII.NUL);
+         return;
+      end if;
+      if Pid < 0 then
+         return;
+      end if;
+      Log_Client.Info (Logger, "Child Pid: " & Basalt.Strings.Image (Pid));
       if Packet.Index (Session).Value in Context.Slots'Range then
          Context.Slots (Packet.Index (Session).Value).Ready := True;
       end if;
@@ -215,7 +242,6 @@ is
       use type SXML.Result_Type;
       use type SXML.Parser.Match_Type;
       Document   : SXML.Document_Type (1 .. 128) := (others => SXML.Null_Node);
-      Success    : Boolean;
       State      : SXML.Query.State_Type;
       Result     : SXML.Result_Type;
       Match      : SXML.Parser.Match_Type;

@@ -5,6 +5,7 @@ project Socat extends "gneiss_component" is
 
    case Build_Step is
       when "compile" =>
+         for Languages use ("Ada", "C");
          for Runtime ("Ada") use Gneiss_Runtime;
          for Source_Dirs use ("socat");
          for Object_Dir use external ("CEMENT_OBJECT_DIR");
