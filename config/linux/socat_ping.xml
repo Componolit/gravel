@@ -1,0 +1,13 @@
+<config>
+    <resource name="socat_config" type="File" location="../gravel/config/components/socat_ping.xml"/>
+    <component name="log_server" file="libcomponent_linux_log_server.so"/>
+    <component name="ping" file="libcomponent_ping.so">
+        <service name="Packet" server="socat"/>
+        <service name="Log" server="log_server"/>
+        <service name="Timer"/>
+    </component>
+    <component name="socat" file="libcomponent_socat.so">
+        <service name="Log" server="log_server"/>
+        <service name="Rom" resource="socat_config"/>
+    </component>
+</config>
