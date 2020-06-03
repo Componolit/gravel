@@ -10,6 +10,8 @@ with Net.RFLX_Builtin_Types;
 with Net.ICMP;
 with Net.ICMP.Echo_Request_Reply_Message;
 with Basalt.Strings;
+with Basalt.Strings_Generic;
+with Checksum;
 
 package body Component with
    SPARK_Mode
@@ -45,12 +47,16 @@ is
    package Packet_Client is new Packet.Client (ICMP_Buf.Bytes, Event, Update, Read);
    package Timer_Client is new Gneiss_Timer.Client (Timer_Event);
 
-   Client     : Packet.Client_Session;
-   Log        : Gneiss_Log.Client_Session;
-   Trigger    : Gneiss_Timer.Client_Session;
-   Capability : Gneiss.Capability;
-   Desc       : Packet.Descriptor;
-   Sent       : Gneiss_Timer.Time := 0.0;
+   function Image is new Basalt.Strings_Generic.Image_Modular (Net.ICMP.Sequence_Number);
+   function Image is new Basalt.Strings_Generic.Image_Modular (Net.ICMP.Checksum);
+
+   Client         : Packet.Client_Session;
+   Log            : Gneiss_Log.Client_Session;
+   Trigger        : Gneiss_Timer.Client_Session;
+   Capability     : Gneiss.Capability;
+   Desc           : Packet.Descriptor;
+   Sent_Time      : Gneiss_Timer.Time := 0.0;
+   Seq            : Net.ICMP.Sequence_Number := 0;
 
    procedure Construct (Cap : Gneiss.Capability)
    is
@@ -105,17 +111,28 @@ is
          Echo.Structural_Valid_Message (Context)
          and then Echo.Get_Tag (Context) = Net.ICMP.Echo_Reply
          and then Echo.Get_Code (Context) = 0
-         and then Echo.Get_Checksum (Context) = 16#FFFF#
-         and then Echo.Get_Identifier (Context) = 16#0#
-         and then Echo.Get_Sequence_Number (Context) = 16#0#
       then
-         Log_Client.Info (Log, "Ping: " & Basalt.Strings.Image (Duration (Received - Sent)));
+         Log_Client.Info (Log, "seq="
+                               & Image (Echo.Get_Sequence_Number (Context))
+                               & " time="
+                               & Basalt.Strings.Image (Duration (Received - Sent_Time))
+                               & " checksum="
+                               & Image (Echo.Get_Checksum (Context), 16)
+                               & "("
+                               & Image (Checksum.Echo_Request_Reply_Checksum (Net.ICMP.Echo_Reply,
+                                                                              Echo.Get_Code (Context),
+                                                                              Echo.Get_Identifier (Context),
+                                                                              Echo.Get_Sequence_Number (Context),
+                                                                              (1 .. 0 => 0)),
+                                        16)
+                               & ")");
       end if;
       Echo.Take_Buffer (Context, ICMP_Buf.Ptr);
    end Event;
 
    procedure Timer_Event
    is
+      use type Net.ICMP.Sequence_Number;
       Context : Echo.Context;
    begin
       Timer_Client.Set_Timeout (Trigger, 1.0);
@@ -131,13 +148,18 @@ is
       Echo.Initialize (Context, ICMP_Buf.Ptr);
       Echo.Set_Tag (Context, Net.ICMP.Echo_Request);
       Echo.Set_Code (Context, 0);
-      Echo.Set_Checksum (Context, 16#F7FF#);
+      Echo.Set_Checksum (Context, Checksum.Echo_Request_Reply_Checksum (Net.ICMP.Echo_Request,
+                                                                        0,
+                                                                        16#0#,
+                                                                        Seq,
+                                                                        (1 .. 0 => 0)));
       Echo.Set_Identifier (Context, 16#0#);
-      Echo.Set_Sequence_Number (Context, 16#0#);
+      Echo.Set_Sequence_Number (Context, Seq);
       Echo.Take_Buffer (Context, ICMP_Buf.Ptr);
       Packet_Client.Update (Client, Desc, ICMP_Buf.Ptr.all);
       Packet_Client.Send (Client, Desc);
-      Sent := Timer_Client.Clock (Trigger);
+      Seq := Seq + 1;
+      Sent_Time := Timer_Client.Clock (Trigger);
       if Packet_Client.Allocated (Client, Desc) then
          Log_Client.Warning (Log, "Failed to send request.");
          Packet_Client.Free (Client, Desc);
