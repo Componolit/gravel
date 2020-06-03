@@ -6,9 +6,9 @@ with Gneiss.Packet.Client;
 with Gneiss.Timer;
 with Gneiss.Timer.Client;
 with Buffer;
-with Net.RFLX_Builtin_Types;
-with Net.ICMP;
-with Net.ICMP.Echo_Request_Reply_Message;
+with RFLX_Builtin_Types;
+with ICMP;
+with ICMP.Echo_Request_Reply_Message;
 with Basalt.Strings;
 with Basalt.Strings_Generic;
 with Checksum;
@@ -17,8 +17,8 @@ package body Component with
    SPARK_Mode
 is
 
-   package Types renames Net.RFLX_Builtin_Types;
-   package Echo renames Net.ICMP.Echo_Request_Reply_Message;
+   package Types renames RFLX_Builtin_Types;
+   package Echo renames ICMP.Echo_Request_Reply_Message;
 
    package Gneiss_Log is new Gneiss.Log;
    package Log_Client is new Gneiss_Log.Client;
@@ -47,8 +47,8 @@ is
    package Packet_Client is new Packet.Client (ICMP_Buf.Bytes, Event, Update, Read);
    package Timer_Client is new Gneiss_Timer.Client (Timer_Event);
 
-   function Image is new Basalt.Strings_Generic.Image_Modular (Net.ICMP.Sequence_Number);
-   function Image is new Basalt.Strings_Generic.Image_Modular (Net.ICMP.Checksum);
+   function Image is new Basalt.Strings_Generic.Image_Modular (ICMP.Sequence_Number);
+   function Image is new Basalt.Strings_Generic.Image_Modular (ICMP.Checksum);
 
    Client         : Packet.Client_Session;
    Log            : Gneiss_Log.Client_Session;
@@ -56,7 +56,7 @@ is
    Capability     : Gneiss.Capability;
    Desc           : Packet.Descriptor;
    Sent_Time      : Gneiss_Timer.Time := 0.0;
-   Seq            : Net.ICMP.Sequence_Number := 0;
+   Seq            : ICMP.Sequence_Number := 0;
 
    procedure Construct (Cap : Gneiss.Capability)
    is
@@ -84,11 +84,11 @@ is
 
    procedure Event
    is
-      use type Net.ICMP.Tag;
-      use type Net.ICMP.Code_Zero_Base;
-      use type Net.ICMP.Checksum;
-      use type Net.ICMP.Identifier;
-      use type Net.ICMP.Sequence_Number;
+      use type ICMP.Tag;
+      use type ICMP.Code_Zero_Base;
+      use type ICMP.Checksum;
+      use type ICMP.Identifier;
+      use type ICMP.Sequence_Number;
       use type Gneiss_Timer.Time;
       Context : Echo.Context;
       Received : Gneiss_Timer.Time;
@@ -109,7 +109,7 @@ is
       Echo.Verify_Message (Context);
       if
          Echo.Structural_Valid_Message (Context)
-         and then Echo.Get_Tag (Context) = Net.ICMP.Echo_Reply
+         and then Echo.Get_Tag (Context) = ICMP.Echo_Reply
          and then Echo.Get_Code (Context) = 0
       then
          Log_Client.Info (Log, "seq="
@@ -119,7 +119,7 @@ is
                                & " checksum="
                                & Image (Echo.Get_Checksum (Context), 16)
                                & "("
-                               & Image (Checksum.Echo_Request_Reply_Checksum (Net.ICMP.Echo_Reply,
+                               & Image (Checksum.Echo_Request_Reply_Checksum (ICMP.Echo_Reply,
                                                                               Echo.Get_Code (Context),
                                                                               Echo.Get_Identifier (Context),
                                                                               Echo.Get_Sequence_Number (Context),
@@ -132,7 +132,7 @@ is
 
    procedure Timer_Event
    is
-      use type Net.ICMP.Sequence_Number;
+      use type ICMP.Sequence_Number;
       Context : Echo.Context;
    begin
       Timer_Client.Set_Timeout (Trigger, 1.0);
@@ -146,9 +146,9 @@ is
          return;
       end if;
       Echo.Initialize (Context, ICMP_Buf.Ptr);
-      Echo.Set_Tag (Context, Net.ICMP.Echo_Request);
+      Echo.Set_Tag (Context, ICMP.Echo_Request);
       Echo.Set_Code (Context, 0);
-      Echo.Set_Checksum (Context, Checksum.Echo_Request_Reply_Checksum (Net.ICMP.Echo_Request,
+      Echo.Set_Checksum (Context, Checksum.Echo_Request_Reply_Checksum (ICMP.Echo_Request,
                                                                         0,
                                                                         16#0#,
                                                                         Seq,
