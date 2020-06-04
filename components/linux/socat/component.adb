@@ -8,6 +8,8 @@ with Gneiss.Rom;
 with Gneiss.Rom.Client;
 with Gneiss.Log;
 with Gneiss.Log.Client;
+with Gneiss_Internal;
+with Gneiss_Internal.Syscall;
 with SXML;
 with SXML.Parser;
 with SXML.Query;
@@ -22,20 +24,12 @@ is
    package Rom is new Gneiss.Rom (Character, Positive, String);
    package Packet is new Gneiss.Packet (Positive, Character, String, Desc_Index);
 
-   type Descriptors is array (Desc_Index'Range) of Packet.Descriptor;
-
-   type Server_Slot is record
-      Ready : Boolean := False;
-   end record;
-
-   subtype Server_Index is Gneiss.Session_Index range 1 .. 2;
-   type Server_Reg is array (Server_Index'Range) of Packet.Server_Session;
-   type Server_Slots is array (Server_Index'Range) of Server_Slot;
+   subtype Server_Index is Gneiss.Session_Index range 1 .. 1;
 
    type Server_Meta is record
-      Slots       : Server_Slots;
       Destination : String (1 .. 1024) := (others => Character'First);
       Last        : Natural := 0;
+      Pid         : Integer := -1;
    end record;
 
    function Rom_Contract (S : Server_Meta) return Boolean is (True);
@@ -43,12 +37,12 @@ is
    procedure Update (Session : in out Packet.Server_Session;
                      Idx     :        Desc_Index;
                      Buf     :    out String;
-                     Ctx     : in out Server_Meta);
+                     Ctx     : in out Server_Meta) is null;
 
    procedure Read (Session : in out Packet.Server_Session;
                    Idx     :        Desc_Index;
                    Buf     :        String;
-                   Ctx     : in out Server_Meta);
+                   Ctx     : in out Server_Meta) is null;
 
    procedure Configure (Session : in out Rom.Client_Session;
                         Data    :        String;
@@ -69,7 +63,7 @@ is
       Post   => Packet.Initialized (Session),
       Global => null;
 
-   procedure Event;
+   procedure Event is null;
 
    function Ready (Session : Packet.Server_Session;
                    Context : Server_Meta) return Boolean with
@@ -84,16 +78,17 @@ is
       Post   => Packet.Initialized (Session)
                 and then Packet.Registered (Session);
 
-   procedure Fork (Pid : out Integer) with
-      Import,
-      Convention    => C,
-      External_Name => "socat_fork";
-
    procedure Exec (Dest : String;
                    Src  : String) with
       Import,
       Convention    => C,
       External_Name => "socat_exec";
+
+   procedure Check_Pid (Pid    :     Integer;
+                        Status : out Integer) with
+      Import,
+      Convention    => C,
+      External_Name => "socat_check_pid";
 
    package Packet_Server is new Packet.Server (Server_Meta, Initialize, Finalize, Event, Ready, Update, Read);
    package Linux_Server is new Packet_Server.Linux;
@@ -105,9 +100,7 @@ is
 
    Dispatcher  : Packet.Dispatcher_Session;
    Capability  : Gneiss.Capability;
-   Servers     : Server_Reg;
    Server_Data : Server_Meta;
-   Descs       : Descriptors;
    Config      : Rom.Client_Session;
    Logger      : Log.Client_Session;
 
@@ -142,30 +135,6 @@ is
       Packet_Dispatcher.Register (Dispatcher);
    end Construct;
 
-   procedure Event
-   is
-   begin
-      null;
-   end Event;
-
-   procedure Update (Session : in out Packet.Server_Session;
-                     Idx     :        Desc_Index;
-                     Buf     :    out String;
-                     Ctx     : in out Server_Meta)
-   is
-   begin
-      null;
-   end Update;
-
-   procedure Read (Session : in out Packet.Server_Session;
-                   Idx     :        Desc_Index;
-                   Buf     :        String;
-                   Ctx     : in out Server_Meta)
-   is
-   begin
-      null;
-   end Read;
-
    procedure Destruct
    is
    begin
@@ -175,31 +144,25 @@ is
    procedure Initialize (Session : in out Packet.Server_Session;
                          Context : in out Server_Meta)
    is
-      Pid : Integer;
    begin
       Log_Client.Info (Logger, "FD: " & Basalt.Strings.Image (Linux_Server.Get_Fd (Session)));
-      Fork (Pid);
-      if Pid = 0 then
+      Gneiss_Internal.Syscall.Fork (Context.Pid);
+      if Context.Pid = 0 then
          Exec (Context.Destination (Context.Destination'First .. Context.Last) & ASCII.NUL,
                "FD:" & Basalt.Strings.Image (Linux_Server.Get_Fd (Session)) & ASCII.NUL);
          return;
       end if;
-      if Pid < 0 then
+      if Context.Pid < 0 then
          return;
       end if;
-      Log_Client.Info (Logger, "Child Pid: " & Basalt.Strings.Image (Pid));
-      if Packet.Index (Session).Value in Context.Slots'Range then
-         Context.Slots (Packet.Index (Session).Value).Ready := True;
-      end if;
+      Log_Client.Info (Logger, "Child Pid: " & Basalt.Strings.Image (Context.Pid));
    end Initialize;
 
    procedure Finalize (Session : in out Packet.Server_Session;
                        Context : in out Server_Meta)
    is
    begin
-      if Packet.Index (Session).Value in Context.Slots'Range then
-         Context.Slots (Packet.Index (Session).Value).Ready := False;
-      end if;
+      null;
    end Finalize;
 
    procedure Dispatch (Session  : in out Packet.Dispatcher_Session;
@@ -207,32 +170,35 @@ is
                        Name     :        String;
                        Label    :        String)
    is
-      pragma Unreferenced (Name);
-      pragma Unreferenced (Label);
+      Server : Packet.Server_Session;
+      Status : Integer;
    begin
-      if Packet_Dispatcher.Valid_Session_Request (Session, Disp_Cap) then
-         for I in Servers'Range loop
-            if not Ready (Servers (I), Server_Data) and then not Packet.Initialized (Servers (I)) then
-               Packet_Dispatcher.Session_Initialize (Session, Disp_Cap, Servers (I), Server_Data, I);
-               if Ready (Servers (I), Server_Data) and then Packet.Initialized (Servers (I)) then
-                  Packet_Dispatcher.Session_Accept (Session, Disp_Cap, Servers (I), Server_Data);
-                  exit;
-               end if;
-            end if;
-         end loop;
+      Log_Client.Info (Logger, "Request from " & Name & ":" & Label);
+      if
+         not Packet_Dispatcher.Valid_Session_Request (Session, Disp_Cap)
+         or else Ready (Server, Server_Data)
+         or else Packet.Initialized (Server)
+      then
+         Log_Client.Warning (Logger, "[" & Name & ":" & Label & "] Server not free.");
+         return;
       end if;
-      for S of Servers loop
-         Packet_Dispatcher.Session_Cleanup (Session, Disp_Cap, S, Server_Data);
-      end loop;
+      Packet_Dispatcher.Session_Initialize (Session, Disp_Cap, Server, Server_Data, 1);
+      Check_Pid (Server_Data.Pid, Status);
+      if
+         not Ready (Server, Server_Data)
+         or else not Packet.Initialized (Server)
+         or else Status /= 0
+      then
+         Log_Client.Warning (Logger, "[" & Name & ":" & Label & "] Server failed to initialize.");
+         Server_Data.Pid := -1;
+         return;
+      end if;
+      Packet_Dispatcher.Session_Accept (Session, Disp_Cap, Server, Server_Data);
+      Server_Data.Pid := -1;
    end Dispatch;
 
    function Ready (Session : Packet.Server_Session;
-                   Context : Server_Meta) return Boolean is
-      (if
-          Packet.Index (Session).Valid
-          and then Packet.Index (Session).Value in Context.Slots'Range
-       then Context.Slots (Packet.Index (Session).Value).Ready
-       else False);
+                   Context : Server_Meta) return Boolean is (Context.Pid > 0);
 
    procedure Configure (Session : in out Rom.Client_Session;
                         Data    :        String;
