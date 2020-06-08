@@ -8,7 +8,7 @@ with Gneiss.Timer.Client;
 with Buffer;
 with RFLX_Builtin_Types;
 with ICMP;
-with ICMP.Echo_Request_Reply_Message;
+with ICMP.Message;
 with Basalt.Strings;
 with Basalt.Strings_Generic;
 with Checksum;
@@ -18,7 +18,7 @@ package body Component with
 is
 
    package Types renames RFLX_Builtin_Types;
-   package Echo renames ICMP.Echo_Request_Reply_Message;
+   package Echo renames ICMP.Message;
 
    package Gneiss_Log is new Gneiss.Log;
    package Log_Client is new Gneiss_Log.Client;
@@ -110,7 +110,7 @@ is
       if
          Echo.Structural_Valid_Message (Context)
          and then Echo.Get_Tag (Context) = ICMP.Echo_Reply
-         and then Echo.Get_Code (Context) = 0
+         and then Echo.Get_Code_Zero (Context) = 0
       then
          Log_Client.Info (Log, "seq="
                                & Image (Echo.Get_Sequence_Number (Context))
@@ -120,7 +120,7 @@ is
                                & Image (Echo.Get_Checksum (Context), 16)
                                & "("
                                & Image (Checksum.Echo_Request_Reply_Checksum (ICMP.Echo_Reply,
-                                                                              Echo.Get_Code (Context),
+                                                                              Echo.Get_Code_Zero (Context),
                                                                               Echo.Get_Identifier (Context),
                                                                               Echo.Get_Sequence_Number (Context),
                                                                               (1 .. 0 => 0)),
@@ -147,7 +147,7 @@ is
       end if;
       Echo.Initialize (Context, ICMP_Buf.Ptr);
       Echo.Set_Tag (Context, ICMP.Echo_Request);
-      Echo.Set_Code (Context, 0);
+      Echo.Set_Code_Zero (Context, 0);
       Echo.Set_Checksum (Context, Checksum.Echo_Request_Reply_Checksum (ICMP.Echo_Request,
                                                                         0,
                                                                         16#0#,
