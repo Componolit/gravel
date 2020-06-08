@@ -8,7 +8,10 @@ package Buffer with
    Elaborate_Body
 is
 
-   subtype Bytes is RFLX_Builtin_Types.Bytes (1 .. Size);
+   type Bytes is record
+      Data   : RFLX_Builtin_Types.Bytes_Ptr;
+      Length : RFLX_Builtin_Types.Length;
+   end record;
 
    Ptr : RFLX_Builtin_Types.Bytes_Ptr;
 
