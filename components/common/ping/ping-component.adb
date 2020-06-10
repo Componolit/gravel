@@ -5,7 +5,7 @@ with Gneiss.Packet;
 with Gneiss.Packet.Client;
 with Gneiss.Timer;
 with Gneiss.Timer.Client;
-with Buffer;
+with Ping.Buffer;
 with RFLX_Types;
 with RFLX_Builtin_Types;
 with ICMP;
@@ -14,7 +14,7 @@ with Basalt.Strings;
 with Basalt.Strings_Generic;
 with Checksum;
 
-package body Component with
+package body Ping.Component with
    SPARK_Mode
 is
 
@@ -274,4 +274,4 @@ is
       Timer_Client.Finalize (Trigger);
    end Destruct;
 
-end Component;
+end Ping.Component;

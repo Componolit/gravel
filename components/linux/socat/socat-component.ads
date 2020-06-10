@@ -2,7 +2,7 @@
 with Gneiss;
 with Gneiss.Component;
 
-package Component with
+package Socat.Component with
    SPARK_Mode
 is
 
@@ -12,4 +12,4 @@ is
 
    package Main is new Gneiss.Component (Construct, Destruct);
 
-end Component;
+end Socat.Component;

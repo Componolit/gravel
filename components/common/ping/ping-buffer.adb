@@ -1,5 +1,5 @@
 
-package body Buffer with
+package body Ping.Buffer with
    SPARK_Mode
 is
 
@@ -8,4 +8,4 @@ is
 begin
    pragma SPARK_Mode (Off);
    Ptr := Buf'Unrestricted_Access;
-end Buffer;
+end Ping.Buffer;
