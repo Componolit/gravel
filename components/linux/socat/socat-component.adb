@@ -18,11 +18,9 @@ package body Socat.Component with
    SPARK_Mode
 is
 
-   subtype Desc_Index is Positive range 1 .. 10;
-
    package Log is new Gneiss.Log;
    package Rom is new Gneiss.Rom (Character, Positive, String);
-   package Packet is new Gneiss.Packet (Positive, Character, String, Desc_Index);
+   package Packet is new Gneiss.Packet (Positive, Character, String);
 
    subtype Server_Index is Gneiss.Session_Index range 1 .. 1;
 
@@ -33,16 +31,6 @@ is
    end record;
 
    function Rom_Contract (S : Server_Meta) return Boolean is (True);
-
-   procedure Update (Session : in out Packet.Server_Session;
-                     Idx     :        Desc_Index;
-                     Buf     :    out String;
-                     Ctx     : in out Server_Meta) is null;
-
-   procedure Read (Session : in out Packet.Server_Session;
-                   Idx     :        Desc_Index;
-                   Buf     :        String;
-                   Ctx     : in out Server_Meta) is null;
 
    procedure Configure (Session : in out Rom.Client_Session;
                         Data    :        String;
@@ -90,7 +78,7 @@ is
       Convention    => C,
       External_Name => "socat_check_pid";
 
-   package Packet_Server is new Packet.Server (Server_Meta, Initialize, Finalize, Event, Ready, Update, Read);
+   package Packet_Server is new Packet.Server (Server_Meta, Initialize, Finalize, Event, Ready);
    package Linux_Server is new Packet_Server.Linux;
    package Packet_Dispatcher is new Packet.Dispatcher (Packet_Server, Dispatch);
    package Rom_Client is new Rom.Client (Server_Meta, Configure);
