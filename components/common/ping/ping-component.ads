@@ -3,7 +3,7 @@ with Gneiss;
 with Gneiss.Component;
 with Gneiss_Internal;
 
-package Component with
+package Ping.Component with
    SPARK_Mode
 is
 
@@ -13,4 +13,4 @@ is
 
    package Main is new Gneiss.Component (Construct, Destruct);
 
-end Component;
+end Ping.Component;

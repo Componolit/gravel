@@ -3,7 +3,7 @@ with RFLX_Builtin_Types;
 
 generic
    Size : RFLX_Builtin_Types.Length;
-package Buffer with
+package Ping.Buffer with
    SPARK_Mode,
    Elaborate_Body
 is
@@ -15,4 +15,4 @@ is
 
    Ptr : RFLX_Builtin_Types.Bytes_Ptr;
 
-end Buffer;
+end Ping.Buffer;

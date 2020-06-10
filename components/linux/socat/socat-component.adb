@@ -14,7 +14,7 @@ with SXML;
 with SXML.Parser;
 with SXML.Query;
 
-package body Component with
+package body Socat.Component with
    SPARK_Mode
 is
 
@@ -237,4 +237,4 @@ is
       end if;
    end Configure;
 
-end Component;
+end Socat.Component;
