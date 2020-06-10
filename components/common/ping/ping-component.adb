@@ -31,35 +31,22 @@ is
 
    procedure Timer_Event;
 
-   subtype Desc_Index is Positive range 1 .. 1;
-
-   package Packet is new Gneiss.Packet (Types.Index, Types.Byte, Types.Bytes, Desc_Index);
+   package Packet is new Gneiss.Packet (Types.Index, Types.Byte, Types.Bytes);
 
    package ICMP_Buf is new Buffer (Buffer_Size);
 
-   procedure Update (Session : in out Packet.Client_Session;
-                     Idx     :        Desc_Index;
-                     Buf     :    out Types.Bytes;
-                     Ctx     : in out ICMP_Buf.Bytes);
-
-   procedure Read (Session : in out Packet.Client_Session;
-                   Idx     :        Desc_Index;
-                   Buf     :        Types.Bytes;
-                   Ctx     : in out ICMP_Buf.Bytes);
-
-   package Packet_Client is new Packet.Client (ICMP_Buf.Bytes, Event, Update, Read);
+   package Packet_Client is new Packet.Client (Event);
    package Timer_Client is new Gneiss_Timer.Client (Timer_Event);
 
    function Image is new Basalt.Strings_Generic.Image_Modular (ICMP.Sequence_Number);
    function Image is new Basalt.Strings_Generic.Image_Modular (ICMP.Checksum);
 
-   Client         : Packet.Client_Session;
-   Log            : Gneiss_Log.Client_Session;
-   Trigger        : Gneiss_Timer.Client_Session;
-   Capability     : Gneiss.Capability;
-   Desc           : Packet.Descriptor;
-   Sent_Time      : Gneiss_Timer.Time := 0.0;
-   Seq            : ICMP.Sequence_Number := 0;
+   Client     : Packet.Client_Session;
+   Log        : Gneiss_Log.Client_Session;
+   Trigger    : Gneiss_Timer.Client_Session;
+   Capability : Gneiss.Capability;
+   Sent_Time  : Gneiss_Timer.Time := 0.0;
+   Seq        : ICMP.Sequence_Number := 0;
 
    procedure Construct (Cap : Gneiss.Capability)
    is
@@ -100,7 +87,7 @@ is
       Packet_Checksum : ICMP.Checksum;
       Identifier      : ICMP.Identifier;
       Sequence_Number : ICMP.Sequence_Number;
-      Data_Ptr        : ICMP_Buf.Bytes;
+      Length          : Natural;
       procedure Process_Data (Buffer : Types.Bytes);
       procedure Process_Data (Buffer : Types.Bytes)
       is
@@ -124,20 +111,14 @@ is
       end if;
       Received := Timer_Client.Clock (Trigger);
       Timer_Client.Set_Timeout (Trigger, 1.0);
-      if Packet_Client.Allocated (Client, Desc) then
-         Log_Client.Warning (Log, "Descriptor already allocated");
-         return;
+      Packet_Client.Receive (Client, ICMP_Buf.Ptr.all, Length);
+      if Length > ICMP_Buf.Ptr'Length then
+         Log_Client.Warning (Log, "Receive truncated packet.");
+         Length := ICMP_Buf.Ptr'Length;
       end if;
-      Packet_Client.Receive (Client, Desc, 1);
-      if not Packet_Client.Allocated (Client, Desc) then
-         return;
-      end if;
-      Data_Ptr := (ICMP_Buf.Ptr, 0);
-      Packet_Client.Read (Client, Desc, Data_Ptr);
-      Packet_Client.Free (Client, Desc);
-      Echo.Initialize (Context, Data_Ptr.Data,
-                       RFLX_Types.First_Bit_Index (Data_Ptr.Data'First),
-                       RFLX_Types.Last_Bit_Index (Data_Ptr.Data'First + Data_Ptr.Length - 1));
+      Echo.Initialize (Context, ICMP_Buf.Ptr,
+                       RFLX_Types.First_Bit_Index (ICMP_Buf.Ptr'First),
+                       RFLX_Types.Last_Bit_Index (ICMP_Buf.Ptr'First + Types.Length (Length) - 1));
       Echo.Verify_Message (Context);
       if
          Echo.Structural_Valid_Message (Context)
@@ -165,9 +146,9 @@ is
       use type ICMP.Sequence_Number;
       use type Types.Length;
       use type Types.Bytes_Ptr;
-      Context  : Echo.Context;
+      Context         : Echo.Context;
       Packet_Checksum : ICMP.Checksum;
-      Data_Ptr : ICMP_Buf.Bytes;
+      Success         : Boolean;
       procedure Process_Data (Buffer : out Types.Bytes);
       procedure Process_Data (Buffer : out Types.Bytes)
       is
@@ -192,15 +173,6 @@ is
          return;
       end if;
       Timer_Client.Set_Timeout (Trigger, 1.0);
-      if Packet_Client.Allocated (Client, Desc) then
-         Log_Client.Warning (Log, "Descriptor already allocated.");
-         return;
-      end if;
-      Packet_Client.Allocate (Client, Desc, 16, 1);
-      if not Packet_Client.Allocated (Client, Desc) then
-         Log_Client.Warning (Log, "Failed to allocate descriptor.");
-         return;
-      end if;
       Echo.Initialize (Context, ICMP_Buf.Ptr);
       Echo.Set_Tag (Context, ICMP.Echo_Request);
       Echo.Set_Code_Zero (Context, 0);
@@ -210,61 +182,14 @@ is
       Set_Data (Context, 64);
       Echo.Set_Checksum (Context, Packet_Checksum);
       Echo.Take_Buffer (Context, ICMP_Buf.Ptr);
-      Data_Ptr := (ICMP_Buf.Ptr, 16);
-      Packet_Client.Update (Client, Desc, Data_Ptr);
-      ICMP_Buf.Ptr := Data_Ptr.Data;
-      Packet_Client.Send (Client, Desc);
+      Packet_Client.Send (Client, ICMP_Buf.Ptr.all  (ICMP_Buf.Ptr'First .. ICMP_Buf.Ptr'First + 15), Success);
+      if not Success then
+         Log_Client.Warning (Log, "Failed to send packet.");
+         return;
+      end if;
       Seq := Seq + 1;
       Sent_Time := Timer_Client.Clock (Trigger);
-      if Packet_Client.Allocated (Client, Desc) then
-         Log_Client.Warning (Log, "Failed to send request.");
-         Packet_Client.Free (Client, Desc);
-      end if;
    end Timer_Event;
-
-   procedure Update (Session : in out Packet.Client_Session;
-                     Idx     :        Desc_Index;
-                     Buf     :    out Types.Bytes;
-                     Ctx     : in out ICMP_Buf.Bytes)
-   is
-      pragma Unreferenced (Session);
-      pragma Unreferenced (Idx);
-      use type Types.Length;
-   begin
-      if Buf'Length < 1 then
-         return;
-      end if;
-      if Ctx.Length > Ctx.Data'Length then
-         Ctx.Length := Ctx.Data'Length;
-      end if;
-      if Buf'Length <= Ctx.Length then
-         Buf := Ctx.Data.all (Ctx.Data'First .. Ctx.Data'First + Buf'Length - 1);
-      else
-         Buf := (others => 0);
-         Buf (Buf'First .. Buf'First + Ctx.Length - 1) := Ctx.Data.all;
-      end if;
-   end Update;
-
-   procedure Read (Session : in out Packet.Client_Session;
-                   Idx     :        Desc_Index;
-                   Buf     :        Types.Bytes;
-                   Ctx     : in out ICMP_Buf.Bytes)
-   is
-      pragma Unreferenced (Session);
-      pragma Unreferenced (Idx);
-      use type Types.Length;
-   begin
-      if Buf'Length < 1 then
-         return;
-      end if;
-      if Buf'Length <= Ctx.Data'Length then
-         Ctx.Data.all (Ctx.Data'First .. Ctx.Data'First + Buf'Length - 1) := Buf;
-         Ctx.Length := Buf'Length;
-      else
-         Ctx.Data.all := Buf (Buf'First .. Buf'First + Ctx.Data'Length - 1);
-         Ctx.Length   := Ctx.Data'Length;
-      end if;
-   end Read;
 
    procedure Destruct
    is
