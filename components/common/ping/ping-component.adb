@@ -88,15 +88,13 @@ is
       Identifier      : ICMP.Identifier;
       Sequence_Number : ICMP.Sequence_Number;
       Length          : Natural;
+      Latency         : Duration;
       procedure Process_Data (Buffer : Types.Bytes);
       procedure Process_Data (Buffer : Types.Bytes)
       is
       begin
-         Packet_Checksum := Checksum.Echo_Request_Reply_Checksum (ICMP.Echo_Reply,
-                                                                  0,
-                                                                  Identifier,
-                                                                  Sequence_Number,
-                                                                  Buffer);
+         Packet_Checksum := Checksum.Echo_Request_Reply_Checksum
+            (ICMP.Echo_Reply, 0, Identifier, Sequence_Number, Buffer);
       end Process_Data;
       procedure Generate_Checksum is new Echo.Get_Data (Process_Data);
    begin
@@ -106,15 +104,27 @@ is
          or else not Packet.Initialized (Client)
          or else ICMP_Buf.Ptr = null
          or else ICMP_Buf.Ptr'Length /= Buffer_Size
+         or else ICMP_Buf.Ptr'First /= 1
       then
          return;
       end if;
       Received := Timer_Client.Clock (Trigger);
+      if
+         Received > Sent_Time
+         and Then (if Sent_Time < 0.0 then Received < Gneiss_Timer.Time'Last + Sent_Time)
+      then
+         Latency := Duration (Received - Sent_Time);
+      else
+         Latency := 0.0;
+      end if;
       Timer_Client.Set_Timeout (Trigger, 1.0);
       Packet_Client.Receive (Client, ICMP_Buf.Ptr.all, Length);
       if Length > ICMP_Buf.Ptr'Length then
          Log_Client.Warning (Log, "Receive truncated packet.");
          Length := ICMP_Buf.Ptr'Length;
+      end if;
+      if Length < 1 then
+         return;
       end if;
       Echo.Initialize (Context, ICMP_Buf.Ptr,
                        RFLX_Types.First_Bit_Index (ICMP_Buf.Ptr'First),
@@ -127,18 +137,25 @@ is
       then
          Identifier      := Echo.Get_Identifier (Context);
          Sequence_Number := Echo.Get_Sequence_Number (Context);
-         Generate_Checksum (Context);
+         if Echo.Present (Context, Echo.F_Data) then
+            Generate_Checksum (Context);
+         else
+            Packet_Checksum := Checksum.Echo_Request_Reply_Checksum
+               (ICMP.Echo_Reply, 0, Identifier, Sequence_Number, (1 .. 0 => 0));
+         end if;
          Log_Client.Info (Log, "seq="
                                & Image (Sequence_Number)
                                & " time="
-                               & Basalt.Strings.Image (Duration (Received - Sent_Time))
+                               & Basalt.Strings.Image (Latency)
                                & " checksum="
                                & Image (Echo.Get_Checksum (Context), 16)
                                & " ("
                                & Image (Packet_Checksum, 16)
                                & ")");
       end if;
+      pragma Warnings (Off, "unused assignment to ""Context""");
       Echo.Take_Buffer (Context, ICMP_Buf.Ptr);
+      pragma Warnings (On, "unused assignment to ""Context""");
    end Event;
 
    procedure Timer_Event
@@ -146,19 +163,19 @@ is
       use type ICMP.Sequence_Number;
       use type Types.Length;
       use type Types.Bytes_Ptr;
+      use type Types.Bit_Length;
       Context         : Echo.Context;
-      Packet_Checksum : ICMP.Checksum;
       Success         : Boolean;
+      Data            : constant Types.Bytes (1 .. 8) := (others => 65);
       procedure Process_Data (Buffer : out Types.Bytes);
       procedure Process_Data (Buffer : out Types.Bytes)
       is
       begin
-         Buffer          := (others => 16#65#);
-         Packet_Checksum := Checksum.Echo_Request_Reply_Checksum (ICMP.Echo_Request,
-                                                                  0,
-                                                                  16#0#,
-                                                                  Seq,
-                                                                  Buffer);
+         if Buffer'Length = Data'Length then
+            Buffer := Data;
+         else
+            Buffer := (others => Types.Byte'First);
+         end if;
       end Process_Data;
       procedure Set_Data is new Echo.Set_Bounded_Data (Process_Data);
    begin
@@ -176,12 +193,14 @@ is
       Echo.Initialize (Context, ICMP_Buf.Ptr);
       Echo.Set_Tag (Context, ICMP.Echo_Request);
       Echo.Set_Code_Zero (Context, 0);
-      Echo.Set_Checksum (Context, 16#0#);
+      Echo.Set_Checksum (Context, Checksum.Echo_Request_Reply_Checksum
+                         (ICMP.Echo_Request, 0, 16#0#, Seq, Data));
       Echo.Set_Identifier (Context, 16#0#);
       Echo.Set_Sequence_Number (Context, Seq);
-      Set_Data (Context, 64);
-      Echo.Set_Checksum (Context, Packet_Checksum);
+      Set_Data (Context, Data'Length * Types.Byte'Size);
+      pragma Warnings (Off, "unused assignment to ""Context""");
       Echo.Take_Buffer (Context, ICMP_Buf.Ptr);
+      pragma Warnings (On, "unused assignment to ""Context""");
       Packet_Client.Send (Client, ICMP_Buf.Ptr.all  (ICMP_Buf.Ptr'First .. ICMP_Buf.Ptr'First + 15), Success);
       if not Success then
          Log_Client.Warning (Log, "Failed to send packet.");
