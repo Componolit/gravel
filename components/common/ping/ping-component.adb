@@ -167,17 +167,16 @@ is
       Context         : Echo.Context;
       Success         : Boolean;
       Data            : constant Types.Bytes (1 .. 8) := (others => 65);
-      procedure Process_Data (Buffer : out Types.Bytes);
+      function Valid_Length (L : Types.Length) return Boolean is
+         (L = Data'Length);
+      procedure Process_Data (Buffer : out Types.Bytes) with
+         Pre => Valid_Length (Buffer'Length);
       procedure Process_Data (Buffer : out Types.Bytes)
       is
       begin
-         if Buffer'Length = Data'Length then
-            Buffer := Data;
-         else
-            Buffer := (others => Types.Byte'First);
-         end if;
+         Buffer := Data;
       end Process_Data;
-      procedure Set_Data is new Echo.Set_Bounded_Data (Process_Data);
+      procedure Set_Data is new Echo.Set_Bounded_Data (Process_Data, Valid_Length);
    begin
       if
          not Gneiss_Timer.Initialized (Trigger)
